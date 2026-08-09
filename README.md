@@ -29,9 +29,25 @@ uv run npcavatar-fetch
 
 # 解包
 uv run npcavatar-unpack --category all
+
+# 立绘分类（独立工具，暂不并入主流程）
+uv run npcavatar-classify
 ```
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
+
+## 立绘分类（独立工具）
+
+`npcavatar-classify` 扫描 `data/unpacked/characters/<npc_id>/`，按文件名把每个角色的 PNG
+划分为底图与差分，并让差分按所属底图分组，输出 JSON 报告（默认
+`data/unpacked/_characters_classified.json`，`--output -` 输出到 stdout）。规则：
+以角色 id 形似纹理（`avg_/char_/avgnew_/npc_`，不区分大小写）的公共前缀为角色根名，
+裸根名或 `根名_1`/`根名#1`（序号 1）为底图，`根名$n` 全部为底图（多底图切分），
+其余为差分；目录内仅有一张图片时无论名称如何都算底图。差分按 `$n` 归属对应底图
+（如 `1$1` 属于 base1、`1$2` 属于 base2）。
+每个角色的报告形如 `bases: {<底图文件>: {"diff": [...]}}`，无法归属的差分进
+`unassigned`；仍无底图时兜底取字符串排序最小的文件作为底图（如 `char_242_mayer#2`）。
+该工具不移动任何文件，也未接入 fetch/unpack 主流程。
 
 ## 磁盘契约
 

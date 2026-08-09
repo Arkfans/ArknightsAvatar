@@ -13,6 +13,7 @@ unpack = ["UnityPy>=1.10.14", "Pillow>=10.0"]
 [project.scripts]
 npcavatar-fetch = "npcavatar.fetch:main"
 npcavatar-unpack = "npcavatar.unpack.unpacker:main"
+npcavatar-classify = "npcavatar.classify:main"
 
 [dependency-groups]
 dev = ["pytest>=8.0"]
