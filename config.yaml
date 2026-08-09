@@ -1,9 +1,9 @@
 adb:
   host: 192.168.2.121
-  port: 5555
+  port: 16448
   game:
     server: official
-    location: /storage/emulated/0/Android/data/com.hypergryph.arknights/files/AB/Android
+    location: /storage/emulated/0/Android/data/com.hypergryph.arknights/files/Bundles
 
 apk:
   file: apk/arknights-hg-2761.apk

@@ -7,8 +7,8 @@ from pathlib import Path
 import yaml
 
 GAME_LOCATIONS = {
-    "official": "/storage/emulated/0/Android/data/com.hypergryph.arknights/files/AB/Android",
-    "bilibili": "/storage/emulated/0/Android/data/com.hypergryph.arknights.bilibili/files/AB/Android",
+    "official": "/storage/emulated/0/Android/data/com.hypergryph.arknights/files/Bundles",
+    "bilibili": "/storage/emulated/0/Android/data/com.hypergryph.arknights.bilibili/files/Bundles",
 }
 
 CATEGORIES = ("characters", "chararts", "skins", "avatars")
