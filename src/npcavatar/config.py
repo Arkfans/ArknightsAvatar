@@ -35,16 +35,9 @@ class ApkConfig:
 
 
 @dataclass
-class LocalConfig:
-    # category -> directory containing *.ab
-    dirs: dict[str, Path] = field(default_factory=dict)
-
-
-@dataclass
 class Config:
     adb: AdbConfig = field(default_factory=AdbConfig)
     apk: ApkConfig = field(default_factory=ApkConfig)
-    local: LocalConfig = field(default_factory=LocalConfig)
     game_version: str = "unknown"
 
 
@@ -75,7 +68,6 @@ def load_config(path: str | Path | None = None) -> Config:
     adb_data = data.get("adb") or {}
     game_data = adb_data.get("game") or {}
     apk_data = data.get("apk") or {}
-    local_data = data.get("local") or {}
 
     server = _env("ADB_GAME_SERVER") or game_data.get("server", "official")
     adb = AdbConfig(
@@ -90,7 +82,5 @@ def load_config(path: str | Path | None = None) -> Config:
         dir=Path(_env("APK_DIR")) if _env("APK_DIR") else (Path(apk_data["dir"]) if apk_data.get("dir") else None),
     )
 
-    local = LocalConfig(dirs={category: Path(value) for category, value in local_data.items() if value})
-
     game_version = _env("GAME_VERSION") or data.get("game_version") or infer_game_version(apk) or "unknown"
-    return Config(adb=adb, apk=apk, local=local, game_version=game_version)
+    return Config(adb=adb, apk=apk, game_version=game_version)

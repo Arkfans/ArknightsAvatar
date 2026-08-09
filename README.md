@@ -2,7 +2,7 @@
 
 明日方舟 NPC 头像提取管线（迁移重构）。分阶段解耦：
 
-1. **fetch**：从本地目录 / APK 解包目录 / ADB 设备获取 AB 资源，缓存到 `data/raw/`，带 sha256 manifest，增量更新。
+1. **fetch**：从 APK 解包目录 / ADB 设备获取 AB 资源，缓存到 `data/raw/`，带 sha256 manifest，增量更新。
 2. **unpack**：用 UnityPy 把 AB 解包为全分辨率 RGBA PNG + 元数据（含游戏自带 `facePos/faceSize`），输出到 `data/unpacked/`，按 `类型/id/` 层级存放。
 3. 人脸识别（规划中，匹配方式待更新）。
 
@@ -18,14 +18,14 @@ uv sync --extra fetch --extra unpack --group dev
 ## 用法
 
 ```bash
-# 从旧缓存导入全部四类资源（characters / chararts / skins / avatars）
-uv run npcavatar-fetch --source local --category all
-
-# 从 APK 解包目录取头像（仅验证用，版本与旧缓存不一致时会记录 game_version）
+# 从 APK 解包目录取头像
 uv run npcavatar-fetch --source apk --category avatars
 
 # 从 ADB 设备拉取
 uv run npcavatar-fetch --source adb --category characters
+
+# 默认从 ADB 设备拉取全部四类资源
+uv run npcavatar-fetch
 
 # 解包
 uv run npcavatar-unpack --category all

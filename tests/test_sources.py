@@ -1,31 +1,6 @@
 from pathlib import Path
 
-from npcavatar.sources import ApkSource, LocalSource
-
-
-def test_local_source_lists_and_fetches(tmp_path: Path):
-    directory = tmp_path / "characters"
-    directory.mkdir()
-    (directory / "a.ab").write_bytes(b"x" * 10)
-    (directory / "empty.ab").write_bytes(b"")
-
-    source = LocalSource({"characters": directory})
-    infos = source.list_files("characters")
-    assert {info.rel for info in infos} == {"characters/a.ab", "characters/empty.ab"}
-    sizes = {info.rel: info.size for info in infos}
-    assert sizes["characters/a.ab"] == 10
-    assert sizes["characters/empty.ab"] == 0
-
-    dest = tmp_path / "out" / "characters" / "a.ab"
-    source.fetch_to("characters/a.ab", dest)
-    assert dest.read_bytes() == b"x" * 10
-    assert source.sha256("characters/a.ab") == __import__("npcavatar.util", fromlist=["sha256_file"]).sha256_file(dest)
-
-
-def test_local_source_missing_category(tmp_path: Path):
-    source = LocalSource({"characters": tmp_path / "characters"})
-    assert source.list_files("chararts") == []
-    assert source.supports("chararts") is False
+from npcavatar.sources import ApkSource
 
 
 def test_apk_source_mapping(tmp_path: Path):
