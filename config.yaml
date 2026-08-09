@@ -1,0 +1,17 @@
+adb:
+  host: 192.168.2.121
+  port: 5555
+  game:
+    server: official
+    location: /storage/emulated/0/Android/data/com.hypergryph.arknights/files/AB/Android
+
+apk:
+  file: apk/arknights-hg-2761.apk
+  dir: apk/arknights-hg-2761
+
+# 本地目录源（旧项目缓存基线），可用 --config 指向别的配置文件切换
+local:
+  characters: 'D:/ProgramProject/OldProject/Web/Arkfans/NpcAvatar/data/tmp/characters'
+  chararts: 'D:/ProgramProject/OldProject/Web/Arkfans/NpcAvatar/data/tmp/chararts'
+  skins: 'D:/ProgramProject/OldProject/Web/Arkfans/NpcAvatar/data/tmp/skins'
+  avatars: 'D:/ProgramProject/OldProject/Web/Arkfans/NpcAvatar/data/avatar_ab'

@@ -1,0 +1,113 @@
+import json
+from pathlib import Path
+
+from PIL import Image
+
+from npcavatar.util import sha256_file
+from npcavatar.unpack.unpacker import run_unpack, unpack_one
+
+
+class FakeParse:
+    def __init__(self, path: Path):
+        self._path = path
+        self.sprites = {"2$1": None}
+        self.face_groups = [{"facePos": {"x": 1, "y": 2}, "faceSize": {"x": 3, "y": 4}}]
+
+    def merged_images(self) -> dict[str, Image.Image]:
+        return {"2$1": Image.new("RGBA", (10, 10), (255, 0, 0, 255))}
+
+
+class FakeAvatarParse(FakeParse):
+    def __init__(self, path: Path):
+        super().__init__(path)
+        self.sprites = {"char_002_amiya": None}
+
+    def merged_images(self) -> dict[str, Image.Image]:
+        return {"char_002_amiya": Image.new("RGBA", (8, 8), (0, 0, 255, 255))}
+
+
+class SelectiveParse:
+    """Succeeds for 'good' files, raises for 'bad' files."""
+
+    def __init__(self, path: Path):
+        if "bad" in path.name:
+            raise RuntimeError("boom")
+        self.sprites = {"2$1": None}
+        self.face_groups = [{"facePos": {"x": 1, "y": 2}, "faceSize": {"x": 3, "y": 4}}]
+
+    def merged_images(self) -> dict[str, Image.Image]:
+        return {"2$1": Image.new("RGBA", (4, 4), (0, 0, 0, 0))}
+
+
+class AlwaysFailParse:
+    def __init__(self, path: Path):
+        raise RuntimeError("boom")
+
+
+def test_unpack_characters(tmp_path: Path):
+    ab_path = tmp_path / "avg_007_closre_1.ab"
+    ab_path.write_bytes(b"x")
+    unpacked = tmp_path / "unpacked"
+
+    stats = unpack_one(ab_path, unpacked, "characters", "characters/avg_007_closre_1.ab", "sha1", parser_cls=FakeParse)
+    assert stats == {"textures": 1, "sprites": 1, "face_groups": 1}
+
+    item_dir = unpacked / "characters" / "avg_007_closre_1"
+    assert (item_dir / "2$1.png").exists()
+    meta = json.loads((item_dir / "meta.json").read_text(encoding="utf8"))
+    assert meta["source"] == {"rel": "characters/avg_007_closre_1.ab", "sha256": "sha1"}
+    assert meta["textures"] == {"2$1": [10, 10]}
+    assert meta["sprites"] == ["2$1"]
+    assert meta["face_groups"] == [{"facePos": {"x": 1, "y": 2}, "faceSize": {"x": 3, "y": 4}}]
+
+
+def test_unpack_avatars_flat(tmp_path: Path):
+    ab_path = tmp_path / "ui_char_avatar_0.ab"
+    ab_path.write_bytes(b"x")
+    unpacked = tmp_path / "unpacked"
+
+    unpack_one(ab_path, unpacked, "avatars", "avatars/ui_char_avatar_0.ab", "sha2", parser_cls=FakeAvatarParse)
+
+    assert (unpacked / "avatars" / "char_002_amiya.png").exists()
+    meta = json.loads((unpacked / "avatars" / "_meta" / "ui_char_avatar_0.json").read_text(encoding="utf8"))
+    assert meta["source"]["sha256"] == "sha2"
+
+
+def test_run_unpack_incremental_and_failures(tmp_path: Path):
+    raw = tmp_path / "raw"
+    characters = raw / "characters"
+    characters.mkdir(parents=True)
+    good = characters / "avg_good_1.ab"
+    good.write_bytes(b"good")
+    bad = characters / "avg_bad_1.ab"
+    bad.write_bytes(b"bad")
+    unpacked = tmp_path / "unpacked"
+
+    stats = run_unpack(raw, unpacked, ["characters"], parser_cls=SelectiveParse)
+    assert stats["characters"]["listed"] == 2
+    assert stats["characters"]["unpacked"] == 1
+    assert stats["characters"]["failed"] == 1
+
+    progress = json.loads((unpacked / "_manifest.json").read_text(encoding="utf8"))
+    assert progress == {"characters/avg_good_1.ab": sha256_file(good)}
+    failures = json.loads((unpacked / "_failed.json").read_text(encoding="utf8"))
+    assert set(failures) == {"characters/avg_bad_1.ab"}
+
+    # 第二次运行失败清单应保持不变（幂等）
+    stats2 = run_unpack(raw, unpacked, ["characters"], parser_cls=SelectiveParse)
+    assert stats2["characters"]["unpacked"] == 0
+    assert stats2["characters"]["skipped"] == 1
+    assert stats2["characters"]["failed"] == 1
+
+
+def test_run_unpack_creates_output_dir_when_all_fail(tmp_path: Path):
+    raw = tmp_path / "raw"
+    characters = raw / "characters"
+    characters.mkdir(parents=True)
+    (characters / "avg_bad_1.ab").write_bytes(b"bad")
+    unpacked = tmp_path / "unpacked"
+
+    stats = run_unpack(raw, unpacked, ["characters"], parser_cls=AlwaysFailParse)
+    assert stats["characters"]["failed"] == 1
+    assert (unpacked / "_manifest.json").exists()
+    assert (unpacked / "_failed.json").exists()

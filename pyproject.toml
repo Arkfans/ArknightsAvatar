@@ -1,0 +1,28 @@
+[project]
+name = "npcavatar"
+version = "0.1.0"
+description = "Arknights NPC avatar extraction pipeline: fetch AB resources, unpack to PNG."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+fetch = ["adb-shell>=0.4.4", "PyYAML>=6.0"]
+unpack = ["UnityPy>=1.10.14", "Pillow>=10.0"]
+
+[project.scripts]
+npcavatar-fetch = "npcavatar.fetch:main"
+npcavatar-unpack = "npcavatar.unpack.unpacker:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/npcavatar"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
