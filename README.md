@@ -32,6 +32,9 @@ uv run npcavatar-unpack --category all
 
 # 立绘分类（独立工具，暂不并入主流程）
 uv run npcavatar-classify
+
+# 底图抽样（独立工具，暂不并入主流程）
+uv run npcavatar-sample-bases
 ```
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
@@ -48,6 +51,28 @@ uv run npcavatar-classify
 每个角色的报告形如 `bases: {<底图文件>: {"diff": [...]}}`，无法归属的差分进
 `unassigned`；仍无底图时兜底取字符串排序最小的文件作为底图（如 `char_242_mayer#2`）。
 该工具不移动任何文件，也未接入 fetch/unpack 主流程。
+
+## 底图抽样（独立工具）
+
+`npcavatar-sample-bases` 读取 `_characters_classified.json`，从有底图的角色中随机抽取
+指定数量（默认 100），把每个角色的底图复制到新文件夹（默认
+`data/unpacked/bases_sample/`），图片展平存放在同一层级，不建角色子目录。
+只复制底图，不复制差分，也不改动源目录；若不同角色的底图同名，自动加
+`<角色 id>_` 前缀避免覆盖。
+
+```bash
+# 随机抽取 100 个角色并复制底图
+uv run npcavatar-sample-bases
+
+# 指定抽样数量、目标目录与随机种子（同一种子结果可复现）
+uv run npcavatar-sample-bases -n 50 -o data/unpacked/bases_sample --seed 42
+
+# 使用其它位置的分类报告
+uv run npcavatar-sample-bases --classified data/unpacked/_characters_classified.json
+```
+
+源角色目录默认取自分类报告内的 `characters_dir` 字段，也可用
+`--characters-dir` 覆盖；`-o` 指定输出目录，`--seed` 指定随机种子。
 
 ## 磁盘契约
 

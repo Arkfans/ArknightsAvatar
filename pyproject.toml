@@ -14,6 +14,7 @@ unpack = ["UnityPy>=1.10.14", "Pillow>=10.0"]
 npcavatar-fetch = "npcavatar.fetch:main"
 npcavatar-unpack = "npcavatar.unpack.unpacker:main"
 npcavatar-classify = "npcavatar.classify:main"
+npcavatar-sample-bases = "npcavatar.sample_bases:main"
 
 [dependency-groups]
 dev = ["pytest>=8.0"]
