@@ -9,15 +9,17 @@ dependencies = []
 [project.optional-dependencies]
 fetch = ["adb-shell>=0.4.4", "PyYAML>=6.0"]
 unpack = ["UnityPy>=1.10.14", "Pillow>=10.0"]
+match = ["numpy>=1.26", "opencv-python-headless>=4.8"]
 
 [project.scripts]
 npcavatar-fetch = "npcavatar.fetch:main"
 npcavatar-unpack = "npcavatar.unpack.unpacker:main"
 npcavatar-classify = "npcavatar.classify:main"
 npcavatar-sample-bases = "npcavatar.sample_bases:main"
+npcavatar-match = "npcavatar.match:main"
 
 [dependency-groups]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "numpy>=1.26", "opencv-python-headless>=4.8", "Pillow>=10.0"]
 
 [build-system]
 requires = ["hatchling"]

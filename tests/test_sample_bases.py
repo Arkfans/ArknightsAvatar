@@ -157,7 +157,7 @@ def test_same_name_bases_renamed_with_char_prefix(capsys, tmp_path: Path):
 def test_select_characters_skips_no_base(tmp_path: Path):
     report = _build_report(tmp_path, {"c1": {"c1.png": []}, "c_empty": {}})
 
-    selected, eligible = select_characters(report, 100, seed=None)
+    selected, eligible = select_characters(json.loads(report.read_text(encoding="utf8")), 100, seed=None)
 
     assert eligible == 1
     assert selected == ["c1"]

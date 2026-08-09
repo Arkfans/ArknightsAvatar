@@ -12,7 +12,7 @@
 
 ```bash
 uv python pin 3.12
-uv sync --extra fetch --extra unpack --group dev
+uv sync --extra fetch --extra unpack --extra match --group dev
 ```
 
 ## 用法
@@ -51,6 +51,28 @@ uv run npcavatar-sample-bases
 每个角色的报告形如 `bases: {<底图文件>: {"diff": [...]}}`，无法归属的差分进
 `unassigned`；仍无底图时兜底取字符串排序最小的文件作为底图（如 `char_242_mayer#2`）。
 该工具不移动任何文件，也未接入 fetch/unpack 主流程。
+
+## 头像匹配（独立工具）
+
+`npcavatar-match` 读取 `data/unpacked/_characters_classified.json`，只处理命名符合
+`avg_\d+_.+` / `char_\d+_.*` 的角色，从 `data/unpacked/avatars/` 取数字 ID 对应的头像
+（`char_<ID>_*`）作为候选，用 OpenCV 模板匹配（TM_CCOEFF_NORMED + 缩放搜索，移植自旧版）
+在每张底图上定位头像包围盒，输出报告（默认 `data/unpacked/_avatar_match.json`）。
+该工具未接入 fetch/unpack 主流程，用于调整匹配参数。
+
+```bash
+# 冒烟：只处理前 20 个角色，输出到 stdout
+uv run npcavatar-match --limit 20 --output -
+
+# 全量匹配
+uv run npcavatar-match
+```
+
+输出语义：`characters.<name>.bases.<底图>` = `{avatar, threshold, box, box_norm}`，
+其中 `box` 为头像在底图原始像素中的包围盒 `[x1, y1, x2, y2]`，`box_norm` 为 0~1 归一化坐标；
+无候选头像的角色记为 `no_avatar`，全部底图失败记为 `failed`，阈值低于
+`--stop-threshold` 的底图计入统计 `low_confidence`。
+可调参数：`--min-avatar-size`（默认 130）、`--stop-threshold`（默认 0.6）、`--limit`。
 
 ## 底图抽样（独立工具）
 
