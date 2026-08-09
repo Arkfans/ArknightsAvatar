@@ -9,6 +9,10 @@ from PIL import Image
 try:
     import UnityPy
     from UnityPy import classes as UnityClasses
+    from .ak import install_unitypy_ak_patch
+
+    # Arknights bundles use a custom LZ4 variant under the "LZHAM" flag.
+    install_unitypy_ak_patch()
 except ImportError:  # pragma: no cover - optional dependency
     UnityPy = None  # type: ignore[assignment]
     UnityClasses = None  # type: ignore[assignment]
