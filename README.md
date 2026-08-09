@@ -45,7 +45,7 @@ data/unpacked/_failed.json      # 解包失败清单
 data/unpacked/characters/<npc_id>/<sprite>.png + meta.json
 data/unpacked/chararts/<char_id>/<sprite>.png + meta.json
 data/unpacked/skins/<char_id>/<sprite>.png + meta.json
-data/unpacked/avatars/<sprite>.png + _meta/<bundle>.json   # 扁平存放
+data/unpacked/avatars/<sprite>.png + _meta/<bundle>.json   # 扁平存放，仅保留 char_* 角色头像，其余素材解包时清理
 ```
 
 `meta.json` 保留 textures 尺寸、sprites 列表、`face_groups`（facePos/faceSize 配对），供步骤 3 使用。

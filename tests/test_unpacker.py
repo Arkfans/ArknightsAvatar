@@ -20,10 +20,18 @@ class FakeParse:
 class FakeAvatarParse(FakeParse):
     def __init__(self, path: Path):
         super().__init__(path)
-        self.sprites = {"char_002_amiya": None}
+        self.sprites = {
+            "char_002_amiya": None,
+            "char_4237_jcinta_2": None,
+            "trap_451_xbflare": None,
+        }
 
     def merged_images(self) -> dict[str, Image.Image]:
-        return {"char_002_amiya": Image.new("RGBA", (8, 8), (0, 0, 255, 255))}
+        return {
+            "char_002_amiya": Image.new("RGBA", (8, 8), (0, 0, 255, 255)),
+            "char_4237_jcinta_2": Image.new("RGBA", (8, 16), (255, 255, 0, 255)),
+            "trap_451_xbflare": Image.new("RGBA", (8, 8), (255, 0, 0, 255)),
+        }
 
 
 class SelectiveParse:
@@ -69,8 +77,39 @@ def test_unpack_avatars_flat(tmp_path: Path):
     unpack_one(ab_path, unpacked, "avatars", "avatars/ui_char_avatar_0.ab", "sha2", parser_cls=FakeAvatarParse)
 
     assert (unpacked / "avatars" / "char_002_amiya.png").exists()
+    # 半身像（非正方形，如 char_portrait 180x360）应被过滤
+    assert not (unpacked / "avatars" / "char_4237_jcinta_2.png").exists()
+    assert not (unpacked / "avatars" / "trap_451_xbflare.png").exists()
     meta = json.loads((unpacked / "avatars" / "_meta" / "ui_char_avatar_0.json").read_text(encoding="utf8"))
     assert meta["source"]["sha256"] == "sha2"
+
+
+def test_run_unpack_avatars_prunes_non_char(tmp_path: Path):
+    raw = tmp_path / "raw"
+    raw_avatars = raw / "avatars"
+    raw_avatars.mkdir(parents=True)
+    (raw_avatars / "ui_char_avatar_0.ab").write_bytes(b"x")
+    unpacked = tmp_path / "unpacked"
+    out_avatars = unpacked / "avatars"
+    out_avatars.mkdir(parents=True)
+    (out_avatars / "stale_icon.png").write_bytes(b"stale")
+    (out_avatars / "char_002_amiya.png").write_bytes(b"existing")
+    Image.new("RGBA", (8, 16), (255, 0, 0, 255)).save(out_avatars / "char_stale_portrait.png")
+
+    stats = run_unpack(raw, unpacked, ["avatars"], parser_cls=FakeAvatarParse)
+    assert stats["avatars"]["unpacked"] == 1
+    assert (out_avatars / "char_002_amiya.png").exists()
+    assert not (out_avatars / "stale_icon.png").exists()
+    # 历史遗留的半身像 PNG 应被清理
+    assert not (out_avatars / "char_stale_portrait.png").exists()
+    assert (out_avatars / "_meta" / "ui_char_avatar_0.json").exists()
+    assert (unpacked / "_manifest.json").exists()
+
+    # 增量全部跳过时，遗留的非 char_* PNG 仍会被清理
+    (out_avatars / "stale_icon2.png").write_bytes(b"stale2")
+    stats2 = run_unpack(raw, unpacked, ["avatars"], parser_cls=FakeAvatarParse)
+    assert stats2["avatars"]["skipped"] == 1
+    assert not (out_avatars / "stale_icon2.png").exists()
 
 
 def test_run_unpack_incremental_and_failures(tmp_path: Path):

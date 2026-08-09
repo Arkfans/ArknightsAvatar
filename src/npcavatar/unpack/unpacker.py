@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+from PIL import Image
+
 from ..config import CATEGORIES, load_config
 from ..manifest import FailureLog, Manifest
 from ..util import sha256_file
@@ -40,6 +42,9 @@ def unpack_one(
         avatars_dir = unpacked_dir / "avatars"
         avatars_dir.mkdir(parents=True, exist_ok=True)
         for sprite_name in parsed.sprites:
+            if not sprite_name.lower().startswith("char_"):
+                # 只保留 char_* 角色头像，其余素材（trap_*/sp_char_* 等）忽略
+                continue
             image = merged.get(sprite_name)
             if image is None:
                 sprite = parsed.sprites[sprite_name]
@@ -47,6 +52,10 @@ def unpack_one(
                     image = sprite.image
                 except Exception:  # noqa: BLE001 - skip sprites without extractable image
                     continue
+            if image.width != image.height:
+                # 过滤半身像：char_portrait（180x360）、skin portrait（292x552）等
+                # 非正方形竖版图不是角色头像，仅保留 180x180 正方形头像
+                continue
             image.save(avatars_dir / f"{sprite_name}.png")
         _write_meta(avatars_dir / "_meta" / f"{ab_path.stem}.json", meta)
     else:
@@ -63,6 +72,28 @@ def _meta_exists(unpacked_dir: Path, category: str, ab_path: Path) -> bool:
     if category == "avatars":
         return (unpacked_dir / "avatars" / "_meta" / f"{ab_path.stem}.json").exists()
     return (unpacked_dir / category / ab_path.stem / "meta.json").exists()
+
+
+def _is_square_png(path: Path) -> bool:
+    """Check whether a PNG is square; unreadable files are kept to avoid误删."""
+    try:
+        with Image.open(path) as image:
+            return image.width == image.height
+    except Exception:  # noqa: BLE001 - 无法读取时保守保留
+        return True
+
+
+def _prune_avatars(unpacked_dir: Path) -> int:
+    """Remove stale top-level PNGs that are not square char_* avatars."""
+    avatars_dir = unpacked_dir / "avatars"
+    if not avatars_dir.exists():
+        return 0
+    removed = 0
+    for png in avatars_dir.glob("*.png"):
+        if png.is_file() and (not png.name.lower().startswith("char_") or not _is_square_png(png)):
+            png.unlink()
+            removed += 1
+    return removed
 
 
 def run_unpack(
@@ -112,6 +143,9 @@ def run_unpack(
                 with progress_path.open("wt", encoding="utf8") as f:
                     json.dump(progress, f, ensure_ascii=False, indent=2)
                 failures.save()
+        if category == "avatars":
+            # 产物契约：avatars 目录只保留 char_* 头像，其余遗留 PNG 一并清理
+            _prune_avatars(unpacked_dir)
 
     with progress_path.open("wt", encoding="utf8") as f:
         json.dump(progress, f, ensure_ascii=False, indent=2)
