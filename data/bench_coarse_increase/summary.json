@@ -1,0 +1,107 @@
+{
+  "command": "uv run npcavatar-match --limit 50",
+  "runs": [
+    {
+      "coarse_increase": 1,
+      "elapsed_s": 218.35778779999237,
+      "evaluations": 10966,
+      "stats": {
+        "total": 50,
+        "ok": 50,
+        "no_avatar": 0,
+        "empty": 0,
+        "failed": 0,
+        "base_files": 85,
+        "matched_bases": 85,
+        "low_confidence": 17
+      },
+      "report": "data\\bench_coarse_increase\\_avatar_match_c1.json",
+      "mode": "api"
+    },
+    {
+      "coarse_increase": 2,
+      "elapsed_s": 139.60554010001943,
+      "evaluations": 7628,
+      "stats": {
+        "total": 50,
+        "ok": 50,
+        "no_avatar": 0,
+        "empty": 0,
+        "failed": 0,
+        "base_files": 85,
+        "matched_bases": 85,
+        "low_confidence": 17
+      },
+      "report": "data\\bench_coarse_increase\\_avatar_match_c2.json",
+      "mode": "cli"
+    },
+    {
+      "coarse_increase": 3,
+      "elapsed_s": 113.2233785999997,
+      "evaluations": 5666,
+      "stats": {
+        "total": 50,
+        "ok": 50,
+        "no_avatar": 0,
+        "empty": 0,
+        "failed": 0,
+        "base_files": 85,
+        "matched_bases": 85,
+        "low_confidence": 17
+      },
+      "report": "data\\bench_coarse_increase\\_avatar_match_c3.json",
+      "mode": "cli"
+    },
+    {
+      "coarse_increase": 4,
+      "elapsed_s": 95.64570500000264,
+      "evaluations": 4525,
+      "stats": {
+        "total": 50,
+        "ok": 50,
+        "no_avatar": 0,
+        "empty": 0,
+        "failed": 0,
+        "base_files": 85,
+        "matched_bases": 85,
+        "low_confidence": 17
+      },
+      "report": "data\\bench_coarse_increase\\_avatar_match_c4.json",
+      "mode": "cli"
+    },
+    {
+      "coarse_increase": 5,
+      "elapsed_s": 78.14950349999708,
+      "evaluations": 3860,
+      "stats": {
+        "total": 50,
+        "ok": 50,
+        "no_avatar": 0,
+        "empty": 0,
+        "failed": 0,
+        "base_files": 85,
+        "matched_bases": 85,
+        "low_confidence": 17
+      },
+      "report": "data\\bench_coarse_increase\\_avatar_match_c5.json",
+      "mode": "cli"
+    },
+    {
+      "coarse_increase": 10,
+      "elapsed_s": 70.21886419999646,
+      "evaluations": 2750,
+      "stats": {
+        "total": 50,
+        "ok": 50,
+        "no_avatar": 0,
+        "empty": 0,
+        "failed": 0,
+        "base_files": 85,
+        "matched_bases": 85,
+        "low_confidence": 17
+      },
+      "report": "data\\bench_coarse_increase\\_avatar_match_c10.json",
+      "mode": "cli"
+    }
+  ]
+}
