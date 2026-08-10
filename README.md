@@ -12,7 +12,7 @@
 
 ```bash
 uv python pin 3.12
-uv sync --extra fetch --extra unpack --extra match --group dev
+uv sync --extra fetch --extra unpack --extra match --extra detect --group dev
 ```
 
 ## 用法
@@ -35,6 +35,9 @@ uv run npcavatar-classify
 
 # 底图抽样（独立工具，暂不并入主流程）
 uv run npcavatar-sample-bases
+
+# 人脸识别（独立工具，暂不并入主流程）
+uv run npcavatar-detect
 ```
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
@@ -111,6 +114,38 @@ uv run npcavatar-sample-bases --classified data/unpacked/_characters_classified.
 
 源角色目录默认取自分类报告内的 `characters_dir` 字段，也可用
 `--characters-dir` 覆盖；`-o` 指定输出目录，`--seed` 指定随机种子。
+
+## 人脸识别（独立工具）
+
+`npcavatar-detect` 使用 anime-face-detector 的 YOLOv3 人脸检测器（纯检测，
+不加载关键点模型），对每张图片只输出**最高置信度**的一个结果：`face_pos`
+（脸部中心 + 尺寸 `{x, y, w, h}`，原始像素、四舍五入）与 `confidence`。
+置信度低于 `--conf`（默认 0.3）视为未检出。该工具未接入 fetch/unpack 主流程，
+用于为后续头像提取（goal.md 步骤 3）的模型识别接口提供识别结果；设备默认 auto
+（有 CUDA 用 GPU，否则 CPU），权重由 anime-face-detector 自动下载并缓存。
+
+```bash
+# 批量识别 characters 目录下所有角色（底图 + 差分）
+uv run npcavatar-detect
+
+# 只识别指定角色
+uv run npcavatar-detect --character avg_003_kalts_1
+
+# 只处理前 20 个角色，输出到 stdout
+uv run npcavatar-detect --limit 20 --output -
+
+# 单张/多张图片快速测试
+uv run npcavatar-detect path/to/a.png path/to/b.png
+
+# 指定置信度阈值与设备
+uv run npcavatar-detect --conf 0.3 --device auto
+```
+
+输出语义：批量模式 `characters.<角色名>.images.<文件名>` 为
+`{image, image_size, detected, face_pos, confidence, error}`；
+`detected=false` 表示未检出或低于阈值（此时 `face_pos`/`confidence` 为 null），
+读图失败或检测异常时 `error` 非空。单图模式输出 `{generated_at, images, stats}`。
+报告默认写入 `data/unpacked/_face_detect.json`，`--output -` 输出到 stdout。
 
 ## 磁盘契约
 
