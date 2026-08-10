@@ -1,0 +1,3712 @@
+{
+  "generated_at": "2026-08-10T21:37:08+00:00",
+  "source": "D:\\ProgramProject\\Arkfans\\NpcAvatar\\data\\unpacked\\_avatar_match.json",
+  "derive_07": "D:\\ProgramProject\\Arkfans\\NpcAvatar\\data\\avatar_derive\\derive_coords.json",
+  "derive_08": "D:\\ProgramProject\\Arkfans\\NpcAvatar\\data\\avatar_derive_08\\derive_coords.json",
+  "sample": {
+    "n": 100,
+    "seed": 42
+  },
+  "rows": [
+    {
+      "character": "char_194_rosali_1",
+      "base": "char_194_rosali_1.png",
+      "image": "data\\unpacked\\characters\\char_194_rosali_1\\char_194_rosali_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_194_leto.png",
+      "match_threshold": 0.97191,
+      "match_box": [
+        400,
+        -20,
+        612,
+        192
+      ],
+      "face_pos": [
+        466,
+        68,
+        566,
+        167
+      ],
+      "box07": [
+        410,
+        -13,
+        613,
+        191
+      ],
+      "box08": [
+        409,
+        -13,
+        613,
+        191
+      ],
+      "iou07": 0.9116,
+      "iou08": 0.9168
+    },
+    {
+      "character": "avg_171_bldsk_1",
+      "base": "avg_171_bldsk_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_171_bldsk_1\\avg_171_bldsk_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_171_bldsk.png",
+      "match_threshold": 0.976796,
+      "match_box": [
+        526,
+        -10,
+        729,
+        193
+      ],
+      "face_pos": [
+        573,
+        67,
+        678,
+        171
+      ],
+      "box07": [
+        524,
+        -9,
+        726,
+        193
+      ],
+      "box08": [
+        524,
+        -10,
+        727,
+        193
+      ],
+      "iou07": 0.9711,
+      "iou08": 0.9774
+    },
+    {
+      "character": "avg_1022_flwr2_1",
+      "base": "avg_1022_flwr2_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_1022_flwr2_1\\avg_1022_flwr2_1$1.png",
+      "image_size": [
+        1072,
+        1072
+      ],
+      "avatar": "char_1022_flwr2.png",
+      "match_threshold": 0.99311,
+      "match_box": [
+        446,
+        -15,
+        652,
+        192
+      ],
+      "face_pos": [
+        499,
+        67,
+        601,
+        168
+      ],
+      "box07": [
+        449,
+        -12,
+        652,
+        192
+      ],
+      "box08": [
+        449,
+        -12,
+        653,
+        192
+      ],
+      "iou07": 0.9708,
+      "iou08": 0.97
+    },
+    {
+      "character": "char_337_utage_story_1",
+      "base": "char_337_utage_story_1.png",
+      "image": "data\\unpacked\\characters\\char_337_utage_story_1\\char_337_utage_story_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_337_utage.png",
+      "match_threshold": 0.985317,
+      "match_box": [
+        391,
+        20,
+        636,
+        265
+      ],
+      "face_pos": [
+        446,
+        127,
+        552,
+        234
+      ],
+      "box07": [
+        396,
+        43,
+        613,
+        259
+      ],
+      "box08": [
+        397,
+        43,
+        613,
+        259
+      ],
+      "iou07": 0.7813,
+      "iou08": 0.7799
+    },
+    {
+      "character": "avg_394_hadiya_1",
+      "base": "avg_394_hadiya_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_394_hadiya_1\\avg_394_hadiya_1$2.png",
+      "image_size": [
+        1664,
+        1664
+      ],
+      "avatar": "char_394_hadiya.png",
+      "match_threshold": 0.981345,
+      "match_box": [
+        871,
+        188,
+        1138,
+        455
+      ],
+      "face_pos": [
+        940,
+        299,
+        1065,
+        423
+      ],
+      "box07": [
+        876,
+        197,
+        1129,
+        450
+      ],
+      "box08": [
+        876,
+        196,
+        1130,
+        450
+      ],
+      "iou07": 0.8961,
+      "iou08": 0.9045
+    },
+    {
+      "character": "avg_346_aosta_1",
+      "base": "avg_346_aosta_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_346_aosta_1\\avg_346_aosta_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_346_aosta.png",
+      "match_threshold": 0.98436,
+      "match_box": [
+        321,
+        1,
+        504,
+        184
+      ],
+      "face_pos": [
+        367,
+        82,
+        448,
+        164
+      ],
+      "box07": [
+        323,
+        12,
+        496,
+        186
+      ],
+      "box08": [
+        323,
+        12,
+        496,
+        185
+      ],
+      "iou07": 0.8862,
+      "iou08": 0.8814
+    },
+    {
+      "character": "avg_293_thorns_1",
+      "base": "avg_293_thorns_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_293_thorns_1\\avg_293_thorns_1$2.png",
+      "image_size": [
+        1124,
+        1124
+      ],
+      "avatar": "char_293_thorns.png",
+      "match_threshold": 0.990075,
+      "match_box": [
+        428,
+        -21,
+        640,
+        191
+      ],
+      "face_pos": [
+        498,
+        63,
+        601,
+        166
+      ],
+      "box07": [
+        439,
+        -19,
+        648,
+        191
+      ],
+      "box08": [
+        438,
+        -19,
+        648,
+        191
+      ],
+      "iou07": 0.903,
+      "iou08": 0.9089
+    },
+    {
+      "character": "avg_197_poca_1",
+      "base": "avg_197_poca_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_197_poca_1\\avg_197_poca_1$2.png",
+      "image_size": [
+        1212,
+        1212
+      ],
+      "avatar": "char_197_poca.png",
+      "match_threshold": 0.983761,
+      "match_box": [
+        466,
+        1,
+        676,
+        211
+      ],
+      "face_pos": [
+        516,
+        83,
+        607,
+        186
+      ],
+      "box07": [
+        466,
+        14,
+        661,
+        209
+      ],
+      "box08": [
+        466,
+        14,
+        660,
+        208
+      ],
+      "iou07": 0.8567,
+      "iou08": 0.854
+    },
+    {
+      "character": "char_336_scene_1",
+      "base": "char_336_Scene_1.png",
+      "image": "data\\unpacked\\characters\\char_336_scene_1\\char_336_Scene_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_336_folivo.png",
+      "match_threshold": 0.988218,
+      "match_box": [
+        412,
+        11,
+        620,
+        219
+      ],
+      "face_pos": [
+        458,
+        103,
+        555,
+        196
+      ],
+      "box07": [
+        413,
+        22,
+        610,
+        220
+      ],
+      "box08": [
+        413,
+        22,
+        611,
+        220
+      ],
+      "iou07": 0.897,
+      "iou08": 0.8996
+    },
+    {
+      "character": "avg_141_nights_1",
+      "base": "avg_141_nights_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_141_nights_1\\avg_141_nights_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_141_nights.png",
+      "match_threshold": 0.980166,
+      "match_box": [
+        428,
+        10,
+        677,
+        259
+      ],
+      "face_pos": [
+        507,
+        127,
+        607,
+        224
+      ],
+      "box07": [
+        439,
+        27,
+        664,
+        252
+      ],
+      "box08": [
+        436,
+        25,
+        663,
+        252
+      ],
+      "iou07": 0.8166,
+      "iou08": 0.8299
+    },
+    {
+      "character": "char_230_savage_1",
+      "base": "char_230_savage_1.png",
+      "image": "data\\unpacked\\characters\\char_230_savage_1\\char_230_savage_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_230_savage.png",
+      "match_threshold": 0.971252,
+      "match_box": [
+        428,
+        121,
+        604,
+        297
+      ],
+      "face_pos": [
+        481,
+        189,
+        565,
+        275
+      ],
+      "box07": [
+        446,
+        111,
+        632,
+        297
+      ],
+      "box08": [
+        447,
+        110,
+        633,
+        296
+      ],
+      "iou07": 0.7376,
+      "iou08": 0.727
+    },
+    {
+      "character": "char_456_ash_1",
+      "base": "char_456_ash_1_1.png",
+      "image": "data\\unpacked\\characters\\char_456_ash_1\\char_456_ash_1_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_456_ash.png",
+      "match_threshold": 0.978375,
+      "match_box": [
+        444,
+        47,
+        599,
+        202
+      ],
+      "face_pos": [
+        477,
+        108,
+        559,
+        186
+      ],
+      "box07": [
+        436,
+        42,
+        599,
+        205
+      ],
+      "box08": [
+        437,
+        41,
+        600,
+        204
+      ],
+      "iou07": 0.9055,
+      "iou08": 0.9051
+    },
+    {
+      "character": "avg_476_blkngt_1",
+      "base": "avg_476_blkngt_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_476_blkngt_1\\avg_476_blkngt_1$2.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_476_blkngt.png",
+      "match_threshold": 0.972994,
+      "match_box": [
+        422,
+        -24,
+        629,
+        183
+      ],
+      "face_pos": [
+        485,
+        63,
+        586,
+        160
+      ],
+      "box07": [
+        421,
+        -23,
+        629,
+        185
+      ],
+      "box08": [
+        420,
+        -24,
+        629,
+        185
+      ],
+      "iou07": 0.9855,
+      "iou08": 0.9788
+    },
+    {
+      "character": "avg_126_shotst_1",
+      "base": "avg_126_shotst_1.png",
+      "image": "data\\unpacked\\characters\\avg_126_shotst_1\\avg_126_shotst_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_126_shotst.png",
+      "match_threshold": 0.98421,
+      "match_box": [
+        427,
+        48,
+        604,
+        225
+      ],
+      "face_pos": [
+        480,
+        119,
+        570,
+        208
+      ],
+      "box07": [
+        432,
+        48,
+        613,
+        228
+      ],
+      "box08": [
+        432,
+        48,
+        613,
+        228
+      ],
+      "iou07": 0.9089,
+      "iou08": 0.9088
+    },
+    {
+      "character": "char_130_doberm_ex",
+      "base": "char_130_doberm_ex.png",
+      "image": "data\\unpacked\\characters\\char_130_doberm_ex\\char_130_doberm_ex.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_130_doberm.png",
+      "match_threshold": 0.954042,
+      "match_box": [
+        443,
+        44,
+        626,
+        227
+      ],
+      "face_pos": [
+        479,
+        107,
+        572,
+        208
+      ],
+      "box07": [
+        434,
+        40,
+        623,
+        229
+      ],
+      "box08": [
+        435,
+        40,
+        623,
+        228
+      ],
+      "iou07": 0.911,
+      "iou08": 0.9197
+    },
+    {
+      "character": "avg_4173_nowell_1",
+      "base": "avg_4173_nowell_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_4173_nowell_1\\avg_4173_nowell_1$2.png",
+      "image_size": [
+        1400,
+        1400
+      ],
+      "avatar": "char_4173_nowell.png",
+      "match_threshold": 0.980776,
+      "match_box": [
+        643,
+        19,
+        875,
+        252
+      ],
+      "face_pos": [
+        701,
+        102,
+        799,
+        212
+      ],
+      "box07": [
+        642,
+        25,
+        856,
+        240
+      ],
+      "box08": [
+        641,
+        24,
+        856,
+        239
+      ],
+      "iou07": 0.8417,
+      "iou08": 0.8385
+    },
+    {
+      "character": "avg_1028_texas2_1",
+      "base": "avg_1028_texas2_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_1028_texas2_1\\avg_1028_texas2_1$2.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_1028_texas2.png",
+      "match_threshold": 0.98542,
+      "match_box": [
+        414,
+        -4,
+        614,
+        196
+      ],
+      "face_pos": [
+        464,
+        78,
+        559,
+        172
+      ],
+      "box07": [
+        411,
+        1,
+        604,
+        194
+      ],
+      "box08": [
+        411,
+        1,
+        604,
+        194
+      ],
+      "iou07": 0.9031,
+      "iou08": 0.9015
+    },
+    {
+      "character": "avg_1027_greyy2_1",
+      "base": "avg_1027_greyy2_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_1027_greyy2_1\\avg_1027_greyy2_1$2.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_1027_greyy2.png",
+      "match_threshold": 0.98945,
+      "match_box": [
+        410,
+        -24,
+        615,
+        181
+      ],
+      "face_pos": [
+        471,
+        57,
+        572,
+        156
+      ],
+      "box07": [
+        418,
+        -21,
+        617,
+        179
+      ],
+      "box08": [
+        418,
+        -21,
+        617,
+        179
+      ],
+      "iou07": 0.9261,
+      "iou08": 0.9269
+    },
+    {
+      "character": "avg_133_mm_1",
+      "base": "avg_133_mm_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_133_mm_1\\avg_133_mm_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_133_mm.png",
+      "match_threshold": 0.970441,
+      "match_box": [
+        270,
+        7,
+        503,
+        240
+      ],
+      "face_pos": [
+        339,
+        93,
+        457,
+        214
+      ],
+      "box07": [
+        272,
+        -3,
+        517,
+        243
+      ],
+      "box08": [
+        271,
+        -2,
+        516,
+        243
+      ],
+      "iou07": 0.8906,
+      "iou08": 0.8975
+    },
+    {
+      "character": "avg_290_vigna_1",
+      "base": "avg_290_vigna_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_290_vigna_1\\avg_290_vigna_1$1.png",
+      "image_size": [
+        1297,
+        1297
+      ],
+      "avatar": "char_290_vigna.png",
+      "match_threshold": 0.983391,
+      "match_box": [
+        393,
+        34,
+        675,
+        317
+      ],
+      "face_pos": [
+        481,
+        167,
+        607,
+        290
+      ],
+      "box07": [
+        415,
+        66,
+        666,
+        317
+      ],
+      "box08": [
+        414,
+        66,
+        666,
+        318
+      ],
+      "iou07": 0.7898,
+      "iou08": 0.7898
+    },
+    {
+      "character": "avg_325_bison_1",
+      "base": "avg_325_bison_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_325_bison_1\\avg_325_bison_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_325_bison.png",
+      "match_threshold": 0.987589,
+      "match_box": [
+        398,
+        10,
+        619,
+        231
+      ],
+      "face_pos": [
+        469,
+        105,
+        568,
+        205
+      ],
+      "box07": [
+        414,
+        25,
+        617,
+        229
+      ],
+      "box08": [
+        414,
+        26,
+        617,
+        229
+      ],
+      "iou07": 0.8484,
+      "iou08": 0.8458
+    },
+    {
+      "character": "avg_427_vigil_1",
+      "base": "avg_427_vigil_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_427_vigil_1\\avg_427_vigil_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_427_vigil.png",
+      "match_threshold": 0.968818,
+      "match_box": [
+        474,
+        56,
+        643,
+        225
+      ],
+      "face_pos": [
+        518,
+        126,
+        595,
+        207
+      ],
+      "box07": [
+        475,
+        63,
+        638,
+        226
+      ],
+      "box08": [
+        475,
+        63,
+        638,
+        226
+      ],
+      "iou07": 0.9157,
+      "iou08": 0.9181
+    },
+    {
+      "character": "char_141_nights_1",
+      "base": "char_141_nights_1.png",
+      "image": "data\\unpacked\\characters\\char_141_nights_1\\char_141_nights_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_141_nights.png",
+      "match_threshold": 0.984644,
+      "match_box": [
+        405,
+        5,
+        656,
+        256
+      ],
+      "face_pos": [
+        484,
+        124,
+        586,
+        218
+      ],
+      "box07": [
+        415,
+        18,
+        645,
+        248
+      ],
+      "box08": [
+        412,
+        16,
+        644,
+        248
+      ],
+      "iou07": 0.8414,
+      "iou08": 0.8551
+    },
+    {
+      "character": "avg_1022_flwr2_1",
+      "base": "avg_1022_flwr2_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_1022_flwr2_1\\avg_1022_flwr2_1$2.png",
+      "image_size": [
+        1072,
+        1072
+      ],
+      "avatar": "char_1022_flwr2.png",
+      "match_threshold": 0.99311,
+      "match_box": [
+        446,
+        -15,
+        652,
+        192
+      ],
+      "face_pos": [
+        499,
+        67,
+        601,
+        168
+      ],
+      "box07": [
+        448,
+        -13,
+        653,
+        192
+      ],
+      "box08": [
+        449,
+        -13,
+        654,
+        192
+      ],
+      "iou07": 0.969,
+      "iou08": 0.969
+    },
+    {
+      "character": "avg_493_firwhl_1",
+      "base": "avg_493_firwhl_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_493_firwhl_1\\avg_493_firwhl_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_493_firwhl.png",
+      "match_threshold": 0.986187,
+      "match_box": [
+        477,
+        -26,
+        671,
+        168
+      ],
+      "face_pos": [
+        520,
+        57,
+        610,
+        146
+      ],
+      "box07": [
+        472,
+        -17,
+        659,
+        169
+      ],
+      "box08": [
+        472,
+        -18,
+        659,
+        169
+      ],
+      "iou07": 0.8731,
+      "iou08": 0.8779
+    },
+    {
+      "character": "avg_271_arene_1",
+      "base": "avg_271_arene_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_271_arene_1\\avg_271_arene_1$1.png",
+      "image_size": [
+        1358,
+        1358
+      ],
+      "avatar": "char_271_spikes.png",
+      "match_threshold": 0.983585,
+      "match_box": [
+        548,
+        36,
+        788,
+        276
+      ],
+      "face_pos": [
+        617,
+        136,
+        733,
+        251
+      ],
+      "box07": [
+        556,
+        50,
+        782,
+        276
+      ],
+      "box08": [
+        556,
+        50,
+        782,
+        276
+      ],
+      "iou07": 0.8872,
+      "iou08": 0.8897
+    },
+    {
+      "character": "char_290_vigna",
+      "base": "char_290_vigna.png",
+      "image": "data\\unpacked\\characters\\char_290_vigna\\char_290_vigna.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_290_vigna.png",
+      "match_threshold": 0.976197,
+      "match_box": [
+        382,
+        83,
+        582,
+        283
+      ],
+      "face_pos": [
+        444,
+        174,
+        537,
+        265
+      ],
+      "box07": [
+        393,
+        98,
+        580,
+        285
+      ],
+      "box08": [
+        392,
+        98,
+        580,
+        285
+      ],
+      "iou07": 0.8599,
+      "iou08": 0.8601
+    },
+    {
+      "character": "char_199_yak_1",
+      "base": "char_199_yak_1.png",
+      "image": "data\\unpacked\\characters\\char_199_yak_1\\char_199_yak_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_199_yak.png",
+      "match_threshold": 0.975538,
+      "match_box": [
+        450,
+        50,
+        608,
+        208
+      ],
+      "face_pos": [
+        487,
+        98,
+        568,
+        190
+      ],
+      "box07": [
+        444,
+        39,
+        615,
+        210
+      ],
+      "box08": [
+        444,
+        39,
+        614,
+        209
+      ],
+      "iou07": 0.8571,
+      "iou08": 0.8639
+    },
+    {
+      "character": "char_260_durnar_1",
+      "base": "char_260_durnar_1.png",
+      "image": "data\\unpacked\\characters\\char_260_durnar_1\\char_260_durnar_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_260_durnar.png",
+      "match_threshold": 0.9813,
+      "match_box": [
+        367,
+        62,
+        559,
+        254
+      ],
+      "face_pos": [
+        410,
+        146,
+        502,
+        236
+      ],
+      "box07": [
+        363,
+        66,
+        555,
+        258
+      ],
+      "box08": [
+        363,
+        66,
+        555,
+        258
+      ],
+      "iou07": 0.9226,
+      "iou08": 0.9252
+    },
+    {
+      "character": "char_400_weedy_1",
+      "base": "char_400_weedy_1.png",
+      "image": "data\\unpacked\\characters\\char_400_weedy_1\\char_400_weedy_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_400_weedy.png",
+      "match_threshold": 0.976243,
+      "match_box": [
+        505,
+        95,
+        689,
+        279
+      ],
+      "face_pos": [
+        548,
+        168,
+        642,
+        259
+      ],
+      "box07": [
+        491,
+        85,
+        688,
+        282
+      ],
+      "box08": [
+        490,
+        85,
+        688,
+        283
+      ],
+      "iou07": 0.8656,
+      "iou08": 0.857
+    },
+    {
+      "character": "avg_4172_xingzh_1",
+      "base": "avg_4172_xingzh_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4172_xingzh_1\\avg_4172_xingzh_1$1.png",
+      "image_size": [
+        1425,
+        1425
+      ],
+      "avatar": "char_4172_xingzh.png",
+      "match_threshold": 0.971724,
+      "match_box": [
+        612,
+        32,
+        863,
+        282
+      ],
+      "face_pos": [
+        673,
+        131,
+        797,
+        252
+      ],
+      "box07": [
+        614,
+        34,
+        862,
+        281
+      ],
+      "box08": [
+        615,
+        33,
+        863,
+        282
+      ],
+      "iou07": 0.9776,
+      "iou08": 0.9823
+    },
+    {
+      "character": "avg_291_aglina_1",
+      "base": "avg_291_aglina_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_291_aglina_1\\avg_291_aglina_1$1.png",
+      "image_size": [
+        1500,
+        1500
+      ],
+      "avatar": "char_291_aglina.png",
+      "match_threshold": 0.976566,
+      "match_box": [
+        532,
+        21,
+        853,
+        341
+      ],
+      "face_pos": [
+        608,
+        154,
+        759,
+        301
+      ],
+      "box07": [
+        533,
+        36,
+        833,
+        336
+      ],
+      "box08": [
+        533,
+        36,
+        834,
+        336
+      ],
+      "iou07": 0.8765,
+      "iou08": 0.8797
+    },
+    {
+      "character": "avg_4191_tippi_1",
+      "base": "avg_4191_tippi_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4191_tippi_1\\avg_4191_tippi_1$1.png",
+      "image_size": [
+        1200,
+        1200
+      ],
+      "avatar": "char_4191_tippi.png",
+      "match_threshold": 0.986832,
+      "match_box": [
+        450,
+        -12,
+        671,
+        210
+      ],
+      "face_pos": [
+        499,
+        65,
+        619,
+        184
+      ],
+      "box07": [
+        438,
+        -27,
+        678,
+        213
+      ],
+      "box08": [
+        438,
+        -28,
+        679,
+        213
+      ],
+      "iou07": 0.8514,
+      "iou08": 0.8499
+    },
+    {
+      "character": "char_124_kroos_1",
+      "base": "char_124_kroos_1.png",
+      "image": "data\\unpacked\\characters\\char_124_kroos_1\\char_124_kroos_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_124_kroos.png",
+      "match_threshold": 0.964319,
+      "match_box": [
+        353,
+        89,
+        538,
+        274
+      ],
+      "face_pos": [
+        399,
+        158,
+        496,
+        255
+      ],
+      "box07": [
+        352,
+        77,
+        553,
+        278
+      ],
+      "box08": [
+        353,
+        78,
+        553,
+        278
+      ],
+      "iou07": 0.8493,
+      "iou08": 0.8532
+    },
+    {
+      "character": "avg_4006_melnte_1",
+      "base": "avg_4006_melnte_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4006_melnte_1\\avg_4006_melnte_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4006_melnte.png",
+      "match_threshold": 0.981421,
+      "match_box": [
+        534,
+        -27,
+        746,
+        185
+      ],
+      "face_pos": [
+        584,
+        40,
+        698,
+        158
+      ],
+      "box07": [
+        529,
+        -41,
+        755,
+        184
+      ],
+      "box08": [
+        529,
+        -42,
+        755,
+        184
+      ],
+      "iou07": 0.8761,
+      "iou08": 0.8699
+    },
+    {
+      "character": "avg_1013_spchen_1",
+      "base": "avg_1013_spchen_1.png",
+      "image": "data\\unpacked\\characters\\avg_1013_spchen_1\\avg_1013_spchen_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_1013_chen2.png",
+      "match_threshold": 0.962556,
+      "match_box": [
+        492,
+        98,
+        655,
+        261
+      ],
+      "face_pos": [
+        531,
+        163,
+        609,
+        241
+      ],
+      "box07": [
+        486,
+        96,
+        651,
+        260
+      ],
+      "box08": [
+        486,
+        96,
+        651,
+        260
+      ],
+      "iou07": 0.9251,
+      "iou08": 0.923
+    },
+    {
+      "character": "avg_212_ansel_1",
+      "base": "avg_212_ansel_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_212_ansel_1\\avg_212_ansel_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_212_ansel.png",
+      "match_threshold": 0.985962,
+      "match_box": [
+        403,
+        -12,
+        607,
+        192
+      ],
+      "face_pos": [
+        447,
+        55,
+        548,
+        154
+      ],
+      "box07": [
+        397,
+        -25,
+        600,
+        178
+      ],
+      "box08": [
+        397,
+        -25,
+        600,
+        178
+      ],
+      "iou07": 0.8238,
+      "iou08": 0.824
+    },
+    {
+      "character": "char_254_shamare_1",
+      "base": "char_254_Shamare_1.png",
+      "image": "data\\unpacked\\characters\\char_254_shamare_1\\char_254_Shamare_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_254_vodfox.png",
+      "match_threshold": 0.977244,
+      "match_box": [
+        388,
+        79,
+        613,
+        304
+      ],
+      "face_pos": [
+        447,
+        184,
+        552,
+        276
+      ],
+      "box07": [
+        385,
+        82,
+        604,
+        301
+      ],
+      "box08": [
+        383,
+        82,
+        604,
+        302
+      ],
+      "iou07": 0.9215,
+      "iou08": 0.9196
+    },
+    {
+      "character": "char_383_snsant_1",
+      "base": "char_383_snsant_1.png",
+      "image": "data\\unpacked\\characters\\char_383_snsant_1\\char_383_snsant_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_383_snsant.png",
+      "match_threshold": 0.988612,
+      "match_box": [
+        408,
+        -11,
+        633,
+        214
+      ],
+      "face_pos": [
+        461,
+        91,
+        570,
+        187
+      ],
+      "box07": [
+        409,
+        -3,
+        627,
+        215
+      ],
+      "box08": [
+        409,
+        -3,
+        628,
+        215
+      ],
+      "iou07": 0.9337,
+      "iou08": 0.9333
+    },
+    {
+      "character": "avg_4072_ironmn_1",
+      "base": "avg_4072_ironmn_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4072_ironmn_1\\avg_4072_ironmn_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4072_ironmn.png",
+      "match_threshold": 0.988507,
+      "match_box": [
+        447,
+        6,
+        622,
+        181
+      ],
+      "face_pos": [
+        489,
+        72,
+        582,
+        162
+      ],
+      "box07": [
+        439,
+        -6,
+        630,
+        185
+      ],
+      "box08": [
+        439,
+        -6,
+        630,
+        185
+      ],
+      "iou07": 0.8404,
+      "iou08": 0.8397
+    },
+    {
+      "character": "char_333_sidero_1",
+      "base": "char_333_sidero_1.png",
+      "image": "data\\unpacked\\characters\\char_333_sidero_1\\char_333_sidero_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_333_sidero.png",
+      "match_threshold": 0.975366,
+      "match_box": [
+        445,
+        33,
+        655,
+        243
+      ],
+      "face_pos": [
+        507,
+        126,
+        605,
+        220
+      ],
+      "box07": [
+        448,
+        39,
+        654,
+        245
+      ],
+      "box08": [
+        447,
+        38,
+        654,
+        245
+      ],
+      "iou07": 0.945,
+      "iou08": 0.9495
+    },
+    {
+      "character": "avg_202_demkni_1",
+      "base": "avg_202_demkni_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_202_demkni_1\\avg_202_demkni_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_202_demkni.png",
+      "match_threshold": 0.980997,
+      "match_box": [
+        442,
+        -22,
+        642,
+        178
+      ],
+      "face_pos": [
+        494,
+        57,
+        594,
+        153
+      ],
+      "box07": [
+        444,
+        -23,
+        644,
+        177
+      ],
+      "box08": [
+        444,
+        -24,
+        644,
+        177
+      ],
+      "iou07": 0.971,
+      "iou08": 0.9663
+    },
+    {
+      "character": "avg_289_gyuki_1",
+      "base": "avg_289_gyuki_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_289_gyuki_1\\avg_289_gyuki_1$2.png",
+      "image_size": [
+        2048,
+        2048
+      ],
+      "avatar": "char_289_gyuki.png",
+      "match_threshold": 0.982053,
+      "match_box": [
+        968,
+        120,
+        1294,
+        446
+      ],
+      "face_pos": [
+        1033,
+        243,
+        1209,
+        413
+      ],
+      "box07": [
+        944,
+        105,
+        1294,
+        455
+      ],
+      "box08": [
+        942,
+        103,
+        1295,
+        456
+      ],
+      "iou07": 0.8666,
+      "iou08": 0.8531
+    },
+    {
+      "character": "avg_4066_highmo_1",
+      "base": "avg_4066_highmo_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4066_highmo_1\\avg_4066_highmo_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4066_highmo.png",
+      "match_threshold": 0.976845,
+      "match_box": [
+        521,
+        70,
+        704,
+        253
+      ],
+      "face_pos": [
+        571,
+        138,
+        665,
+        234
+      ],
+      "box07": [
+        522,
+        67,
+        710,
+        255
+      ],
+      "box08": [
+        522,
+        67,
+        710,
+        255
+      ],
+      "iou07": 0.9371,
+      "iou08": 0.9358
+    },
+    {
+      "character": "char_405_absin_ed_1",
+      "base": "char_405_absin_ed_1.png",
+      "image": "data\\unpacked\\characters\\char_405_absin_ed_1\\char_405_absin_ed_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_405_absin.png",
+      "match_threshold": 0.951894,
+      "match_box": [
+        345,
+        28,
+        543,
+        226
+      ],
+      "face_pos": [
+        395,
+        104,
+        497,
+        205
+      ],
+      "box07": [
+        344,
+        26,
+        547,
+        228
+      ],
+      "box08": [
+        345,
+        26,
+        547,
+        228
+      ],
+      "iou07": 0.9569,
+      "iou08": 0.9613
+    },
+    {
+      "character": "char_373_leonhardt_1",
+      "base": "char_373_Leonhardt_1.png",
+      "image": "data\\unpacked\\characters\\char_373_leonhardt_1\\char_373_Leonhardt_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_373_lionhd.png",
+      "match_threshold": 0.971593,
+      "match_box": [
+        271,
+        92,
+        456,
+        277
+      ],
+      "face_pos": [
+        321,
+        165,
+        411,
+        257
+      ],
+      "box07": [
+        271,
+        91,
+        457,
+        277
+      ],
+      "box08": [
+        271,
+        92,
+        457,
+        277
+      ],
+      "iou07": 0.984,
+      "iou08": 0.9945
+    },
+    {
+      "character": "avg_4133_logos_1",
+      "base": "avg_4133_logos_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4133_logos_1\\avg_4133_logos_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4133_logos.png",
+      "match_threshold": 0.973607,
+      "match_box": [
+        399,
+        33,
+        562,
+        196
+      ],
+      "face_pos": [
+        433,
+        97,
+        513,
+        181
+      ],
+      "box07": [
+        391,
+        30,
+        562,
+        202
+      ],
+      "box08": [
+        391,
+        31,
+        562,
+        201
+      ],
+      "iou07": 0.9025,
+      "iou08": 0.9106
+    },
+    {
+      "character": "avg_135_halo_1",
+      "base": "avg_135_halo_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_135_halo_1\\avg_135_halo_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_135_halo.png",
+      "match_threshold": 0.980895,
+      "match_box": [
+        420,
+        17,
+        628,
+        225
+      ],
+      "face_pos": [
+        480,
+        102,
+        579,
+        201
+      ],
+      "box07": [
+        424,
+        23,
+        624,
+        223
+      ],
+      "box08": [
+        424,
+        23,
+        624,
+        223
+      ],
+      "iou07": 0.9235,
+      "iou08": 0.9253
+    },
+    {
+      "character": "avg_4109_baslin_1",
+      "base": "avg_4109_baslin_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_4109_baslin_1\\avg_4109_baslin_1$2.png",
+      "image_size": [
+        1030,
+        1030
+      ],
+      "avatar": "char_4109_baslin.png",
+      "match_threshold": 0.988033,
+      "match_box": [
+        365,
+        13,
+        560,
+        208
+      ],
+      "face_pos": [
+        409,
+        93,
+        503,
+        186
+      ],
+      "box07": [
+        361,
+        17,
+        552,
+        208
+      ],
+      "box08": [
+        361,
+        17,
+        552,
+        208
+      ],
+      "iou07": 0.9212,
+      "iou08": 0.9234
+    },
+    {
+      "character": "avg_4078_bdhkgt_1",
+      "base": "avg_4078_bdhkgt_1$3.png",
+      "image": "data\\unpacked\\characters\\avg_4078_bdhkgt_1\\avg_4078_bdhkgt_1$3.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4078_bdhkgt.png",
+      "match_threshold": 0.980251,
+      "match_box": [
+        526,
+        33,
+        709,
+        216
+      ],
+      "face_pos": [
+        565,
+        99,
+        662,
+        196
+      ],
+      "box07": [
+        517,
+        24,
+        711,
+        218
+      ],
+      "box08": [
+        518,
+        24,
+        711,
+        218
+      ],
+      "iou07": 0.8928,
+      "iou08": 0.8917
+    },
+    {
+      "character": "char_144_red_7",
+      "base": "char_144_red_1.png",
+      "image": "data\\unpacked\\characters\\char_144_red_7\\char_144_red_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_144_red.png",
+      "match_threshold": 0.980188,
+      "match_box": [
+        433,
+        48,
+        598,
+        213
+      ],
+      "face_pos": [
+        463,
+        109,
+        556,
+        203
+      ],
+      "box07": [
+        410,
+        31,
+        606,
+        227
+      ],
+      "box08": [
+        409,
+        31,
+        605,
+        227
+      ],
+      "iou07": 0.7081,
+      "iou08": 0.7089
+    },
+    {
+      "character": "avg_388_mint_1",
+      "base": "avg_388_mint_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_388_mint_1\\avg_388_mint_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_388_mint.png",
+      "match_threshold": 0.987344,
+      "match_box": [
+        399,
+        -20,
+        613,
+        194
+      ],
+      "face_pos": [
+        449,
+        64,
+        559,
+        168
+      ],
+      "box07": [
+        395,
+        -26,
+        617,
+        196
+      ],
+      "box08": [
+        395,
+        -26,
+        617,
+        196
+      ],
+      "iou07": 0.9305,
+      "iou08": 0.9303
+    },
+    {
+      "character": "avg_1036_fang2_1",
+      "base": "avg_1036_fang2_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_1036_fang2_1\\avg_1036_fang2_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_1036_fang2.png",
+      "match_threshold": 0.979204,
+      "match_box": [
+        445,
+        3,
+        643,
+        201
+      ],
+      "face_pos": [
+        491,
+        81,
+        583,
+        175
+      ],
+      "box07": [
+        442,
+        7,
+        633,
+        198
+      ],
+      "box08": [
+        442,
+        7,
+        633,
+        198
+      ],
+      "iou07": 0.9016,
+      "iou08": 0.9017
+    },
+    {
+      "character": "avg_4208_wintim_1",
+      "base": "avg_4208_wintim_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4208_wintim_1\\avg_4208_wintim_1$1.png",
+      "image_size": [
+        1385,
+        1385
+      ],
+      "avatar": "char_4208_wintim.png",
+      "match_threshold": 0.978094,
+      "match_box": [
+        606,
+        -27,
+        845,
+        212
+      ],
+      "face_pos": [
+        675,
+        69,
+        793,
+        187
+      ],
+      "box07": [
+        616,
+        -19,
+        849,
+        214
+      ],
+      "box08": [
+        615,
+        -20,
+        850,
+        214
+      ],
+      "iou07": 0.9055,
+      "iou08": 0.9096
+    },
+    {
+      "character": "avg_466_qanik_1",
+      "base": "avg_466_qanik_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_466_qanik_1\\avg_466_qanik_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_466_qanik.png",
+      "match_threshold": 0.990808,
+      "match_box": [
+        324,
+        95,
+        509,
+        280
+      ],
+      "face_pos": [
+        373,
+        167,
+        461,
+        257
+      ],
+      "box07": [
+        327,
+        96,
+        508,
+        278
+      ],
+      "box08": [
+        327,
+        97,
+        507,
+        277
+      ],
+      "iou07": 0.9588,
+      "iou08": 0.9516
+    },
+    {
+      "character": "avg_183_skgoat_1",
+      "base": "avg_183_skgoat_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_183_skgoat_1\\avg_183_skgoat_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_183_skgoat.png",
+      "match_threshold": 0.979749,
+      "match_box": [
+        488,
+        71,
+        685,
+        268
+      ],
+      "face_pos": [
+        526,
+        146,
+        624,
+        243
+      ],
+      "box07": [
+        474,
+        64,
+        676,
+        266
+      ],
+      "box08": [
+        475,
+        64,
+        676,
+        266
+      ],
+      "iou07": 0.8537,
+      "iou08": 0.8559
+    },
+    {
+      "character": "avg_4131_odda_1",
+      "base": "avg_4131_odda_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_4131_odda_1\\avg_4131_odda_1$2.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4131_odda.png",
+      "match_threshold": 0.976586,
+      "match_box": [
+        477,
+        -9,
+        684,
+        198
+      ],
+      "face_pos": [
+        529,
+        78,
+        627,
+        173
+      ],
+      "box07": [
+        474,
+        -2,
+        673,
+        196
+      ],
+      "box08": [
+        474,
+        -3,
+        673,
+        196
+      ],
+      "iou07": 0.8961,
+      "iou08": 0.8962
+    },
+    {
+      "character": "avg_110_deepcl_1",
+      "base": "avg_110_deepcl_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_110_deepcl_1\\avg_110_deepcl_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_110_deepcl.png",
+      "match_threshold": 0.980267,
+      "match_box": [
+        368,
+        -3,
+        595,
+        224
+      ],
+      "face_pos": [
+        433,
+        88,
+        546,
+        197
+      ],
+      "box07": [
+        373,
+        -4,
+        599,
+        223
+      ],
+      "box08": [
+        373,
+        -4,
+        599,
+        223
+      ],
+      "iou07": 0.9517,
+      "iou08": 0.954
+    },
+    {
+      "character": "avg_486_espumo_1",
+      "base": "avg_486_espumo_1.png",
+      "image": "data\\unpacked\\characters\\avg_486_espumo_1\\avg_486_espumo_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_486_takila.png",
+      "match_threshold": 0.956588,
+      "match_box": [
+        433,
+        52,
+        593,
+        212
+      ],
+      "face_pos": [
+        469,
+        115,
+        553,
+        194
+      ],
+      "box07": [
+        425,
+        44,
+        595,
+        214
+      ],
+      "box08": [
+        425,
+        44,
+        596,
+        214
+      ],
+      "iou07": 0.8841,
+      "iou08": 0.884
+    },
+    {
+      "character": "avg_4031_liesel_1",
+      "base": "avg_4031_liesel_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4031_liesel_1\\avg_4031_liesel_1$1.png",
+      "image_size": [
+        1456,
+        1456
+      ],
+      "avatar": "char_4031_liesel.png",
+      "match_threshold": 0.990872,
+      "match_box": [
+        557,
+        158,
+        813,
+        414
+      ],
+      "face_pos": [
+        601,
+        250,
+        732,
+        382
+      ],
+      "box07": [
+        546,
+        154,
+        802,
+        411
+      ],
+      "box08": [
+        547,
+        154,
+        803,
+        411
+      ],
+      "iou07": 0.8936,
+      "iou08": 0.901
+    },
+    {
+      "character": "char_181_flower_1",
+      "base": "char_181_flower_1.png",
+      "image": "data\\unpacked\\characters\\char_181_flower_1\\char_181_flower_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_181_flower.png",
+      "match_threshold": 0.98267,
+      "match_box": [
+        489,
+        94,
+        699,
+        304
+      ],
+      "face_pos": [
+        533,
+        180,
+        638,
+        282
+      ],
+      "box07": [
+        485,
+        94,
+        699,
+        308
+      ],
+      "box08": [
+        485,
+        93,
+        700,
+        308
+      ],
+      "iou07": 0.9592,
+      "iou08": 0.9557
+    },
+    {
+      "character": "char_171_bldsk_1",
+      "base": "char_171_bldsk_1.png",
+      "image": "data\\unpacked\\characters\\char_171_bldsk_1\\char_171_bldsk_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_171_bldsk.png",
+      "match_threshold": 0.991239,
+      "match_box": [
+        430,
+        21,
+        623,
+        214
+      ],
+      "face_pos": [
+        475,
+        92,
+        575,
+        192
+      ],
+      "box07": [
+        428,
+        18,
+        623,
+        213
+      ],
+      "box08": [
+        428,
+        18,
+        623,
+        213
+      ],
+      "iou07": 0.9696,
+      "iou08": 0.9686
+    },
+    {
+      "character": "avg_4114_harold_1",
+      "base": "avg_4114_harold_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4114_harold_1\\avg_4114_harold_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4114_harold.png",
+      "match_threshold": 0.973598,
+      "match_box": [
+        406,
+        42,
+        559,
+        195
+      ],
+      "face_pos": [
+        444,
+        100,
+        519,
+        178
+      ],
+      "box07": [
+        399,
+        35,
+        562,
+        199
+      ],
+      "box08": [
+        399,
+        35,
+        562,
+        198
+      ],
+      "iou07": 0.874,
+      "iou08": 0.8798
+    },
+    {
+      "character": "char_102_texas_1",
+      "base": "char_102_texas_1.png",
+      "image": "data\\unpacked\\characters\\char_102_texas_1\\char_102_texas_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_102_texas.png",
+      "match_threshold": 0.981915,
+      "match_box": [
+        419,
+        27,
+        620,
+        228
+      ],
+      "face_pos": [
+        482,
+        104,
+        580,
+        205
+      ],
+      "box07": [
+        430,
+        27,
+        632,
+        229
+      ],
+      "box08": [
+        430,
+        27,
+        632,
+        228
+      ],
+      "iou07": 0.8874,
+      "iou08": 0.888
+    },
+    {
+      "character": "avg_254_vodfox_1",
+      "base": "avg_254_vodfox_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_254_vodfox_1\\avg_254_vodfox_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_254_vodfox.png",
+      "match_threshold": 0.985509,
+      "match_box": [
+        395,
+        35,
+        649,
+        289
+      ],
+      "face_pos": [
+        460,
+        151,
+        581,
+        257
+      ],
+      "box07": [
+        390,
+        36,
+        641,
+        287
+      ],
+      "box08": [
+        389,
+        35,
+        641,
+        287
+      ],
+      "iou07": 0.9379,
+      "iou08": 0.9373
+    },
+    {
+      "character": "avg_1051_headb2_1",
+      "base": "avg_1051_headb2_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_1051_headb2_1\\avg_1051_headb2_1$2.png",
+      "image_size": [
+        1741,
+        1741
+      ],
+      "avatar": "char_1051_headb2.png",
+      "match_threshold": 0.982419,
+      "match_box": [
+        728,
+        201,
+        1000,
+        473
+      ],
+      "face_pos": [
+        791,
+        316,
+        923,
+        441
+      ],
+      "box07": [
+        731,
+        210,
+        992,
+        471
+      ],
+      "box08": [
+        730,
+        208,
+        994,
+        472
+      ],
+      "iou07": 0.9258,
+      "iou08": 0.9373
+    },
+    {
+      "character": "avg_1038_whitw2_1",
+      "base": "avg_1038_whitw2_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_1038_whitw2_1\\avg_1038_whitw2_1$1.png",
+      "image_size": [
+        1792,
+        1792
+      ],
+      "avatar": "char_1038_whitw2.png",
+      "match_threshold": 0.974835,
+      "match_box": [
+        779,
+        208,
+        1050,
+        480
+      ],
+      "face_pos": [
+        843,
+        328,
+        964,
+        444
+      ],
+      "box07": [
+        785,
+        229,
+        1031,
+        474
+      ],
+      "box08": [
+        784,
+        228,
+        1032,
+        475
+      ],
+      "iou07": 0.8189,
+      "iou08": 0.8298
+    },
+    {
+      "character": "char_208_melan_1",
+      "base": "char_208_melan_1.png",
+      "image": "data\\unpacked\\characters\\char_208_melan_1\\char_208_melan_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_208_melan.png",
+      "match_threshold": 0.989239,
+      "match_box": [
+        391,
+        65,
+        580,
+        254
+      ],
+      "face_pos": [
+        437,
+        141,
+        529,
+        234
+      ],
+      "box07": [
+        389,
+        66,
+        578,
+        256
+      ],
+      "box08": [
+        389,
+        66,
+        578,
+        256
+      ],
+      "iou07": 0.9652,
+      "iou08": 0.9659
+    },
+    {
+      "character": "avg_298_sussu_1",
+      "base": "avg_298_sussu_1.png",
+      "image": "data\\unpacked\\characters\\avg_298_sussu_1\\avg_298_sussu_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_298_susuro.png",
+      "match_threshold": 0.991093,
+      "match_box": [
+        359,
+        124,
+        567,
+        332
+      ],
+      "face_pos": [
+        417,
+        215,
+        520,
+        311
+      ],
+      "box07": [
+        353,
+        120,
+        569,
+        336
+      ],
+      "box08": [
+        352,
+        120,
+        568,
+        336
+      ],
+      "iou07": 0.9313,
+      "iou08": 0.9234
+    },
+    {
+      "character": "avg_4025_aprot2_1",
+      "base": "avg_4025_aprot2_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4025_aprot2_1\\avg_4025_aprot2_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4025_aprot2.png",
+      "match_threshold": 0.961302,
+      "match_box": [
+        421,
+        -13,
+        602,
+        168
+      ],
+      "face_pos": [
+        471,
+        52,
+        558,
+        144
+      ],
+      "box07": [
+        424,
+        -14,
+        605,
+        167
+      ],
+      "box08": [
+        425,
+        -14,
+        605,
+        166
+      ],
+      "iou07": 0.9482,
+      "iou08": 0.9448
+    },
+    {
+      "character": "char_249_muesys_1",
+      "base": "char_249_muesys_1.png",
+      "image": "data\\unpacked\\characters\\char_249_muesys_1\\char_249_muesys_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_249_mlyss.png",
+      "match_threshold": 0.970298,
+      "match_box": [
+        428,
+        18,
+        615,
+        205
+      ],
+      "face_pos": [
+        478,
+        100,
+        568,
+        184
+      ],
+      "box07": [
+        432,
+        25,
+        613,
+        206
+      ],
+      "box08": [
+        432,
+        25,
+        613,
+        206
+      ],
+      "iou07": 0.9316,
+      "iou08": 0.9318
+    },
+    {
+      "character": "char_366_acdrop",
+      "base": "char_366_acdrop.png",
+      "image": "data\\unpacked\\characters\\char_366_acdrop\\char_366_acdrop.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_366_acdrop.png",
+      "match_threshold": 0.987663,
+      "match_box": [
+        402,
+        23,
+        616,
+        237
+      ],
+      "face_pos": [
+        445,
+        97,
+        564,
+        215
+      ],
+      "box07": [
+        394,
+        4,
+        633,
+        243
+      ],
+      "box08": [
+        395,
+        4,
+        634,
+        243
+      ],
+      "iou07": 0.7992,
+      "iou08": 0.7989
+    },
+    {
+      "character": "avg_137_brownb_1",
+      "base": "avg_137_brownb_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_137_brownb_1\\avg_137_brownb_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_137_brownb.png",
+      "match_threshold": 0.977187,
+      "match_box": [
+        404,
+        -23,
+        611,
+        184
+      ],
+      "face_pos": [
+        453,
+        58,
+        558,
+        163
+      ],
+      "box07": [
+        399,
+        -25,
+        612,
+        188
+      ],
+      "box08": [
+        399,
+        -25,
+        612,
+        188
+      ],
+      "iou07": 0.9482,
+      "iou08": 0.9465
+    },
+    {
+      "character": "char_281_popka_1",
+      "base": "char_281_popka_1.png",
+      "image": "data\\unpacked\\characters\\char_281_popka_1\\char_281_popka_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_281_popka.png",
+      "match_threshold": 0.987665,
+      "match_box": [
+        336,
+        64,
+        570,
+        298
+      ],
+      "face_pos": [
+        392,
+        165,
+        503,
+        272
+      ],
+      "box07": [
+        338,
+        70,
+        567,
+        299
+      ],
+      "box08": [
+        338,
+        70,
+        567,
+        299
+      ],
+      "iou07": 0.9493,
+      "iou08": 0.9498
+    },
+    {
+      "character": "char_294_ayer",
+      "base": "char_294_ayer.png",
+      "image": "data\\unpacked\\characters\\char_294_ayer\\char_294_ayer.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_294_ayer.png",
+      "match_threshold": 0.976089,
+      "match_box": [
+        371,
+        17,
+        564,
+        210
+      ],
+      "face_pos": [
+        423,
+        100,
+        516,
+        188
+      ],
+      "box07": [
+        371,
+        21,
+        560,
+        209
+      ],
+      "box08": [
+        371,
+        21,
+        560,
+        210
+      ],
+      "iou07": 0.956,
+      "iou08": 0.9546
+    },
+    {
+      "character": "avg_4204_mantra_1",
+      "base": "avg_4204_mantra_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4204_mantra_1\\avg_4204_mantra_1$1.png",
+      "image_size": [
+        1860,
+        1860
+      ],
+      "avatar": "char_4204_mantra.png",
+      "match_threshold": 0.980832,
+      "match_box": [
+        767,
+        -2,
+        1032,
+        263
+      ],
+      "face_pos": [
+        825,
+        82,
+        960,
+        234
+      ],
+      "box07": [
+        760,
+        -10,
+        1038,
+        268
+      ],
+      "box08": [
+        760,
+        -11,
+        1038,
+        268
+      ],
+      "iou07": 0.908,
+      "iou08": 0.9044
+    },
+    {
+      "character": "char_190_clour",
+      "base": "char_190_clour.png",
+      "image": "data\\unpacked\\characters\\char_190_clour\\char_190_clour.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_190_clour.png",
+      "match_threshold": 0.981934,
+      "match_box": [
+        356,
+        42,
+        585,
+        271
+      ],
+      "face_pos": [
+        408,
+        139,
+        528,
+        244
+      ],
+      "box07": [
+        354,
+        34,
+        592,
+        272
+      ],
+      "box08": [
+        355,
+        33,
+        593,
+        272
+      ],
+      "iou07": 0.9238,
+      "iou08": 0.9197
+    },
+    {
+      "character": "avg_4119_wanqin_1",
+      "base": "avg_4119_wanqin_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4119_wanqin_1\\avg_4119_wanqin_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4119_wanqin.png",
+      "match_threshold": 0.976768,
+      "match_box": [
+        426,
+        -3,
+        612,
+        183
+      ],
+      "face_pos": [
+        465,
+        63,
+        565,
+        161
+      ],
+      "box07": [
+        414,
+        -19,
+        619,
+        186
+      ],
+      "box08": [
+        413,
+        -20,
+        619,
+        186
+      ],
+      "iou07": 0.8217,
+      "iou08": 0.819
+    },
+    {
+      "character": "avg_214_kafka_1",
+      "base": "avg_214_kafka_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_214_kafka_1\\avg_214_kafka_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_214_kafka.png",
+      "match_threshold": 0.965262,
+      "match_box": [
+        411,
+        38,
+        605,
+        232
+      ],
+      "face_pos": [
+        451,
+        110,
+        553,
+        209
+      ],
+      "box07": [
+        399,
+        26,
+        605,
+        233
+      ],
+      "box08": [
+        399,
+        26,
+        606,
+        233
+      ],
+      "iou07": 0.8836,
+      "iou08": 0.8849
+    },
+    {
+      "character": "avg_4124_iana_1",
+      "base": "avg_4124_iana_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4124_iana_1\\avg_4124_iana_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4124_iana.png",
+      "match_threshold": 0.978011,
+      "match_box": [
+        411,
+        -30,
+        615,
+        174
+      ],
+      "face_pos": [
+        475,
+        57,
+        571,
+        152
+      ],
+      "box07": [
+        424,
+        -16,
+        613,
+        173
+      ],
+      "box08": [
+        423,
+        -16,
+        613,
+        173
+      ],
+      "iou07": 0.8594,
+      "iou08": 0.8602
+    },
+    {
+      "character": "avg_4105_almond_1",
+      "base": "avg_4105_almond_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4105_almond_1\\avg_4105_almond_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4105_almond.png",
+      "match_threshold": 0.981632,
+      "match_box": [
+        443,
+        0,
+        669,
+        226
+      ],
+      "face_pos": [
+        515,
+        94,
+        623,
+        197
+      ],
+      "box07": [
+        457,
+        5,
+        675,
+        222
+      ],
+      "box08": [
+        457,
+        4,
+        675,
+        222
+      ],
+      "iou07": 0.8796,
+      "iou08": 0.883
+    },
+    {
+      "character": "avg_281_popka_1",
+      "base": "avg_281_popka_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_281_popka_1\\avg_281_popka_1$2.png",
+      "image_size": [
+        1045,
+        1045
+      ],
+      "avatar": "char_281_popka.png",
+      "match_threshold": 0.990583,
+      "match_box": [
+        571,
+        -5,
+        835,
+        258
+      ],
+      "face_pos": [
+        638,
+        112,
+        758,
+        225
+      ],
+      "box07": [
+        579,
+        8,
+        827,
+        256
+      ],
+      "box08": [
+        579,
+        7,
+        828,
+        256
+      ],
+      "iou07": 0.8849,
+      "iou08": 0.8944
+    },
+    {
+      "character": "avg_388_mint_1",
+      "base": "avg_388_mint_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_388_mint_1\\avg_388_mint_1$2.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_388_mint.png",
+      "match_threshold": 0.987367,
+      "match_box": [
+        399,
+        -20,
+        613,
+        194
+      ],
+      "face_pos": [
+        450,
+        64,
+        559,
+        168
+      ],
+      "box07": [
+        396,
+        -25,
+        616,
+        195
+      ],
+      "box08": [
+        396,
+        -25,
+        617,
+        195
+      ],
+      "iou07": 0.9424,
+      "iou08": 0.9425
+    },
+    {
+      "character": "avg_106_franka_1",
+      "base": "avg_106_franka_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_106_franka_1\\avg_106_franka_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_106_franka.png",
+      "match_threshold": 0.988059,
+      "match_box": [
+        418,
+        40,
+        600,
+        222
+      ],
+      "face_pos": [
+        456,
+        114,
+        544,
+        201
+      ],
+      "box07": [
+        412,
+        44,
+        589,
+        221
+      ],
+      "box08": [
+        413,
+        44,
+        590,
+        221
+      ],
+      "iou07": 0.8884,
+      "iou08": 0.8913
+    },
+    {
+      "character": "char_150_snakekiller_1",
+      "base": "char_150_snakekiller_1.png",
+      "image": "data\\unpacked\\characters\\char_150_snakekiller_1\\char_150_snakekiller_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_150_snakek.png",
+      "match_threshold": 0.974976,
+      "match_box": [
+        498,
+        -12,
+        740,
+        230
+      ],
+      "face_pos": [
+        543,
+        93,
+        649,
+        201
+      ],
+      "box07": [
+        493,
+        8,
+        712,
+        227
+      ],
+      "box08": [
+        493,
+        7,
+        713,
+        227
+      ],
+      "iou07": 0.7879,
+      "iou08": 0.7914
+    },
+    {
+      "character": "char_2014_nian_1",
+      "base": "char_2014_nian_1.png",
+      "image": "data\\unpacked\\characters\\char_2014_nian_1\\char_2014_nian_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_2014_nian.png",
+      "match_threshold": 0.982639,
+      "match_box": [
+        441,
+        29,
+        639,
+        227
+      ],
+      "face_pos": [
+        506,
+        103,
+        606,
+        204
+      ],
+      "box07": [
+        448,
+        24,
+        651,
+        227
+      ],
+      "box08": [
+        447,
+        24,
+        651,
+        227
+      ],
+      "iou07": 0.8855,
+      "iou08": 0.8897
+    },
+    {
+      "character": "avg_230_savage_1",
+      "base": "avg_230_savage_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_230_savage_1\\avg_230_savage_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_230_savage.png",
+      "match_threshold": 0.968792,
+      "match_box": [
+        379,
+        107,
+        570,
+        298
+      ],
+      "face_pos": [
+        436,
+        180,
+        530,
+        275
+      ],
+      "box07": [
+        398,
+        95,
+        602,
+        299
+      ],
+      "box08": [
+        399,
+        94,
+        603,
+        298
+      ],
+      "iou07": 0.725,
+      "iou08": 0.7182
+    },
+    {
+      "character": "avg_464_cement_1",
+      "base": "avg_464_cement_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_464_cement_1\\avg_464_cement_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_464_cement.png",
+      "match_threshold": 0.975377,
+      "match_box": [
+        348,
+        -25,
+        592,
+        219
+      ],
+      "face_pos": [
+        411,
+        86,
+        527,
+        180
+      ],
+      "box07": [
+        356,
+        -24,
+        591,
+        211
+      ],
+      "box08": [
+        356,
+        -25,
+        592,
+        211
+      ],
+      "iou07": 0.9268,
+      "iou08": 0.9339
+    },
+    {
+      "character": "char_451_robin",
+      "base": "char_451_robin.png",
+      "image": "data\\unpacked\\characters\\char_451_robin\\char_451_robin.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_451_robin.png",
+      "match_threshold": 0.967809,
+      "match_box": [
+        424,
+        40,
+        629,
+        245
+      ],
+      "face_pos": [
+        496,
+        130,
+        586,
+        221
+      ],
+      "box07": [
+        442,
+        55,
+        631,
+        244
+      ],
+      "box08": [
+        441,
+        55,
+        631,
+        244
+      ],
+      "iou07": 0.8349,
+      "iou08": 0.8398
+    },
+    {
+      "character": "char_345_folnic_1",
+      "base": "char_345_folnic_1.png",
+      "image": "data\\unpacked\\characters\\char_345_folnic_1\\char_345_folnic_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_345_folnic.png",
+      "match_threshold": 0.989569,
+      "match_box": [
+        429,
+        2,
+        623,
+        196
+      ],
+      "face_pos": [
+        497,
+        83,
+        584,
+        174
+      ],
+      "box07": [
+        443,
+        11,
+        628,
+        197
+      ],
+      "box08": [
+        442,
+        11,
+        627,
+        196
+      ],
+      "iou07": 0.8607,
+      "iou08": 0.8689
+    },
+    {
+      "character": "avg_4211_snhunt_1",
+      "base": "avg_4211_snhunt_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4211_snhunt_1\\avg_4211_snhunt_1$1.png",
+      "image_size": [
+        1228,
+        1228
+      ],
+      "avatar": "char_4211_snhunt.png",
+      "match_threshold": 0.970988,
+      "match_box": [
+        549,
+        29,
+        772,
+        252
+      ],
+      "face_pos": [
+        605,
+        116,
+        717,
+        224
+      ],
+      "box07": [
+        551,
+        26,
+        776,
+        252
+      ],
+      "box08": [
+        551,
+        26,
+        777,
+        252
+      ],
+      "iou07": 0.962,
+      "iou08": 0.9568
+    },
+    {
+      "character": "char_201_moeshd_summer",
+      "base": "char_201_moeshd_summer.png",
+      "image": "data\\unpacked\\characters\\char_201_moeshd_summer\\char_201_moeshd_summer.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_201_moeshd_summer#4.png",
+      "match_threshold": 0.982542,
+      "match_box": [
+        374,
+        35,
+        585,
+        246
+      ],
+      "face_pos": [
+        434,
+        113,
+        540,
+        223
+      ],
+      "box07": [
+        377,
+        31,
+        593,
+        247
+      ],
+      "box08": [
+        376,
+        31,
+        593,
+        247
+      ],
+      "iou07": 0.926,
+      "iou08": 0.9303
+    },
+    {
+      "character": "avg_391_rosmon_1",
+      "base": "avg_391_rosmon_1$2.png",
+      "image": "data\\unpacked\\characters\\avg_391_rosmon_1\\avg_391_rosmon_1$2.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_391_rosmon.png",
+      "match_threshold": 0.979847,
+      "match_box": [
+        495,
+        278,
+        633,
+        416
+      ],
+      "face_pos": [
+        542,
+        333,
+        606,
+        399
+      ],
+      "box07": [
+        504,
+        275,
+        645,
+        416
+      ],
+      "box08": [
+        505,
+        276,
+        645,
+        416
+      ],
+      "iou07": 0.8431,
+      "iou08": 0.844
+    },
+    {
+      "character": "avg_491_humus_1",
+      "base": "avg_491_humus_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_491_humus_1\\avg_491_humus_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_491_humus.png",
+      "match_threshold": 0.971488,
+      "match_box": [
+        431,
+        100,
+        579,
+        248
+      ],
+      "face_pos": [
+        467,
+        148,
+        540,
+        227
+      ],
+      "box07": [
+        428,
+        89,
+        585,
+        246
+      ],
+      "box08": [
+        428,
+        89,
+        585,
+        246
+      ],
+      "iou07": 0.8696,
+      "iou08": 0.8711
+    },
+    {
+      "character": "char_401_elysm",
+      "base": "char_401_elysm.png",
+      "image": "data\\unpacked\\characters\\char_401_elysm\\char_401_elysm.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_401_elysm.png",
+      "match_threshold": 0.978708,
+      "match_box": [
+        365,
+        98,
+        520,
+        253
+      ],
+      "face_pos": [
+        403,
+        155,
+        477,
+        235
+      ],
+      "box07": [
+        362,
+        96,
+        519,
+        253
+      ],
+      "box08": [
+        362,
+        96,
+        518,
+        253
+      ],
+      "iou07": 0.9573,
+      "iou08": 0.9591
+    },
+    {
+      "character": "avg_4062_totter_1",
+      "base": "avg_4062_totter_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4062_totter_1\\avg_4062_totter_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_4062_totter.png",
+      "match_threshold": 0.962036,
+      "match_box": [
+        436,
+        -23,
+        609,
+        150
+      ],
+      "face_pos": [
+        472,
+        41,
+        558,
+        133
+      ],
+      "box07": [
+        432,
+        -22,
+        607,
+        153
+      ],
+      "box08": [
+        433,
+        -22,
+        607,
+        152
+      ],
+      "iou07": 0.9431,
+      "iou08": 0.954
+    },
+    {
+      "character": "avg_1044_hsgma2_1",
+      "base": "avg_1044_hsgma2_1$3.png",
+      "image": "data\\unpacked\\characters\\avg_1044_hsgma2_1\\avg_1044_hsgma2_1$3.png",
+      "image_size": [
+        1456,
+        1456
+      ],
+      "avatar": "char_1044_hsgma2.png",
+      "match_threshold": 0.961527,
+      "match_box": [
+        700,
+        34,
+        914,
+        249
+      ],
+      "face_pos": [
+        750,
+        117,
+        846,
+        221
+      ],
+      "box07": [
+        700,
+        42,
+        905,
+        247
+      ],
+      "box08": [
+        700,
+        41,
+        906,
+        247
+      ],
+      "iou07": 0.9141,
+      "iou08": 0.9189
+    },
+    {
+      "character": "avg_300_phenxi_1",
+      "base": "avg_300_phenxi_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_300_phenxi_1\\avg_300_phenxi_1$1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_300_phenxi.png",
+      "match_threshold": 0.98064,
+      "match_box": [
+        404,
+        28,
+        599,
+        223
+      ],
+      "face_pos": [
+        455,
+        104,
+        555,
+        200
+      ],
+      "box07": [
+        403,
+        21,
+        606,
+        224
+      ],
+      "box08": [
+        404,
+        21,
+        606,
+        224
+      ],
+      "iou07": 0.9257,
+      "iou08": 0.9271
+    },
+    {
+      "character": "char_381_bubble_1",
+      "base": "char_381_bubble_1.png",
+      "image": "data\\unpacked\\characters\\char_381_bubble_1\\char_381_bubble_1.png",
+      "image_size": [
+        1024,
+        1024
+      ],
+      "avatar": "char_381_bubble.png",
+      "match_threshold": 0.977535,
+      "match_box": [
+        182,
+        170,
+        382,
+        370
+      ],
+      "face_pos": [
+        229,
+        252,
+        317,
+        345
+      ],
+      "box07": [
+        168,
+        172,
+        364,
+        368
+      ],
+      "box08": [
+        167,
+        173,
+        362,
+        368
+      ],
+      "iou07": 0.8368,
+      "iou08": 0.8205
+    },
+    {
+      "character": "avg_4056_titi_1",
+      "base": "avg_4056_titi_1$1.png",
+      "image": "data\\unpacked\\characters\\avg_4056_titi_1\\avg_4056_titi_1$1.png",
+      "image_size": [
+        1148,
+        1148
+      ],
+      "avatar": "char_4056_titi.png",
+      "match_threshold": 0.985051,
+      "match_box": [
+        499,
+        112,
+        688,
+        302
+      ],
+      "face_pos": [
+        536,
+        178,
+        629,
+        275
+      ],
+      "box07": [
+        491,
+        103,
+        687,
+        299
+      ],
+      "box08": [
+        491,
+        103,
+        687,
+        299
+      ],
+      "iou07": 0.8954,
+      "iou08": 0.8994
+    }
+  ]
+}

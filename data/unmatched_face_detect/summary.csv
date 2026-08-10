@@ -1,0 +1,149 @@
+﻿character,base,reason,face_confidence,head_confidence,derived_box07,derived_box08,accepted
+avg_npc_047,avg_npc_047.png,no_avatar_unreported,0.9891,0.883,"[416, 11, 585, 180]","[416, 10, 585, 180]",True
+avg_npc_174,avg_npc_174.png,no_avatar_unreported,0.5242,0.8902,"[382, 18, 548, 184]","[384, 19, 548, 183]",False
+avg_npc_399_1,avg_npc_399_1$1.png,no_avatar_unreported,0.3187,0.9155,"[429, -10, 579, 140]","[428, -11, 579, 140]",False
+avg_npc_1497_1,avg_npc_1497_1$1.png,no_avatar_unreported,0.9856,0.9265,"[312, -23, 585, 250]","[312, -22, 585, 251]",True
+avg_npc_2324_1,avg_npc_2324_1$2.png,no_avatar_unreported,0.98,0.8935,"[613, 38, 831, 255]","[613, 37, 831, 255]",True
+avg_npc_361_1,avg_npc_361_1$1.png,no_avatar_unreported,0.9989,0.8952,"[454, 26, 651, 224]","[455, 26, 651, 223]",True
+avg_npc_410_1,avg_npc_410_1$1.png,no_avatar_unreported,0.6067,0.8916,"[422, -17, 580, 141]","[423, -17, 581, 141]",False
+avg_npc_970_1,avg_npc_970_1$1.png,no_avatar_unreported,0.9985,0.9171,"[369, -5, 569, 195]","[369, -5, 570, 195]",True
+avg_npc_485_1,avg_npc_485_1$1.png,no_avatar_unreported,0.9958,0.8998,"[433, -14, 603, 156]","[434, -14, 603, 155]",True
+avg_npc_105,avg_npc_105.png,no_avatar_unreported,,0.7552,,,False
+avg_npc_122,avg_npc_122_1.png,no_avatar_unreported,0.9994,0.8865,"[478, 40, 679, 241]","[477, 40, 679, 241]",True
+avg_npc_1004_1,avg_npc_1004_1$1.png,no_avatar_unreported,0.9992,0.9083,"[24, -55, 366, 287]","[25, -53, 366, 288]",True
+avg_npc_1211_1,avg_npc_1211_1$1.png,no_avatar_unreported,0.9265,0.9008,"[444, -7, 607, 156]","[444, -7, 607, 156]",True
+avg_npc_2259_1,avg_npc_2259_1$1.png,no_avatar_unreported,0.8552,0.893,"[514, 43, 678, 207]","[513, 43, 677, 207]",True
+avg_npc_2169_1,avg_npc_2169_1$1.png,no_avatar_unreported,0.9919,0.8999,"[493, 0, 698, 205]","[494, -1, 699, 204]",True
+avg_npc_450_1,avg_npc_450_1$1.png,no_avatar_unreported,0.9565,0.9048,"[396, -22, 563, 145]","[396, -22, 563, 145]",True
+avg_npc_034,avg_npc_034.png,no_avatar_unreported,,0.4929,,,False
+avg_npc_423_1,avg_npc_423_1$1.png,no_avatar_unreported,0.9944,0.9108,"[430, -18, 605, 158]","[430, -18, 605, 157]",True
+avg_npc_305_1,avg_npc_305_1$1.png,no_avatar_unreported,0.9971,0.893,"[402, -20, 591, 169]","[403, -19, 591, 169]",True
+avg_npc_1245_1,avg_npc_1245_1$1.png,no_avatar_unreported,,0.8709,,,False
+avg_npc_1839_1,avg_npc_1839_1$1.png,no_avatar_unreported,0.999,0.9034,"[599, 12, 814, 227]","[600, 12, 815, 227]",True
+avg_npc_597_1,avg_npc_597_1$1.png,no_avatar_unreported,0.9574,0.9355,"[362, -11, 639, 266]","[363, -10, 640, 267]",True
+avg_npc_2036_1,avg_npc_2036_1$1.png,no_avatar_unreported,,0.0295,,,False
+avg_npc_2101_1,avg_npc_2101_1$1.png,no_avatar_unreported,0.9792,0.8704,"[614, 34, 829, 249]","[614, 33, 829, 248]",True
+avg_npc_570_1,avg_npc_570_1$1.png,no_avatar_unreported,0.9984,0.9193,"[408, -41, 648, 199]","[408, -41, 648, 199]",True
+avg_npc_1628_1,avg_npc_1628_1$1.png,no_avatar_unreported,0.9993,0.9102,"[539, 22, 763, 246]","[540, 21, 764, 246]",True
+avg_npc_189,avg_npc_189.png,no_avatar_unreported,0.969,0.8975,"[398, 35, 567, 204]","[399, 35, 567, 203]",True
+avg_npc_701_1,avg_npc_701_1$1.png,no_avatar_unreported,0.9975,0.8997,"[385, 1, 563, 179]","[386, 1, 563, 179]",True
+avg_npc_039_1,avg_npc_039_1.png,no_avatar_unreported,0.3131,0.3703,"[461, 114, 631, 284]","[458, 114, 629, 285]",False
+avg_npc_1558_1,avg_npc_1558_1$1.png,no_avatar_unreported,,0.8898,,,False
+avg_npc_785_1,avg_npc_785_1$1.png,no_avatar_unreported,0.7477,0.9006,"[427, -24, 611, 160]","[427, -24, 611, 160]",True
+avg_npc_1009_1,avg_npc_1009_1$1.png,no_avatar_unreported,0.9947,0.1349,"[261, 139, 476, 355]","[261, 140, 475, 355]",False
+avg_npc_2183_1,avg_npc_2183_1$1.png,no_avatar_unreported,0.9993,0.9171,"[516, -19, 745, 211]","[515, -19, 746, 211]",True
+avg_npc_247,avg_npc_247.png,no_avatar_unreported,0.8841,0.8952,"[434, -15, 594, 145]","[434, -15, 594, 144]",True
+avg_npc_1982_1,avg_npc_1982_1$1.png,no_avatar_unreported,0.9967,0.9122,"[641, 2, 875, 237]","[640, 1, 876, 237]",True
+avg_npc_1008_1,avg_npc_1008_1$1.png,no_avatar_unreported,0.9967,0.3298,"[240, 122, 475, 357]","[237, 123, 472, 358]",False
+avg_npc_1800_1,avg_npc_1800_1$5.png,no_avatar_unreported,0.6944,0.8903,"[815, 90, 1028, 303]","[814, 88, 1029, 303]",False
+avg_npc_294_1,avg_npc_294_1$1.png,no_avatar_unreported,0.845,0.6745,"[470, -15, 654, 169]","[466, -18, 652, 168]",False
+avg_npc_1257_1,avg_npc_1257_1$1.png,no_avatar_unreported,0.8367,0.902,"[426, -19, 616, 171]","[427, -18, 616, 171]",True
+avg_npc_400_1,avg_npc_400_1$1.png,no_avatar_unreported,0.9982,0.9194,"[428, -14, 625, 183]","[425, -16, 624, 183]",True
+avg_npc_1831_1,avg_npc_1831_1$3.png,no_avatar_unreported,0.9992,0.9062,"[532, 3, 762, 232]","[533, 3, 762, 232]",True
+avg_npc_2349_1,avg_npc_2349_1$1.png,no_avatar_unreported,0.0097,0.4239,"[747, 1381, 469, 1103]","[731, 1344, 481, 1094]",False
+avg_npc_031,avg_npc_031.png,no_avatar_unreported,0.3108,0.9086,"[397, 15, 599, 217]","[397, 14, 600, 218]",False
+avg_npc_1123_1,avg_npc_1123_1$1.png,no_avatar_unreported,0.3861,0.9004,"[440, -10, 596, 147]","[441, -10, 596, 146]",False
+avg_npc_1015_1,avg_npc_1015_1$1.png,no_avatar_unreported,0.9999,0.7538,"[453, 11, 669, 226]","[452, 10, 668, 227]",True
+char_1002_nsabr_2,char_1002_nsabr_2.png,no_avatar,0.4101,0.5743,"[433, 4, 633, 204]","[435, 5, 633, 203]",False
+avg_npc_1134_1,avg_npc_1134_1$1.png,no_avatar_unreported,0.8984,0.8977,"[422, 14, 612, 204]","[422, 14, 612, 204]",True
+avg_npc_2090_1,avg_npc_2090_1$2.png,no_avatar_unreported,,0.0037,,,False
+avgnew_400_weedy_1,avgnew_400_weedy_1$1.png,no_avatar_unreported,0.9995,0.8815,"[482, 44, 702, 264]","[481, 44, 702, 264]",True
+avg_npc_924_1,avg_npc_924_1$1.png,no_avatar_unreported,0.9894,0.8138,"[440, 40, 600, 200]","[439, 40, 599, 199]",True
+avg_npc_1136_1,avg_npc_1136_1$1.png,no_avatar_unreported,,0.0148,,,False
+avg_npc_161,avg_npc_161.png,no_avatar_unreported,0.9428,0.9024,"[427, 58, 588, 219]","[428, 58, 588, 218]",True
+avg_npc_1561_1,avg_npc_1561_1$1.png,no_avatar_unreported,0.3751,0.9037,"[502, 24, 671, 193]","[502, 24, 670, 193]",False
+avg_npc_1805_1,avg_npc_1805_1$1.png,no_avatar_unreported,0.9983,0.9,"[390, 4, 571, 186]","[391, 5, 571, 185]",True
+avg_npc_079,avg_npc_079.png,no_avatar_unreported,0.9995,0.8828,"[408, 20, 613, 226]","[405, 19, 612, 226]",True
+avg_npc_1132_1,avg_npc_1132_1$1.png,no_avatar_unreported,0.9952,0.8774,"[444, 29, 607, 192]","[444, 29, 607, 192]",True
+avg_npc_1974_1,avg_npc_1974_1$1.png,no_avatar_unreported,0.9971,0.9127,"[529, -17, 736, 189]","[529, -18, 736, 189]",True
+avg_npc_217,avg_npc_217.png,no_avatar_unreported,,0.8788,,,False
+avg_npc_822_1,avg_npc_822_1$1.png,no_avatar_unreported,0.9945,0.9099,"[376, -9, 546, 161]","[376, -9, 545, 160]",True
+avg_npc_190_1,avg_npc_190_1.png,no_avatar_unreported,0.9996,0.8775,"[389, 71, 597, 279]","[389, 71, 596, 279]",True
+avg_npc_2112_1,avg_npc_2112_1$1.png,no_avatar_unreported,,0.004,,,False
+avg_npc_627_1,avg_npc_627_1$1.png,no_avatar_unreported,0.993,0.8823,"[436, 40, 598, 202]","[436, 40, 598, 201]",True
+avg_npc_461_1,avg_npc_461_1$1.png,no_avatar_unreported,0.9953,0.9109,"[400, 3, 593, 197]","[401, 3, 594, 197]",True
+avg_npc_462_1,avg_npc_462_1$1.png,no_avatar_unreported,0.9997,0.911,"[394, -10, 601, 198]","[395, -10, 602, 197]",True
+avg_npc_301_1,avg_npc_301_1$1.png,no_avatar_unreported,0.9149,0.8839,"[463, 43, 627, 208]","[463, 43, 627, 207]",True
+avg_npc_937_1,avg_npc_937_1$1.png,no_avatar_unreported,0.9416,0.9026,"[458, 28, 631, 201]","[458, 28, 631, 201]",True
+avg_npc_030,avg_npc_030.png,no_avatar_unreported,0.9888,0.8648,"[409, 23, 573, 187]","[408, 23, 572, 186]",True
+avg_npc_366_1,avg_npc_366_1$2.png,no_avatar_unreported,0.9879,0.9029,"[426, 41, 580, 196]","[426, 41, 580, 195]",True
+avg_npc_1691_1,avg_npc_1691_1$1.png,no_avatar_unreported,0.0744,0.8917,"[491, -19, 698, 188]","[491, -20, 699, 189]",False
+avg_npc_1454_1,avg_npc_1454_1$1.png,no_avatar_unreported,0.8755,0.8942,"[419, 11, 590, 183]","[419, 11, 589, 182]",True
+char_259_jessica_1,char_259_Jessica_1.png,no_avatar,0.9884,0.8866,"[396, 39, 589, 231]","[395, 39, 588, 231]",True
+avg_npc_049,avg_npc_049.png,no_avatar_unreported,0.9983,0.8809,"[430, 47, 613, 230]","[430, 47, 613, 230]",True
+avg_npc_209_1,avg_npc_209_1.png,no_avatar_unreported,0.9809,0.883,"[446, 58, 619, 231]","[446, 58, 619, 230]",True
+avg_npc_225,avg_npc_225.png,no_avatar_unreported,,0.3801,,,False
+avg_npc_276_1,avg_npc_276_1$1.png,no_avatar_unreported,0.9805,0.9038,"[418, 20, 594, 196]","[418, 20, 594, 196]",True
+avg_npc_2325_1,avg_npc_2325_1$1.png,no_avatar_unreported,0.9935,0.904,"[610, 90, 830, 310]","[608, 89, 828, 309]",True
+avg_npc_1544_1,avg_npc_1544_1$1.png,no_avatar_unreported,0.9923,0.909,"[519, 16, 729, 226]","[520, 16, 730, 226]",True
+avg_npc_289_1,avg_npc_289_1$1.png,no_avatar_unreported,0.9798,0.9011,"[422, -15, 583, 146]","[422, -15, 583, 145]",True
+avg_npc_596_1,avg_npc_596_1$1.png,no_avatar_unreported,0.9921,0.0464,"[-45, -121, 276, 199]","[-41, -118, 278, 201]",False
+avgnew_147_shining_1,avgnew_147_shining_1$2.png,no_avatar_unreported,0.0283,0.2117,"[383, 46, 560, 224]","[385, 47, 559, 222]",False
+avg_npc_2068_1,avg_npc_2068_1$2.png,no_avatar_unreported,0.925,0.6845,"[572, 226, 786, 440]","[567, 224, 783, 441]",False
+avg_npc_936_1,avg_npc_936_1$1.png,no_avatar_unreported,0.9931,0.8982,"[468, 29, 642, 203]","[467, 28, 642, 203]",True
+avg_npc_1453_1,avg_npc_1453_1$1.png,no_avatar_unreported,0.9613,0.8916,"[418, 41, 578, 201]","[418, 41, 578, 201]",True
+avg_npc_1131_1,avg_npc_1131_1$1.png,no_avatar_unreported,0.9978,0.879,"[440, 24, 609, 193]","[441, 24, 609, 193]",True
+avg_npc_522_1,avg_npc_522_1$1.png,no_avatar_unreported,0.9861,0.9021,"[431, -14, 601, 157]","[431, -14, 601, 156]",True
+avg_npc_1249_1,avg_npc_1249_1$1.png,no_avatar_unreported,0.9995,0.9188,"[424, -19, 612, 169]","[425, -19, 613, 169]",True
+avg_npc_535_1,avg_npc_535_1$1.png,no_avatar_unreported,0.9955,0.9099,"[433, -10, 612, 169]","[433, -11, 612, 169]",True
+avg_npc_1038_1,avg_npc_1038_1$1.png,no_avatar_unreported,0.251,0.9075,"[371, 7, 548, 184]","[372, 8, 547, 183]",False
+avg_npc_001,avg_npc_001.png,no_avatar_unreported,0.9883,0.9074,"[396, 8, 563, 176]","[396, 8, 563, 175]",True
+avg_npc_014,avg_npc_014.png,no_avatar_unreported,0.231,0.0259,"[435, 73, 612, 250]","[442, 75, 615, 248]",False
+avg_npc_408_1,avg_npc_408_1$1.png,no_avatar_unreported,0.9507,0.9073,"[425, -13, 604, 166]","[426, -13, 604, 165]",True
+avg_npc_2321_1,avg_npc_2321_1$2.png,no_avatar_unreported,0.9998,0.9033,"[383, -17, 622, 223]","[382, -17, 622, 223]",True
+avg_npc_1251_1,avg_npc_1251_1$1.png,no_avatar_unreported,,0.0041,,,False
+avg_npc_1830_1,avg_npc_1830_1$1.png,no_avatar_unreported,0.963,0.8434,"[528, 69, 750, 290]","[528, 69, 750, 290]",True
+avg_npc_254_1,avg_npc_254_1$1.png,no_avatar_unreported,0.8181,0.8171,"[383, -2, 534, 149]","[383, -2, 534, 149]",True
+avg_npc_863_1,avg_npc_863_1$1.png,no_avatar_unreported,0.9996,0.9315,"[477, -12, 672, 182]","[477, -13, 672, 182]",True
+avg_npc_414_1,avg_npc_414_1$1.png,no_avatar_unreported,0.9879,0.904,"[417, -10, 590, 164]","[417, -10, 590, 163]",True
+avg_npc_1899_1,avg_npc_1899_1$2.png,no_avatar_unreported,0.5409,0.9097,"[489, -10, 710, 211]","[489, -11, 710, 210]",False
+avg_npc_1563_1,avg_npc_1563_1$1.png,no_avatar_unreported,0.9941,0.9048,"[446, 10, 639, 203]","[447, 10, 640, 203]",True
+avg_npc_489_1,avg_npc_489_1$1.png,no_avatar_unreported,0.9839,0.8228,"[397, 22, 598, 222]","[397, 21, 597, 221]",True
+avg_npc_2325_1,avg_npc_2325_1$2.png,no_avatar_unreported,0.9847,0.9039,"[606, 84, 833, 310]","[605, 83, 832, 310]",True
+avg_npc_864_1,avg_npc_864_1$1.png,no_avatar_unreported,0.9589,0.8984,"[429, 16, 618, 205]","[428, 15, 618, 205]",True
+avg_npc_162,avg_npc_162.png,no_avatar_unreported,0.9892,0.8997,"[417, 53, 580, 216]","[417, 53, 579, 215]",True
+avg_npc_965_1,avg_npc_965_1$1.png,no_avatar_unreported,0.8393,0.8627,"[440, 85, 624, 269]","[439, 84, 624, 269]",True
+avg_npc_1331_1,avg_npc_1331_1$1.png,no_avatar_unreported,,0.0017,,,False
+avg_npc_424_1,avg_npc_424_1$1.png,no_avatar_unreported,,0.0034,,,False
+avgnew_2015_dusk_1,avgnew_2015_dusk_1$1.png,no_avatar_unreported,0.9859,0.8894,"[378, 4, 580, 206]","[379, 4, 580, 206]",True
+avg_npc_627_1,avg_npc_627_1$2.png,no_avatar_unreported,,0.2735,,,False
+avg_npc_080,avg_npc_080.png,no_avatar_unreported,0.9624,0.8926,"[424, 20, 616, 211]","[423, 19, 615, 211]",True
+avg_npc_789_1,avg_npc_789_1$1.png,no_avatar_unreported,0.9705,0.9039,"[392, -16, 584, 176]","[393, -16, 584, 175]",True
+avg_npc_2040_1,avg_npc_2040_1$4.png,no_avatar_unreported,,0.0237,,,False
+avg_npc_1484_1,avg_npc_1484_1$2.png,no_avatar_unreported,0.9995,0.8992,"[454, 26, 658, 231]","[454, 26, 659, 231]",True
+avg_npc_901_1,avg_npc_901_1$1.png,no_avatar_unreported,0.3599,0.8901,"[407, 1, 584, 179]","[407, 1, 584, 179]",False
+avg_npc_1014_1,avg_npc_1014_1$1.png,no_avatar_unreported,0.0305,0.0857,"[408, 190, 666, 448]","[400, 176, 673, 449]",False
+avgnew_455_nothing_1,avgnew_455_nothing_1$1.png,no_avatar_unreported,0.8918,0.8998,"[431, -5, 596, 160]","[430, -6, 596, 159]",True
+avg_npc_2235_1,avg_npc_2235_1$1.png,no_avatar_unreported,0.8775,0.838,"[770, 86, 1030, 346]","[769, 85, 1032, 347]",True
+avg_npc_087,avg_npc_087.png,no_avatar_unreported,0.9865,0.8881,"[434, 148, 612, 327]","[435, 148, 613, 327]",True
+avg_npc_278_1,avg_npc_278_1$1.png,no_avatar_unreported,0.9817,0.9082,"[406, -33, 609, 171]","[407, -32, 610, 171]",True
+avg_npc_2107_1,avg_npc_2107_1$1.png,no_avatar_unreported,0.0066,0.1682,"[480, -283, 1046, 284]","[500, -265, 1053, 288]",False
+avg_npc_898_1,avg_npc_898_1$2.png,no_avatar_unreported,,0.0164,,,False
+avg_npc_1496_1,avg_npc_1496_1$1.png,no_avatar_unreported,0.9811,0.92,"[464, -7, 711, 240]","[463, -8, 711, 240]",True
+avg_npc_1840_1,avg_npc_1840_1$1.png,no_avatar_unreported,0.3197,0.8931,"[670, 30, 931, 290]","[670, 29, 932, 291]",False
+avg_npc_1967_1,avg_npc_1967_1$1.png,no_avatar_unreported,0.9971,0.9111,"[539, -11, 768, 218]","[538, -12, 768, 218]",True
+avg_npc_244,avg_npc_244.png,no_avatar_unreported,0.7077,0.8772,"[412, -10, 575, 153]","[413, -10, 575, 152]",True
+avg_npc_2073_1,avg_npc_2073_1$1.png,no_avatar_unreported,0.9749,0.8167,"[435, -15, 629, 180]","[434, -16, 629, 179]",True
+avg_npc_2353_1,avg_npc_2353_1$1.png,no_avatar_unreported,0.9926,0.8832,"[439, -7, 647, 202]","[436, -8, 646, 202]",True
+avg_npc_298_1,avg_npc_298_1$1.png,no_avatar_unreported,0.9997,0.8525,"[426, 48, 616, 237]","[427, 48, 616, 237]",True
+avg_npc_038,avg_npc_038.png,no_avatar_unreported,,0.0156,,,False
+avg_npc_355_1,avg_npc_355_1$1.png,no_avatar_unreported,0.9814,0.8952,"[431, 27, 608, 203]","[431, 26, 607, 202]",True
+avg_npc_1906_1,avg_npc_1906_1$1.png,no_avatar_unreported,0.3878,0.9036,"[545, -5, 748, 197]","[546, -6, 748, 197]",False
+avg_npc_2129_1,avg_npc_2129_1$1.png,no_avatar_unreported,0.8161,0.8088,"[647, 201, 845, 399]","[647, 201, 845, 399]",True
+avg_npc_2321_1,avg_npc_2321_1$1.png,no_avatar_unreported,0.9997,0.902,"[383, -16, 621, 222]","[383, -16, 621, 222]",True
+avg_npc_222,avg_npc_222.png,no_avatar_unreported,0.6453,0.8864,"[440, 126, 587, 273]","[440, 126, 586, 272]",False
+avg_npc_1847_1,avg_npc_1847_1$1.png,no_avatar_unreported,0.9959,0.9192,"[476, 3, 686, 213]","[476, 2, 687, 214]",True
+avg_npc_1902_1,avg_npc_1902_1$1.png,no_avatar_unreported,0.9769,0.894,"[711, 50, 943, 283]","[711, 49, 944, 282]",True
+avg_npc_1493_1,avg_npc_1493_1$1.png,no_avatar_unreported,0.9941,0.9119,"[343, -1, 529, 185]","[343, -1, 528, 184]",True
+avg_npc_758_1,avg_npc_758_1$1.png,no_avatar_unreported,0.9923,0.9103,"[365, -12, 544, 167]","[366, -12, 544, 166]",True
+avg_npc_1904_1,avg_npc_1904_1$3.png,no_avatar_unreported,,0.0045,,,False
+avg_npc_1834_1,avg_npc_1834_1$1.png,no_avatar_unreported,0.9994,0.8987,"[555, -27, 778, 196]","[554, -27, 779, 197]",True
+avg_npc_2357_1,avg_npc_2357_1$2.png,no_avatar_unreported,,0.0073,,,False
+avg_npc_246,avg_npc_246.png,no_avatar_unreported,0.5261,0.8902,"[438, -11, 599, 149]","[439, -11, 599, 149]",False
+avg_npc_1188_1,avg_npc_1188_1$1.png,no_avatar_unreported,0.816,0.2451,"[11, -72, 278, 195]","[12, -73, 280, 195]",False
+avg_npc_2201_1,avg_npc_2201_1$1.png,no_avatar_unreported,,0.578,,,False
+avg_npc_660_1,avg_npc_660_1$1.png,no_avatar_unreported,0.9969,0.9139,"[436, -3, 632, 194]","[436, -3, 632, 193]",True
+avg_npc_078,avg_npc_078.png,no_avatar_unreported,0.997,0.8952,"[406, 7, 594, 196]","[405, 7, 594, 195]",True
+avg_npc_2248_1,avg_npc_2248_1$1.png,no_avatar_unreported,0.9937,0.9033,"[585, -7, 808, 216]","[584, -8, 808, 215]",True
+avg_npc_1795_1,avg_npc_1795_1$2.png,no_avatar_unreported,0.9586,0.9072,"[386, 33, 600, 247]","[387, 33, 600, 247]",True
+avg_npc_928_1,avg_npc_928_1$1.png,no_avatar_unreported,0.9998,0.9396,"[370, 7, 712, 348]","[372, 7, 713, 349]",True

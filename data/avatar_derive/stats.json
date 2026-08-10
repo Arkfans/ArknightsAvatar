@@ -1,0 +1,23 @@
+{
+  "n": 430,
+  "filter": {
+    "confidence_min": 0.7
+  },
+  "iou": {
+    "mean": 0.8927,
+    "median": 0.9043,
+    "p10": 0.8155,
+    "p90": 0.9588,
+    "min": 0.6711,
+    "lt_0.80": 0.0721,
+    "ge_0.90": 0.5233
+  },
+  "center_error_px": {
+    "mean": 6.62,
+    "median": 5.86
+  },
+  "size_ratio": {
+    "mean": 1.0034,
+    "median": 1.0
+  }
+}
