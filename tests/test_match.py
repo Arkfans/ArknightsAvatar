@@ -1,11 +1,15 @@
 import json
 from pathlib import Path
 
+import cv2
+import numpy as np
 import pytest
 from PIL import Image, ImageDraw
 
 from npcavatar.match import (
     CONFIDENCE_TARGET,
+    AVATAR_MAX_SIZE,
+    OUTPUT_BASE_SIZE,
     STOP_THRESHOLD,
     _avatar_candidates,
     _char_seq,
@@ -401,3 +405,158 @@ def test_cli_output_stdout_dash(capsys, tmp_path: Path):
     start = next(i for i, line in enumerate(lines) if line.startswith("{"))
     payload = json.loads("\n".join(lines[start:]))
     assert payload["stats"]["total"] == 1
+
+
+def _setup_match_env(tmp_path: Path, avatar_size: int = 180, seed: int = 1):
+    """搭建一套角色/头像/分类文件，返回 (classified_path, characters_dir, avatars_dir, expected_box)。"""
+    characters_dir = tmp_path / "characters"
+    avatars_dir = tmp_path / "avatars"
+    avatar = _avatar_image(avatar_size, seed=seed)
+    paste_x, paste_y = 300, 200
+    _write_image(avatars_dir / "char_003_kalts.png", avatar)
+    _write_image(characters_dir / "avg_003_kalts_1" / "avg_003_kalts_1$1.png", _base_with_avatar(avatar, (paste_x, paste_y)))
+    classified = tmp_path / "classified.json"
+    _write_classified(
+        classified,
+        {"avg_003_kalts_1": {"status": "ok", "bases": {"avg_003_kalts_1$1.png": {"diff": []}}, "unassigned": [], "sizes": {}}},
+    )
+    expected_box = [paste_x, paste_y, paste_x + avatar_size, paste_y + avatar_size]
+    return classified, characters_dir, avatars_dir, expected_box
+
+
+def test_image_output_end_to_end(tmp_path: Path):
+    pytest.importorskip("cv2")
+    classified, characters_dir, avatars_dir, _ = _setup_match_env(tmp_path)
+    image_dir = tmp_path / "images"
+    output = tmp_path / "report.json"
+
+    code = main(
+        [
+            "--classified", str(classified),
+            "--characters-dir", str(characters_dir),
+            "--avatars-dir", str(avatars_dir),
+            "--output", str(output),
+            "--image-dir", str(image_dir),
+        ]
+    )
+
+    assert code == 0
+    pngs = list(image_dir.glob("*.png"))
+    assert len(pngs) == 1
+    assert pngs[0].name == "avg_003_kalts_1__avg_003_kalts_1$1.png"
+
+    data = np.fromfile(str(pngs[0]), dtype=np.uint8)
+    img = cv2.imdecode(data, cv2.IMREAD_UNCHANGED)
+    assert img.shape == (OUTPUT_BASE_SIZE, OUTPUT_BASE_SIZE, 3)
+
+    # 红框应改变底图区域像素（与纯白缩放底图对比）
+    base_path = characters_dir / "avg_003_kalts_1" / "avg_003_kalts_1$1.png"
+    from npcavatar.match import _read_rgba, _composite_on_color
+    base_rgba = _read_rgba(base_path)
+    base_plain = _composite_on_color(cv2.resize(base_rgba, (OUTPUT_BASE_SIZE, OUTPUT_BASE_SIZE)))
+    diff = cv2.absdiff(img, base_plain)
+    assert int(diff.sum()) > 0
+
+    # 头像应出现在右下角（180px 贴在 512 画布右下角）
+    avatar_path = avatars_dir / "char_003_kalts.png"
+    avatar_rgba = _read_rgba(avatar_path)
+    avatar_bgr = _composite_on_color(avatar_rgba)
+    ah, aw = avatar_bgr.shape[:2]
+    paste_x = OUTPUT_BASE_SIZE - aw
+    paste_y = OUTPUT_BASE_SIZE - ah
+    region = img[paste_y:paste_y + ah, paste_x:paste_x + aw]
+    avatar_diff = cv2.absdiff(region, avatar_bgr)
+    assert int(avatar_diff.sum()) < 500  # 近乎一致（允许极小编码误差）
+
+
+def test_image_output_avatar_downscale(tmp_path: Path):
+    pytest.importorskip("cv2")
+    classified, characters_dir, avatars_dir, _ = _setup_match_env(tmp_path, avatar_size=360, seed=3)
+    image_dir = tmp_path / "images"
+    output = tmp_path / "report.json"
+
+    code = main(
+        [
+            "--classified", str(classified),
+            "--characters-dir", str(characters_dir),
+            "--avatars-dir", str(avatars_dir),
+            "--output", str(output),
+            "--image-dir", str(image_dir),
+        ]
+    )
+
+    assert code == 0
+    pngs = list(image_dir.glob("*.png"))
+    assert len(pngs) == 1
+
+    data = np.fromfile(str(pngs[0]), dtype=np.uint8)
+    img = cv2.imdecode(data, cv2.IMREAD_UNCHANGED)
+    assert img.shape == (OUTPUT_BASE_SIZE, OUTPUT_BASE_SIZE, 3)
+
+    # 360 头像应缩放至 256px，贴在右下角
+    expected_size = AVATAR_MAX_SIZE
+    paste_x = OUTPUT_BASE_SIZE - expected_size
+    paste_y = OUTPUT_BASE_SIZE - expected_size
+    avatar_path = avatars_dir / "char_003_kalts.png"
+    avatar_rgba = _read_rgba(avatar_path)
+    avatar_bgr = _composite_on_color(avatar_rgba)
+    scale = AVATAR_MAX_SIZE / 360
+    avatar_scaled = cv2.resize(avatar_bgr, (round(360 * scale), round(360 * scale)))
+    region = img[paste_y:paste_y + expected_size, paste_x:paste_x + expected_size]
+    avatar_diff = cv2.absdiff(region, avatar_scaled)
+    assert int(avatar_diff.sum()) < 2000  # 缩放后近乎一致
+
+
+def test_image_output_skips_failed_and_no_avatar(tmp_path: Path):
+    pytest.importorskip("cv2")
+    characters_dir = tmp_path / "characters"
+    avatars_dir = tmp_path / "avatars"
+    avatar_a = _avatar_image(180, seed=1)
+    _write_image(avatars_dir / "char_003_kalts.png", avatar_a)
+    _write_image(characters_dir / "avg_003_kalts_1" / "avg_003_kalts_1$1.png", _base_with_avatar(avatar_a, (100, 120)))
+    _write_image(characters_dir / "char_011_talula_1" / "char_011_talula_1.png", _base_with_avatar(avatar_a, (0, 0)))
+    classified = tmp_path / "classified.json"
+    _write_classified(
+        classified,
+        {
+            "avg_003_kalts_1": {"status": "ok", "bases": {"avg_003_kalts_1$1.png": {"diff": []}}, "unassigned": [], "sizes": {}},
+            "char_011_talula_1": {"status": "ok", "bases": {"char_011_talula_1.png": {"diff": []}}, "unassigned": [], "sizes": {}},
+        },
+    )
+    image_dir = tmp_path / "images"
+    output = tmp_path / "report.json"
+
+    code = main(
+        [
+            "--classified", str(classified),
+            "--characters-dir", str(characters_dir),
+            "--avatars-dir", str(avatars_dir),
+            "--output", str(output),
+            "--image-dir", str(image_dir),
+        ]
+    )
+
+    assert code == 0
+    pngs = list(image_dir.glob("*.png"))
+    assert len(pngs) == 1   # only the matched avg_003_kalts_1 base; talula has no avatar candidates
+
+
+def test_image_output_disabled_by_default(tmp_path: Path):
+    pytest.importorskip("cv2")
+    classified, characters_dir, avatars_dir, _ = _setup_match_env(tmp_path)
+    output = tmp_path / "report.json"
+
+    code = main(
+        [
+            "--classified", str(classified),
+            "--characters-dir", str(characters_dir),
+            "--avatars-dir", str(avatars_dir),
+            "--output", str(output),
+        ]
+    )
+
+    assert code == 0
+    pngs = list(tmp_path.rglob("*.png"))
+    # 头像源文件本身是 png，排除后应无可视化输出
+    output_pngs = [p for p in pngs if "images" not in p.parts and "avatars" not in p.parts and "characters" not in p.parts]
+    assert output_pngs == []

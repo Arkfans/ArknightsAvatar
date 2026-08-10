@@ -24,6 +24,12 @@ CONFIDENCE_TARGET = 0.9
 MAX_OPTIMIZE_TIMES = 20
 FIND_MAX_OPTIMIZE_TIMES = 20
 
+OUTPUT_BASE_SIZE = 512
+AVATAR_MAX_SIZE = 256
+BOX_COLOR = (0, 0, 255)
+BOX_THICKNESS = 3
+TEXT_COLOR = (0, 0, 255)
+
 AVG_NAME_RE = re.compile(r"^avg_\d+_.+", re.IGNORECASE)
 CHAR_NAME_RE = re.compile(r"^char_\d+_.*", re.IGNORECASE)
 CHAR_SEQ_RE = re.compile(r"^(?:avg|char)_(\d+)_", re.IGNORECASE)
@@ -98,6 +104,103 @@ def _read_bgr(path: Path) -> np.ndarray:
 def _color_proportion(image: np.ndarray, color: tuple[int, int, int]) -> float:
     mask = np.all(image == np.array(color), axis=-1)
     return float(np.sum(mask)) / (image.shape[0] * image.shape[1])
+
+
+def _read_rgba(path: Path) -> np.ndarray:
+    """读取图像并归一化为 4 通道 BGRA（alpha 缺失时补 255），保留原始像素用于显示。"""
+    data = np.fromfile(str(path), dtype=np.uint8)
+    image = cv2.imdecode(data, cv2.IMREAD_UNCHANGED)
+    if image is None:
+        raise ValueError(f"cannot read image: {path}")
+    if image.ndim == 2:
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
+    elif image.shape[2] == 3:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+    return image
+
+
+def _composite_on_color(rgba: np.ndarray, bg: tuple[int, int, int] = (255, 255, 255)) -> np.ndarray:
+    """将 BGRA 图像 alpha 合成到纯色背景上，返回 3 通道 BGR。"""
+    b, g, r, a = cv2.split(rgba)
+    alpha = a.astype(np.float32) / 255.0
+    bg_arr = np.array(bg, dtype=np.float32)
+    blended = cv2.merge([b, g, r]).astype(np.float32) * alpha[:, :, None] + bg_arr * (1.0 - alpha[:, :, None])
+    return blended.clip(0, 255).astype(np.uint8)
+
+
+def render_match_image(
+    base_path: Path,
+    avatar_path: Path,
+    box_norm: list[float],
+    threshold: float,
+    base_size: int = OUTPUT_BASE_SIZE,
+    avatar_max: int = AVATAR_MAX_SIZE,
+) -> np.ndarray:
+    """渲染单张可视化图：512×512 base + 红框 + 匹配分数 + 右下角 overlay 头像。"""
+    base_rgba = _read_rgba(base_path)
+    base_resized = cv2.resize(base_rgba, (base_size, base_size))
+    canvas = _composite_on_color(base_resized, bg=(255, 255, 255))
+
+    if box_norm:
+        x1 = max(0, round(box_norm[0] * base_size))
+        y1 = max(0, round(box_norm[1] * base_size))
+        x2 = min(base_size - 1, round(box_norm[2] * base_size))
+        y2 = min(base_size - 1, round(box_norm[3] * base_size))
+        cv2.rectangle(canvas, (x1, y1), (x2, y2), BOX_COLOR, BOX_THICKNESS)
+        label = f"{threshold:.4f}"
+        anchor_y = y1 - 6 if y1 - 6 >= 16 else y1 + 16
+        cv2.putText(canvas, label, (x1 + 4, anchor_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, TEXT_COLOR, 1, cv2.LINE_AA)
+
+    try:
+        avatar_rgba = _read_rgba(avatar_path)
+        avatar_bgr = _composite_on_color(avatar_rgba, bg=(255, 255, 255))
+    except Exception:  # noqa: BLE001 - 头像不可读时仅返回底图
+        return canvas
+
+    ah, aw = avatar_bgr.shape[:2]
+    if max(ah, aw) > avatar_max:
+        scale = avatar_max / max(ah, aw)
+        avatar_bgr = cv2.resize(avatar_bgr, (round(aw * scale), round(ah * scale)))
+
+    ah, aw = avatar_bgr.shape[:2]
+    paste_x = base_size - aw
+    paste_y = base_size - ah
+    canvas[paste_y:paste_y + ah, paste_x:paste_x + aw] = avatar_bgr
+    return canvas
+
+
+def render_match_images(
+    report: MatchReport,
+    characters_dir: Path,
+    avatars_dir: Path,
+    image_dir: Path,
+    base_size: int = OUTPUT_BASE_SIZE,
+) -> int:
+    """为每个匹配成功的 base 生成可视化 PNG，输出到扁平目录，返回写入数量。"""
+    image_dir.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for name, char in report.characters.items():
+        for base_name, result in char.bases.items():
+            if not result.ok or result.box_norm is None or result.avatar is None or result.threshold is None:
+                continue
+            try:
+                out_name = f"{name}__{Path(base_name).stem}.png"
+                out_path = image_dir / out_name
+                image = render_match_image(
+                    characters_dir / name / base_name,
+                    avatars_dir / result.avatar,
+                    result.box_norm,
+                    result.threshold,
+                    base_size=base_size,
+                )
+                ok, buf = cv2.imencode(".png", image)
+                if not ok:
+                    raise RuntimeError("imencode failed")
+                buf.tofile(str(out_path))
+                count += 1
+            except Exception as error:  # noqa: BLE001 - 单张失败不中断
+                print(f"warning: cannot render {name}/{base_name}: {error}", file=sys.stderr)
+    return count
 
 
 def _prepare_base(path: Path) -> tuple[np.ndarray, tuple[int, int]]:
@@ -502,6 +605,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="include per-offset scale search details for every candidate avatar in the report (default: off)",
     )
+    parser.add_argument(
+        "--image-dir",
+        default=None,
+        help="optional directory for match visualization PNGs (one per matched base; default: off)",
+    )
     return parser
 
 
@@ -574,6 +682,16 @@ def main(argv: list[str] | None = None) -> int:
         with output.open("wt", encoding="utf8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
         print(f"report written: {output}")
+
+    if args.image_dir is not None:
+        image_dir = Path(args.image_dir)
+        img_count = render_match_images(
+            report,
+            Path(args.characters_dir),
+            Path(args.avatars_dir),
+            image_dir,
+        )
+        print(f"images written: {img_count} -> {image_dir}")
     return 0
 
 
