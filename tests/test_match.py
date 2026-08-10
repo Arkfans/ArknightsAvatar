@@ -7,14 +7,23 @@ import pytest
 from PIL import Image, ImageDraw
 
 from npcavatar.match import (
+    BASE_EXTEND_TOP,
+    COARSE_INCREASE,
     CONFIDENCE_TARGET,
     AVATAR_MAX_SIZE,
+    FINE_INCREASE,
+    MIN_AVATAR_SIZE,
     OUTPUT_BASE_SIZE,
     STOP_THRESHOLD,
+    _composite_on_color,
     _avatar_candidates,
     _char_seq,
     _edit_distance,
     _is_target_character,
+    _prepare_avatar,
+    _prepare_base,
+    _read_rgba,
+    _template_match_gray,
     main,
     match_characters,
     template_match,
@@ -46,6 +55,77 @@ def _base_with_avatar(avatar: Image.Image, at: tuple[int, int], size: tuple[int,
     base = Image.new("RGBA", size, (0, 0, 0, 255))
     base.paste(avatar, at, avatar)
     return base
+
+
+def _scaled_base_with_avatar(avatar: Image.Image, scale: float, at: tuple[int, int]) -> Image.Image:
+    """把头像按 scale 缩放后贴到黑色底图上，用于构造需要缩放搜索的匹配场景。"""
+    scaled = avatar.resize(
+        (round(avatar.width * scale), round(avatar.height * scale)), Image.LANCZOS
+    )
+    base = Image.new("RGBA", (1024, 1024), (0, 0, 0, 255))
+    base.paste(scaled, at, scaled)
+    return base
+
+
+def _legacy_1px_search(
+    base: np.ndarray, avatar: np.ndarray, min_avatar_size: int, stop_threshold: float
+) -> tuple[int, float]:
+    """复刻旧版固定 1px 步进搜索（BASE_INCREASE=1），作为自适应步进回归基准。"""
+    ah, aw = avatar.shape[:2]
+
+    def _find(offset: int) -> np.ndarray:
+        scaled = cv2.resize(avatar, (aw + offset, ah + offset))
+        return cv2.matchTemplate(base, scaled, cv2.TM_CCOEFF_NORMED)
+
+    def _valid(offset: int) -> bool:
+        return ah + offset > min_avatar_size and aw + offset > min_avatar_size
+
+    def _optimize(o_offset: int, o_increase: int) -> bool:
+        nonlocal offset, best_offset, best_t
+        times = 10 if best_t > stop_threshold else 50
+        for _ in range(times):
+            o_offset += o_increase
+            if not _valid(o_offset):
+                return False
+            t = float(np.max(_find(o_offset)))
+            if t > best_t:
+                offset = o_offset
+                best_offset = o_offset
+                best_t = t
+                return True
+        return False
+
+    offset = 0
+    best_offset = 0
+    res = _find(0)
+    best_t = float(np.max(res))
+    initial = best_t
+    increase = 1 if float(np.max(_find(1))) > initial else -1
+    if_reversed = False
+
+    while True:
+        offset += increase
+        if not _valid(offset):
+            if not if_reversed and best_t < stop_threshold:
+                if_reversed = True
+                if _optimize(0, -increase):
+                    increase = -increase
+                    continue
+            break
+        t = float(np.max(_find(offset)))
+        if t > best_t:
+            best_t, best_offset = t, offset
+        else:
+            if _optimize(offset, increase):
+                continue
+            if not if_reversed and best_t < stop_threshold:
+                if_reversed = True
+                if _optimize(0, -increase):
+                    increase = -increase
+                    continue
+            break
+
+    return best_offset, best_t
 
 
 def test_name_filtering():
@@ -150,6 +230,59 @@ def test_template_match_located_above_top_edge(tmp_path: Path):
 
     assert threshold > STOP_THRESHOLD
     assert box == (300, -50, 480, 130)
+
+
+def test_adaptive_step_matches_legacy_1px_search(tmp_path: Path):
+    """2px 粗搜 + 1px 微调 + ±1 回查，在多种缩放场景下与原 1px 搜索结果一致。"""
+    for scale in (0.9, 1.0, 1.1, 1.25, 1.3, 1.4):
+        for seed in (1, 2):
+            avatar = _avatar_image(180, seed=seed)
+            avatar_path = tmp_path / f"avatar_{scale}_{seed}.png"
+            base_path = tmp_path / f"base_{scale}_{seed}.png"
+            _write_image(avatar_path, avatar)
+            _write_image(base_path, _scaled_base_with_avatar(avatar, scale, (300, 200)))
+
+            base_gray, _ = _prepare_base(base_path)
+            avatar_gray = _prepare_avatar(avatar_path)
+            threshold, box, _ = _template_match_gray(
+                base_gray, avatar_gray, top_offset=BASE_EXTEND_TOP
+            )
+            new_offset = box[2] - box[0] - avatar_gray.shape[1]
+            legacy_offset, legacy_threshold = _legacy_1px_search(
+                base_gray, avatar_gray, MIN_AVATAR_SIZE, STOP_THRESHOLD
+            )
+
+            assert new_offset == legacy_offset
+            assert threshold == pytest.approx(legacy_threshold, abs=1e-6)
+
+
+def test_adaptive_step_offsets_pattern(tmp_path: Path):
+    """detail 模式下：低于置信阈值用 2px 粗搜、跨阈值后回查 ±1 并转 1px 微调。"""
+    avatar = _avatar_image(180, seed=1)
+    avatar_path = tmp_path / "avatar.png"
+    base_path = tmp_path / "base.png"
+    _write_image(avatar_path, avatar)
+    _write_image(base_path, _scaled_base_with_avatar(avatar, 1.3, (300, 200)))
+
+    base_gray, _ = _prepare_base(base_path)
+    avatar_gray = _prepare_avatar(avatar_path)
+    threshold, _box, offsets = _template_match_gray(
+        base_gray, avatar_gray, top_offset=BASE_EXTEND_TOP, detail=True
+    )
+
+    assert offsets[0].offset == 0
+    assert offsets[0].threshold < CONFIDENCE_TARGET  # 从阈值下出发，触发 2px 粗搜
+    recorded = [record.offset for record in offsets]
+    gaps = [b - a for a, b in zip(recorded, recorded[1:])]
+    assert all(abs(gap) in (COARSE_INCREASE, FINE_INCREASE) for gap in gaps)
+    first_cross = next(
+        i for i, record in enumerate(offsets) if record.threshold >= CONFIDENCE_TARGET
+    )
+    assert all(abs(gap) == COARSE_INCREASE for gap in gaps[:first_cross])
+
+    best = next(record for record in offsets if record.best)
+    assert best.offset - 1 in recorded and best.offset + 1 in recorded
+    assert best.threshold == pytest.approx(threshold)
 
 
 def test_match_report_negative_y_for_above_top_edge(tmp_path: Path):
@@ -497,7 +630,6 @@ def test_image_output_end_to_end(tmp_path: Path):
 
     # 红框应改变底图区域像素（与纯白缩放底图对比）
     base_path = characters_dir / "avg_003_kalts_1" / "avg_003_kalts_1$1.png"
-    from npcavatar.match import _read_rgba, _composite_on_color
     base_rgba = _read_rgba(base_path)
     base_plain = _composite_on_color(cv2.resize(base_rgba, (OUTPUT_BASE_SIZE, OUTPUT_BASE_SIZE)))
     diff = cv2.absdiff(img, base_plain)
