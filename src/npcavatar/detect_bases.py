@@ -1,14 +1,15 @@
-"""High-confidence matched base face detection + visualization.
+"""High-confidence matched base face/head detection + visualization.
 
 Reads an ``_avatar_match.json`` report, selects the bases whose avatar match
-threshold is strictly greater than a cutoff, runs the model-based face
-detector (``npcavatar.detect``, anime-face-detector YOLOv3) on each selected
-base, and writes:
+threshold is strictly greater than a cutoff, runs two detectors on each
+selected base -- the model-based face detector (``npcavatar.detect``,
+anime-face-detector YOLOv3) and the head detector
+(``imgutils.detect.detect_heads``) -- and writes:
 
 1. a JSON report (default ``data/unpacked/_face_detect_matched.json``);
 2. annotated PNGs (default ``data/unpacked/_face_detect_vis/``) showing the
-   avatar match box + threshold (green) and the YOLO face box + confidence
-   (red).
+   avatar match box + threshold (green), the YOLO face box + confidence
+   (red), and the imgutils head box + confidence (blue).
 
 The tool is a standalone CLI (``npcavatar-detect-bases``) and also exposes
 Python functions for pipeline integration. Progress is reported through a
@@ -51,9 +52,11 @@ MATCH_FIELDS = ("avatar", "threshold", "box", "box_norm")
 
 MATCH_BOX_COLOR = (0, 200, 0, 255)  # 绿色：avatar 匹配框（BGRA）
 YOLO_BOX_COLOR = (0, 0, 255, 255)  # 红色：YOLO 人脸框（BGRA）
+HEAD_BOX_COLOR = (255, 0, 0, 255)  # 蓝色：imgutils 头部框（BGRA）
 BOX_THICKNESS = 3
 FONT_SCALE = 0.7
 TEXT_THICKNESS = 2
+DEFAULT_HEAD_CONF = 0.4
 
 
 def _now() -> str:
@@ -82,6 +85,49 @@ def filter_bases(
     return selected
 
 
+def detect_head_top1(
+    image_path: str | Path,
+    *,
+    conf: float = DEFAULT_HEAD_CONF,
+    detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
+) -> dict:
+    """用 ``imgutils.detect.detect_heads`` 对单张图片做 top-1 头部检测。
+
+    detector 为可注入的测试替身（``callable(str) -> [(bbox, label, confidence)]``），
+    默认懒加载真实模型。检测失败不抛出，异常写入 ``head_error``。
+    """
+    result = {
+        "head_detected": False,
+        "head_pos": None,
+        "head_confidence": None,
+        "head_error": None,
+    }
+    try:
+        if detector is not None:
+            detections = detector(str(image_path))
+        else:
+            from imgutils.detect import detect_heads
+
+            detections = detect_heads(str(image_path), conf_threshold=conf)
+    except Exception as exc:  # noqa: BLE001 - 单图失败只记录 error
+        result["head_error"] = f"{type(exc).__name__}: {exc}"
+        return result
+    if not detections:
+        return result
+
+    bbox, _, score = max(detections, key=lambda d: d[2])
+    x0, y0, x1, y1 = (int(round(v)) for v in bbox)
+    result["head_detected"] = True
+    result["head_pos"] = {
+        "x": int(round((x0 + x1) / 2)),
+        "y": int(round((y0 + y1) / 2)),
+        "w": int(round(x1 - x0 + 1)),
+        "h": int(round(y1 - y0 + 1)),
+    }
+    result["head_confidence"] = float(score)
+    return result
+
+
 @dataclass
 class BaseFaceDetection:
     """一张底图的模型识别结果（合并匹配信息）。"""
@@ -94,6 +140,10 @@ class BaseFaceDetection:
     error: str | None
     match: dict[str, Any]
     vis_image: str | None = None
+    head_detected: bool | None = None
+    head_pos: dict[str, int] | None = None
+    head_confidence: float | None = None
+    head_error: str | None = None
 
     def as_dict(self) -> dict:
         result = {
@@ -103,6 +153,10 @@ class BaseFaceDetection:
             "face_pos": self.face_pos,
             "confidence": self.confidence,
             "error": self.error,
+            "head_detected": self.head_detected,
+            "head_pos": self.head_pos,
+            "head_confidence": self.head_confidence,
+            "head_error": self.head_error,
             **self.match,
         }
         if self.vis_image is not None:
@@ -150,19 +204,22 @@ def detect_matched_bases(
     match_file: str | Path | None = None,
     threshold: float = DEFAULT_THRESHOLD,
     conf: float = detect.DEFAULT_CONF,
+    head_conf: float = DEFAULT_HEAD_CONF,
     device: str | None = None,
     limit: int = 0,
     character: str | None = None,
     detector: Callable[[np.ndarray], list[dict]] | None = None,
+    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
     progress: Callable[[int, int, str], None] | None = None,
 ) -> MatchedDetectReport:
     """筛选高置信底图并逐张模型识别人脸，聚合报告。
 
     progress 回调签名 ``(index, total, label)``，index 从 1 开始，label 为
-    ``<角色>/<底图>``。detector 为可注入的测试替身，默认使用懒加载的真实模型。
+    ``<角色>/<底图>``。detector 为可注入的 YOLO 测试替身，head_detector 为可注入的
+    imgutils 头部检测替身，默认分别使用懒加载的真实模型。
     """
     characters_dir = Path(characters_dir)
-    stats = {"filtered": 0, "detected": 0, "not_detected": 0, "errors": 0}
+    stats = {"filtered": 0, "detected": 0, "not_detected": 0, "errors": 0, "heads_detected": 0}
     characters: dict[str, CharacterFaceDetection] = {}
 
     selected = filter_bases(match_report, threshold=threshold, characters_dir=characters_dir)
@@ -176,6 +233,15 @@ def detect_matched_bases(
         if name not in characters:
             characters[name] = CharacterFaceDetection(name=name)
         raw = detect.detect_top1(image_path, device=device, conf=conf, detector=detector)
+        if raw["error"] is None:
+            head = detect_head_top1(image_path, conf=head_conf, detector=head_detector)
+        else:
+            head = {
+                "head_detected": False,
+                "head_pos": None,
+                "head_confidence": None,
+                "head_error": None,
+            }
         match_info = {key: entry.get(key) for key in MATCH_FIELDS}
         characters[name].bases[base_name] = BaseFaceDetection(
             image=str(image_path),
@@ -185,8 +251,14 @@ def detect_matched_bases(
             confidence=raw["confidence"],
             error=raw["error"],
             match=match_info,
+            head_detected=head["head_detected"],
+            head_pos=head["head_pos"],
+            head_confidence=head["head_confidence"],
+            head_error=head["head_error"],
         )
         stats["filtered"] += 1
+        if head["head_detected"]:
+            stats["heads_detected"] += 1
         if raw["error"]:
             stats["errors"] += 1
         elif raw["detected"]:
@@ -242,8 +314,10 @@ def draw_annotation(
     face_pos: dict[str, int] | None,
     confidence: float | None,
     output_path: str | Path,
+    head_pos: dict[str, int] | None = None,
+    head_confidence: float | None = None,
 ) -> None:
-    """在底图上绘制匹配框（绿，标 match 阈值）与人脸框（红，标 yolo 置信度），保存 PNG。"""
+    """在底图上绘制匹配框（绿）、YOLO 人脸框（红）与头部框（蓝），保存 PNG。"""
     canvas = _read_bgra(Path(base_path))
 
     if match_box and len(match_box) == 4:
@@ -259,8 +333,20 @@ def draw_annotation(
         if confidence is not None:
             label_y = y1 - 8 if y1 - 8 >= 20 else y1 + 24
             _put_label(canvas, f"yolo {confidence:.4f}", x1, label_y, YOLO_BOX_COLOR)
-    else:
+
+    if head_pos is not None:
+        x1, y1, x2, y2 = _face_bbox(head_pos)
+        cv2.rectangle(canvas, (x1, y1), (x2, y2), HEAD_BOX_COLOR, BOX_THICKNESS)
+        if head_confidence is not None:
+            label_y = y1 - 8 if y1 - 8 >= 20 else y1 + 24
+            _put_label(canvas, f"head {head_confidence:.4f}", x1, label_y, HEAD_BOX_COLOR)
+
+    if face_pos is None and head_pos is None:
+        _put_label(canvas, "no face / no head", 8, 20, YOLO_BOX_COLOR)
+    elif face_pos is None:
         _put_label(canvas, "no face", 8, 20, YOLO_BOX_COLOR)
+    elif head_pos is None:
+        _put_label(canvas, "no head", 8, 20, YOLO_BOX_COLOR)
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -294,6 +380,8 @@ def render_annotations(
                     det.face_pos,
                     det.confidence,
                     out_path,
+                    det.head_pos,
+                    det.head_confidence,
                 )
                 det.vis_image = str(out_path)
                 count += 1
@@ -306,9 +394,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="npcavatar-detect-bases",
         description=(
-            "Detect faces (top-1, YOLOv3) in bases whose avatar match "
-            "threshold exceeds a cutoff, and write a JSON report plus "
-            "annotated PNGs."
+            "Detect faces (top-1, YOLOv3) and heads (top-1, imgutils) in "
+            "bases whose avatar match threshold exceeds a cutoff, and write "
+            "a JSON report plus annotated PNGs."
         ),
     )
     parser.add_argument(
@@ -334,6 +422,15 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "minimum confidence for a face detection; lower results count as "
             f"not detected (default: {detect.DEFAULT_CONF})"
+        ),
+    )
+    parser.add_argument(
+        "--head-conf",
+        type=float,
+        default=DEFAULT_HEAD_CONF,
+        help=(
+            "minimum confidence for the imgutils head detector; lower "
+            f"results are dropped (default: {DEFAULT_HEAD_CONF})"
         ),
     )
     parser.add_argument(
@@ -366,6 +463,14 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _check_head_deps() -> bool:
+    try:
+        from imgutils.detect import detect_heads  # noqa: F401
+    except Exception:  # noqa: BLE001
+        return False
+    return True
+
+
 def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
     """返回 (progress, close)；优先 tqdm 进度条，缺失时回退为逐条文本。"""
     if tqdm is not None:
@@ -396,10 +501,19 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
+    if not _check_head_deps():
+        print(
+            "error: dghs-imgutils is required (uv sync --extra detect)",
+            file=sys.stderr,
+        )
+        return 1
 
     args = build_parser().parse_args(argv)
     if not 0.0 <= args.conf <= 1.0:
         print(f"error: --conf must be between 0 and 1 (got {args.conf})", file=sys.stderr)
+        return 1
+    if not 0.0 <= args.head_conf <= 1.0:
+        print(f"error: --head-conf must be between 0 and 1 (got {args.head_conf})", file=sys.stderr)
         return 1
     if not 0.0 < args.threshold <= 1.0:
         print(f"error: --threshold must be in (0, 1] (got {args.threshold})", file=sys.stderr)
@@ -441,6 +555,7 @@ def main(argv: list[str] | None = None) -> int:
             match_file=match_path,
             threshold=args.threshold,
             conf=args.conf,
+            head_conf=args.head_conf,
             device=device,
             limit=args.limit,
             character=args.character,
@@ -452,7 +567,8 @@ def main(argv: list[str] | None = None) -> int:
     stats = report.stats
     print(
         f"filtered: {stats['filtered']}  detected: {stats['detected']}  "
-        f"not_detected: {stats['not_detected']}  errors: {stats['errors']}"
+        f"not_detected: {stats['not_detected']}  errors: {stats['errors']}  "
+        f"heads_detected: {stats['heads_detected']}"
     )
 
     payload = report.as_dict()
