@@ -233,6 +233,7 @@ def _template_match_gray(
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     coarse_threshold: float = CONFIDENCE_TARGET,
+    coarse_increase: int = COARSE_INCREASE,
     detail: bool = False,
     top_offset: int = 0,
 ) -> tuple[float, tuple[int, int, int, int], list[OffsetMatch]]:
@@ -242,9 +243,9 @@ def _template_match_gray(
     否则为空列表。坐标以底图原图左上角为原点：top_offset 表示画布顶部相对原图的
     扩展行数，返回的 box 与 offsets.y 统一减去 top_offset，因此扩展区内坐标为负。
 
-    缩放搜索步进自适应：最佳匹配度低于 coarse_threshold 时以 COARSE_INCREASE 粗搜，
-    达标后改用 FINE_INCREASE 微调；粗搜首次跨过阈值时回查最佳 offset 的 ±1 位置，
-    避免 2px 步进跳过奇数偏移的峰值。
+    缩放搜索步进自适应：最佳匹配度低于 coarse_threshold 时以 coarse_increase 步长粗搜，
+    达标后改用 FINE_INCREASE 微调；粗搜首次跨过阈值时按步长 x 回查最佳 offset 的
+    ±1..±(x-1) 位置，避免粗步跳过中间偏移的峰值。
     """
     avatar_h, avatar_w = avatar.shape[:2]
     offsets: list[OffsetMatch] = []
@@ -276,10 +277,10 @@ def _template_match_gray(
     refined = False
 
     def _step() -> int:
-        return COARSE_INCREASE if best_threshold < coarse_threshold else FINE_INCREASE
+        return coarse_increase if best_threshold < coarse_threshold else FINE_INCREASE
 
     def _update_best(o_offset: int, o_res: np.ndarray) -> None:
-        """更新最佳 offset/阈值；首次从阈值下跨到阈值上时，回查最佳位置 ±1。"""
+        """更新最佳 offset/阈值；首次跨阈值时按粗步长回查 ±1..±(coarse_increase-1)。"""
         nonlocal best_offset, best_threshold, res, refined
         crossed = best_threshold < coarse_threshold and float(np.max(o_res)) >= coarse_threshold
         best_offset = o_offset
@@ -287,14 +288,16 @@ def _template_match_gray(
         res = o_res
         if crossed and not refined:
             refined = True
-            for neighbor in (best_offset - 1, best_offset + 1):
-                if not _check_valid_offset(neighbor):
-                    continue
-                neighbor_res = _find(neighbor)
-                if float(np.max(neighbor_res)) > best_threshold:
-                    best_offset = neighbor
-                    best_threshold = float(np.max(neighbor_res))
-                    res = neighbor_res
+            center = best_offset
+            for distance in range(1, coarse_increase):
+                for neighbor in (center - distance, center + distance):
+                    if not _check_valid_offset(neighbor):
+                        continue
+                    neighbor_res = _find(neighbor)
+                    if float(np.max(neighbor_res)) > best_threshold:
+                        best_offset = neighbor
+                        best_threshold = float(np.max(neighbor_res))
+                        res = neighbor_res
 
     def _optimize(o_offset: int, o_increase: int) -> bool:
         nonlocal offset
@@ -355,6 +358,7 @@ def template_match(
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     coarse_threshold: float = CONFIDENCE_TARGET,
+    coarse_increase: int = COARSE_INCREASE,
 ) -> tuple[float, tuple[int, int, int, int]]:
     """对单张底图与单张头像做模板匹配，box 位于底图坐标系（原图顶部 y=0，扩展区为负）。"""
     base, _size = _prepare_base(Path(base_path))
@@ -365,6 +369,7 @@ def template_match(
         min_avatar_size,
         stop_threshold,
         coarse_threshold,
+        coarse_increase,
         top_offset=BASE_EXTEND_TOP,
     )
     return threshold, box
@@ -466,13 +471,15 @@ def match_base(
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     confidence_target: float = CONFIDENCE_TARGET,
+    coarse_increase: int = COARSE_INCREASE,
     detail: bool = False,
 ) -> BaseMatch:
     """用一张底图对多个候选头像匹配，取阈值最高者；坐标换算回底图原始像素。
 
     候选按传入顺序逐个完整匹配，取阈值最高者；某头像阈值高于 confidence_target 时立即采用
     该结果并跳过后续候选（候选级早停）；confidence_target 同时也是每个候选缩放搜索的
-    粗搜/微调切换阈值（低于它用 2px 粗搜，达标后 1px 微调）。顶部扩展区对应原始像素中的负 y。
+    粗搜/微调切换阈值（低于它用 coarse_increase 步长粗搜，达标后 1px 微调）。
+    顶部扩展区对应原始像素中的负 y。
     """
     try:
         base_gray, (width, height) = _prepare_base(base_path)
@@ -492,6 +499,7 @@ def match_base(
             min_avatar_size,
             stop_threshold,
             coarse_threshold=confidence_target,
+            coarse_increase=coarse_increase,
             detail=detail,
             top_offset=BASE_EXTEND_TOP,
         )
@@ -529,6 +537,7 @@ def match_characters(
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     confidence_target: float = CONFIDENCE_TARGET,
+    coarse_increase: int = COARSE_INCREASE,
     detail: bool = False,
     progress: Callable[[int, str], None] | None = None,
 ) -> MatchReport:
@@ -573,6 +582,7 @@ def match_characters(
                     min_avatar_size=min_avatar_size,
                     stop_threshold=stop_threshold,
                     confidence_target=confidence_target,
+                    coarse_increase=coarse_increase,
                     detail=detail,
                 )
                 match.bases[base_name] = result
@@ -656,6 +666,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--coarse-increase",
+        type=int,
+        default=COARSE_INCREASE,
+        help=(
+            f"coarse scale-search step in pixels, >= 2; skipped offsets within ±(step-1) "
+            f"are re-checked after crossing the threshold (default: {COARSE_INCREASE})"
+        ),
+    )
+    parser.add_argument(
         "--detail",
         action="store_true",
         help="include per-offset scale search details for every candidate avatar in the report (default: off)",
@@ -682,6 +701,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     args = build_parser().parse_args(argv)
+    if args.coarse_increase < 2:
+        print(
+            f"error: --coarse-increase must be >= 2 (got {args.coarse_increase})",
+            file=sys.stderr,
+        )
+        return 1
     classified_path = Path(args.classified)
     if not classified_path.is_file():
         print(f"error: classified report not found: {classified_path}", file=sys.stderr)
@@ -714,6 +739,7 @@ def main(argv: list[str] | None = None) -> int:
         min_avatar_size=args.min_avatar_size,
         stop_threshold=args.stop_threshold,
         confidence_target=args.confidence_target,
+        coarse_increase=args.coarse_increase,
         detail=args.detail,
         progress=_on_progress,
     )

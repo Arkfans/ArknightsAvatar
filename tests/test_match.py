@@ -11,7 +11,6 @@ from npcavatar.match import (
     COARSE_INCREASE,
     CONFIDENCE_TARGET,
     AVATAR_MAX_SIZE,
-    FINE_INCREASE,
     MIN_AVATAR_SIZE,
     OUTPUT_BASE_SIZE,
     STOP_THRESHOLD,
@@ -256,8 +255,9 @@ def test_adaptive_step_matches_legacy_1px_search(tmp_path: Path):
             assert threshold == pytest.approx(legacy_threshold, abs=1e-6)
 
 
-def test_adaptive_step_offsets_pattern(tmp_path: Path):
-    """detail 模式下：低于置信阈值用 2px 粗搜、跨阈值后回查 ±1 并转 1px 微调。"""
+@pytest.mark.parametrize("coarse_increase", (COARSE_INCREASE, 3, 4))
+def test_adaptive_step_offsets_pattern(tmp_path: Path, coarse_increase: int):
+    """detail 模式下：低于置信阈值用 coarse_increase 粗搜，跨阈值后按步长回查并转 1px 微调。"""
     avatar = _avatar_image(180, seed=1)
     avatar_path = tmp_path / "avatar.png"
     base_path = tmp_path / "base.png"
@@ -267,22 +267,57 @@ def test_adaptive_step_offsets_pattern(tmp_path: Path):
     base_gray, _ = _prepare_base(base_path)
     avatar_gray = _prepare_avatar(avatar_path)
     threshold, _box, offsets = _template_match_gray(
-        base_gray, avatar_gray, top_offset=BASE_EXTEND_TOP, detail=True
+        base_gray,
+        avatar_gray,
+        top_offset=BASE_EXTEND_TOP,
+        detail=True,
+        coarse_increase=coarse_increase,
     )
 
     assert offsets[0].offset == 0
-    assert offsets[0].threshold < CONFIDENCE_TARGET  # 从阈值下出发，触发 2px 粗搜
+    assert offsets[0].threshold < CONFIDENCE_TARGET  # 从阈值下出发，触发粗搜
     recorded = [record.offset for record in offsets]
     gaps = [b - a for a, b in zip(recorded, recorded[1:])]
-    assert all(abs(gap) in (COARSE_INCREASE, FINE_INCREASE) for gap in gaps)
     first_cross = next(
         i for i, record in enumerate(offsets) if record.threshold >= CONFIDENCE_TARGET
     )
-    assert all(abs(gap) == COARSE_INCREASE for gap in gaps[:first_cross])
+    # 跨阈值前全部为粗步长；跨阈值后按步长回查 ±1..±(x-1)
+    assert all(abs(gap) == coarse_increase for gap in gaps[:first_cross])
+    crossing = offsets[first_cross].offset
+    for distance in range(1, coarse_increase):
+        assert crossing - distance in recorded
+        assert crossing + distance in recorded
 
     best = next(record for record in offsets if record.best)
-    assert best.offset - 1 in recorded and best.offset + 1 in recorded
     assert best.threshold == pytest.approx(threshold)
+
+
+def test_adaptive_step_larger_coarse_matches_legacy(tmp_path: Path):
+    """coarse_increase > 2 时，粗搜 + 按步长回查结果仍与原 1px 搜索一致。"""
+    for coarse_increase in (3, 4):
+        for scale in (1.25, 1.3):
+            for seed in (1, 2):
+                avatar = _avatar_image(180, seed=seed)
+                avatar_path = tmp_path / f"avatar_{coarse_increase}_{scale}_{seed}.png"
+                base_path = tmp_path / f"base_{coarse_increase}_{scale}_{seed}.png"
+                _write_image(avatar_path, avatar)
+                _write_image(base_path, _scaled_base_with_avatar(avatar, scale, (300, 200)))
+
+                base_gray, _ = _prepare_base(base_path)
+                avatar_gray = _prepare_avatar(avatar_path)
+                threshold, box, _ = _template_match_gray(
+                    base_gray,
+                    avatar_gray,
+                    top_offset=BASE_EXTEND_TOP,
+                    coarse_increase=coarse_increase,
+                )
+                new_offset = box[2] - box[0] - avatar_gray.shape[1]
+                legacy_offset, legacy_threshold = _legacy_1px_search(
+                    base_gray, avatar_gray, MIN_AVATAR_SIZE, STOP_THRESHOLD
+                )
+
+                assert new_offset == legacy_offset
+                assert threshold == pytest.approx(legacy_threshold, abs=1e-6)
 
 
 def test_match_report_negative_y_for_above_top_edge(tmp_path: Path):
