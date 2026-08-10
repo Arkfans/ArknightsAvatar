@@ -22,6 +22,7 @@ MATCH_HEIGHT = MATCH_SIZE + BASE_EXTEND_TOP
 COARSE_INCREASE = 2
 FINE_INCREASE = 1
 MIN_AVATAR_SIZE = 130
+MAX_AVATAR_SIZE = 325
 STOP_THRESHOLD = 0.70
 CONFIDENCE_TARGET = 0.85
 MAX_OPTIMIZE_TIMES = 50
@@ -231,6 +232,7 @@ def _template_match_gray(
     base: np.ndarray,
     avatar: np.ndarray,
     min_avatar_size: int = MIN_AVATAR_SIZE,
+    max_avatar_size: int = MAX_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     coarse_threshold: float = CONFIDENCE_TARGET,
     coarse_increase: int = COARSE_INCREASE,
@@ -242,6 +244,9 @@ def _template_match_gray(
     detail 为 True 时，offsets 记录每一次缩放 offset 的匹配明细（分数、位置、尺寸），
     否则为空列表。坐标以底图原图左上角为原点：top_offset 表示画布顶部相对原图的
     扩展行数，返回的 box 与 offsets.y 统一减去 top_offset，因此扩展区内坐标为负。
+
+    缩放范围限制在 (min_avatar_size, max_avatar_size]，即模板短边/长边不超过
+    max_avatar_size，也不低于 min_avatar_size（严格大于）。
 
     缩放搜索步进自适应：最佳匹配度低于 coarse_threshold 时以 coarse_increase 步长粗搜，
     达标后改用 FINE_INCREASE 微调；粗搜首次跨过阈值时按步长 x 回查最佳 offset 的
@@ -267,7 +272,10 @@ def _template_match_gray(
         return result
 
     def _check_valid_offset(offset: int) -> bool:
-        return avatar_h + offset > min_avatar_size and avatar_w + offset > min_avatar_size
+        return (
+            min_avatar_size < avatar_h + offset <= max_avatar_size
+            and min_avatar_size < avatar_w + offset <= max_avatar_size
+        )
 
     offset = 0
     best_offset = 0
@@ -356,6 +364,7 @@ def template_match(
     base_path: Path | str,
     avatar_path: Path | str,
     min_avatar_size: int = MIN_AVATAR_SIZE,
+    max_avatar_size: int = MAX_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     coarse_threshold: float = CONFIDENCE_TARGET,
     coarse_increase: int = COARSE_INCREASE,
@@ -367,6 +376,7 @@ def template_match(
         base,
         avatar,
         min_avatar_size,
+        max_avatar_size,
         stop_threshold,
         coarse_threshold,
         coarse_increase,
@@ -469,6 +479,7 @@ def match_base(
     avatar_paths: Sequence[str],
     avatars_dir: Path,
     min_avatar_size: int = MIN_AVATAR_SIZE,
+    max_avatar_size: int = MAX_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     confidence_target: float = CONFIDENCE_TARGET,
     coarse_increase: int = COARSE_INCREASE,
@@ -497,6 +508,7 @@ def match_base(
             base_gray,
             avatar_gray,
             min_avatar_size,
+            max_avatar_size,
             stop_threshold,
             coarse_threshold=confidence_target,
             coarse_increase=coarse_increase,
@@ -535,6 +547,7 @@ def match_characters(
     limit: int = 0,
     character: str | None = None,
     min_avatar_size: int = MIN_AVATAR_SIZE,
+    max_avatar_size: int = MAX_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     confidence_target: float = CONFIDENCE_TARGET,
     coarse_increase: int = COARSE_INCREASE,
@@ -580,6 +593,7 @@ def match_characters(
                     candidates,
                     avatars_dir,
                     min_avatar_size=min_avatar_size,
+                    max_avatar_size=max_avatar_size,
                     stop_threshold=stop_threshold,
                     confidence_target=confidence_target,
                     coarse_increase=coarse_increase,
@@ -651,6 +665,12 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"minimum template size during scale search (default: {MIN_AVATAR_SIZE})",
     )
     parser.add_argument(
+        "--max-avatar-size",
+        type=int,
+        default=MAX_AVATAR_SIZE,
+        help=f"maximum template size during scale search (default: {MAX_AVATAR_SIZE})",
+    )
+    parser.add_argument(
         "--stop-threshold",
         type=float,
         default=STOP_THRESHOLD,
@@ -707,6 +727,13 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
+    if args.min_avatar_size >= args.max_avatar_size:
+        print(
+            f"error: --min-avatar-size ({args.min_avatar_size}) must be "
+            f"less than --max-avatar-size ({args.max_avatar_size})",
+            file=sys.stderr,
+        )
+        return 1
     classified_path = Path(args.classified)
     if not classified_path.is_file():
         print(f"error: classified report not found: {classified_path}", file=sys.stderr)
@@ -737,6 +764,7 @@ def main(argv: list[str] | None = None) -> int:
         limit=args.limit,
         character=args.character,
         min_avatar_size=args.min_avatar_size,
+        max_avatar_size=args.max_avatar_size,
         stop_threshold=args.stop_threshold,
         confidence_target=args.confidence_target,
         coarse_increase=args.coarse_increase,

@@ -84,7 +84,8 @@ uv run npcavatar-match
 候选头像按“角色名去掉末尾 `_<数字>` 变体编号后与头像基名的编辑距离”升序匹配，
 同距离按文件名稳定排序；某个候选在整次缩放搜索后阈值高于 `--confidence-target`
 即采用该结果并跳过后续候选（候选级早停）。
-可调参数：`--min-avatar-size`（默认 130）、`--stop-threshold`（默认 0.85）、
+可调参数：`--min-avatar-size`（默认 130）、`--max-avatar-size`（默认 325，
+缩放搜索时模板最大边长不超过该值）、`--stop-threshold`（默认 0.85）、
 `--confidence-target`（默认 0.9）、`--limit`、`--character <角色名>`
 （只处理指定角色，需与分类报告中的角色名完全一致）、`--detail`
 （输出逐 offset 的详细匹配情况）。

@@ -11,6 +11,7 @@ from npcavatar.match import (
     COARSE_INCREASE,
     CONFIDENCE_TARGET,
     AVATAR_MAX_SIZE,
+    MAX_AVATAR_SIZE,
     MIN_AVATAR_SIZE,
     OUTPUT_BASE_SIZE,
     STOP_THRESHOLD,
@@ -318,6 +319,46 @@ def test_adaptive_step_larger_coarse_matches_legacy(tmp_path: Path):
 
                 assert new_offset == legacy_offset
                 assert threshold == pytest.approx(legacy_threshold, abs=1e-6)
+
+
+def test_scale_search_capped_at_max_avatar_size(tmp_path: Path):
+    """缩放搜索的模板边长不超过 MAX_AVATAR_SIZE，即使底图中目标更大。"""
+    avatar = _avatar_image(180, seed=1)
+    avatar_path = tmp_path / "avatar.png"
+    base_path = tmp_path / "base.png"
+    _write_image(avatar_path, avatar)
+    # 底图中的头像为 180 * 1.9 = 342px，超过 325px 上限
+    _write_image(base_path, _scaled_base_with_avatar(avatar, 1.9, (300, 200)))
+
+    base_gray, _ = _prepare_base(base_path)
+    avatar_gray = _prepare_avatar(avatar_path)
+    _threshold, box, _offsets = _template_match_gray(
+        base_gray, avatar_gray, top_offset=BASE_EXTEND_TOP
+    )
+
+    avatar_h, avatar_w = avatar_gray.shape[:2]
+    best_offset = box[2] - box[0] - avatar_w
+    assert MIN_AVATAR_SIZE < avatar_h + best_offset <= MAX_AVATAR_SIZE
+    assert MIN_AVATAR_SIZE < avatar_w + best_offset <= MAX_AVATAR_SIZE
+
+    # 若不设上限，旧版 1px 搜索会继续放大到 ~342px，因此结果应显著小于旧版 offset
+    legacy_offset, _ = _legacy_1px_search(
+        base_gray, avatar_gray, MIN_AVATAR_SIZE, STOP_THRESHOLD
+    )
+    assert best_offset < legacy_offset
+
+
+def test_cli_rejects_max_avatar_size_not_greater_than_min(tmp_path: Path, capsys: pytest.CaptureFixture):
+    """--max-avatar-size 必须大于 --min-avatar-size，否则报错退出。"""
+    code = main(
+        [
+            "--classified", str(tmp_path / "missing.json"),
+            "--min-avatar-size", "325",
+            "--max-avatar-size", "325",
+        ]
+    )
+    assert code == 1
+    assert "--min-avatar-size" in capsys.readouterr().err
 
 
 def test_match_report_negative_y_for_above_top_edge(tmp_path: Path):
