@@ -64,15 +64,27 @@ uv run npcavatar-sample-bases
 # 冒烟：只处理前 20 个角色，输出到 stdout
 uv run npcavatar-match --limit 20 --output -
 
+# 只匹配指定角色
+uv run npcavatar-match --character avg_003_kalts_1
+
 # 全量匹配
 uv run npcavatar-match
 ```
 
 输出语义：`characters.<name>.bases.<底图>` = `{avatar, threshold, box, box_norm}`，
 其中 `box` 为头像在底图原始像素中的包围盒 `[x1, y1, x2, y2]`，`box_norm` 为 0~1 归一化坐标；
+加 `--detail` 后每个底图还会带 `offsets`，按候选头像列出缩放搜索中每一次 offset
+的 `{offset, size, threshold, x, y, best}`（`x/y` 为 MATCH_SIZE 坐标系中的左上角，
+`best` 标记最终选中的 offset）。
 无候选头像的角色记为 `no_avatar`，全部底图失败记为 `failed`，阈值低于
 `--stop-threshold` 的底图计入统计 `low_confidence`。
-可调参数：`--min-avatar-size`（默认 130）、`--stop-threshold`（默认 0.6）、`--limit`。
+候选头像按“角色名去掉末尾 `_<数字>` 变体编号后与头像基名的编辑距离”升序匹配，
+同距离按文件名稳定排序；某个候选在整次缩放搜索后阈值高于 `--confidence-target`
+即采用该结果并跳过后续候选（候选级早停）。
+可调参数：`--min-avatar-size`（默认 130）、`--stop-threshold`（默认 0.85）、
+`--confidence-target`（默认 0.9）、`--limit`、`--character <角色名>`
+（只处理指定角色，需与分类报告中的角色名完全一致）、`--detail`
+（输出逐 offset 的详细匹配情况）。
 
 ## 底图抽样（独立工具）
 

@@ -19,9 +19,10 @@ except ImportError:  # pragma: no cover - optional dependency
 MATCH_SIZE = 1024
 BASE_INCREASE = 1
 MIN_AVATAR_SIZE = 130
-STOP_THRESHOLD = 0.6
-MAX_OPTIMIZE_TIMES = 50
-FIND_MAX_OPTIMIZE_TIMES = 10
+STOP_THRESHOLD = 0.85
+CONFIDENCE_TARGET = 0.9
+MAX_OPTIMIZE_TIMES = 20
+FIND_MAX_OPTIMIZE_TIMES = 20
 
 AVG_NAME_RE = re.compile(r"^avg_\d+_.+", re.IGNORECASE)
 CHAR_NAME_RE = re.compile(r"^char_\d+_.*", re.IGNORECASE)
@@ -39,12 +40,37 @@ def _char_seq(name: str) -> str | None:
     return mm.group(1) if mm else None
 
 
-def _avatar_candidates(avatars_dir: Path, seq: str) -> list[str]:
-    """avatars 目录下所有 char_<seq>_* 头像文件名（排序稳定）。"""
+def _edit_distance(a: str, b: str) -> int:
+    """标准 Levenshtein 编辑距离，小写比较。"""
+    a = a.lower()
+    b = b.lower()
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        curr = [i]
+        for j, cb in enumerate(b, 1):
+            curr.append(min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + int(ca != cb)))
+        prev = curr
+    return prev[-1]
+
+
+def _avatar_candidates(
+    avatars_dir: Path, seq: str, character: str | None = None
+) -> list[str]:
+    """avatars 目录下所有 char_<seq>_* 头像文件名。
+
+    默认按文件名稳定排序；传入 character 时，先去掉其末尾的 _<数字> 变体编号，
+    再与头像基名（去 .png、忽略大小写）计算编辑距离，按距离升序优先匹配。
+    """
     if not avatars_dir.is_dir():
         return []
     pattern = re.compile(rf"^char_{re.escape(seq)}_", re.IGNORECASE)
-    return sorted(p.name for p in avatars_dir.glob("*.png") if p.is_file() and pattern.match(p.name))
+    names = sorted(
+        p.name for p in avatars_dir.glob("*.png") if p.is_file() and pattern.match(p.name)
+    )
+    if character is None:
+        return names
+    key = re.sub(r"_\d+$", "", character).lower()
+    return sorted(names, key=lambda n: (_edit_distance(key, Path(n).stem), n))
 
 
 def _read_bgr(path: Path) -> np.ndarray:
@@ -93,13 +119,31 @@ def _template_match_gray(
     avatar: np.ndarray,
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
-) -> tuple[float, tuple[int, int, int, int]]:
-    """移植自旧版：TM_CCOEFF_NORMED + 模板缩放搜索，返回 (threshold, box)。"""
+    detail: bool = False,
+) -> tuple[float, tuple[int, int, int, int], list[OffsetMatch]]:
+    """移植自旧版：TM_CCOEFF_NORMED + 模板缩放搜索，返回 (threshold, box, offsets)。
+
+    detail 为 True 时，offsets 记录每一次缩放 offset 的匹配明细（分数、位置、尺寸），
+    否则为空列表。
+    """
     avatar_h, avatar_w = avatar.shape[:2]
+    offsets: list[OffsetMatch] = []
 
     def _find(offset: int) -> np.ndarray:
         scaled = cv2.resize(avatar, (avatar_w + offset, avatar_h + offset))
-        return cv2.matchTemplate(base, scaled, cv2.TM_CCOEFF_NORMED)
+        result = cv2.matchTemplate(base, scaled, cv2.TM_CCOEFF_NORMED)
+        if detail and all(record.offset != offset for record in offsets):
+            y, x = np.unravel_index(int(np.argmax(result)), result.shape)
+            offsets.append(
+                OffsetMatch(
+                    offset=offset,
+                    size=[avatar_w + offset, avatar_h + offset],
+                    threshold=float(np.max(result)),
+                    x=int(x),
+                    y=int(y),
+                )
+            )
+        return result
 
     def _check_valid_offset(offset: int) -> bool:
         return avatar_h + offset > min_avatar_size and avatar_w + offset > min_avatar_size
@@ -155,7 +199,14 @@ def _template_match_gray(
     y, x = np.unravel_index(int(np.argmax(res)), res.shape)
     w = avatar_w + best_offset
     h = avatar_h + best_offset
-    return best_threshold, (int(x), int(y), int(x + w), int(y + h))
+    if detail:
+        best_record = None
+        for record in offsets:
+            if record.offset == best_offset:
+                best_record = record
+        if best_record is not None:
+            best_record.best = True
+    return best_threshold, (int(x), int(y), int(x + w), int(y + h)), offsets
 
 
 def template_match(
@@ -167,7 +218,30 @@ def template_match(
     """对单张底图与单张头像做模板匹配，box 位于 MATCH_SIZE 坐标系。"""
     base, _size = _prepare_base(Path(base_path))
     avatar = _prepare_avatar(Path(avatar_path))
-    return _template_match_gray(base, avatar, min_avatar_size, stop_threshold)
+    threshold, box, _offsets = _template_match_gray(base, avatar, min_avatar_size, stop_threshold)
+    return threshold, box
+
+
+@dataclass
+class OffsetMatch:
+    """一次缩放 offset 的匹配明细；坐标位于 MATCH_SIZE 坐标系。"""
+
+    offset: int
+    size: list[int]
+    threshold: float
+    x: int
+    y: int
+    best: bool = False
+
+    def as_dict(self) -> dict:
+        return {
+            "offset": self.offset,
+            "size": self.size,
+            "threshold": self.threshold,
+            "x": self.x,
+            "y": self.y,
+            "best": self.best,
+        }
 
 
 @dataclass
@@ -179,6 +253,7 @@ class BaseMatch:
     box: list[int] | None = None
     box_norm: list[float] | None = None
     error: str | None = None
+    offsets: dict[str, list[OffsetMatch]] | None = None
 
     @property
     def ok(self) -> bool:
@@ -187,12 +262,18 @@ class BaseMatch:
     def as_dict(self) -> dict:
         if self.error is not None:
             return {"error": self.error}
-        return {
+        result = {
             "avatar": self.avatar,
             "threshold": self.threshold,
             "box": self.box,
             "box_norm": self.box_norm,
         }
+        if self.offsets is not None:
+            result["offsets"] = {
+                name: [record.as_dict() for record in records]
+                for name, records in self.offsets.items()
+            }
+        return result
 
 
 @dataclass
@@ -236,22 +317,35 @@ def match_base(
     avatars_dir: Path,
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
+    confidence_target: float = CONFIDENCE_TARGET,
+    detail: bool = False,
 ) -> BaseMatch:
-    """用一张底图对多个候选头像匹配，取阈值最高者；坐标换算回底图原始像素。"""
+    """用一张底图对多个候选头像匹配，取阈值最高者；坐标换算回底图原始像素。
+
+    候选按传入顺序逐个完整匹配，某头像阈值高于 confidence_target 时立即采用
+    该结果并跳过后续候选（候选级早停）。
+    """
     try:
         base_gray, (width, height) = _prepare_base(base_path)
     except Exception as error:  # noqa: BLE001 - 单张底图失败不中断整体
         return BaseMatch(error=f"{type(error).__name__}: {error}")
 
     best: tuple[float, tuple[int, int, int, int], str] | None = None
+    offsets: dict[str, list[OffsetMatch]] | None = {} if detail else None
     for avatar_name in avatar_paths:
         try:
             avatar_gray = _prepare_avatar(avatars_dir / avatar_name)
         except Exception:  # noqa: BLE001 - 单个头像不可读时跳过
             continue
-        threshold, box = _template_match_gray(base_gray, avatar_gray, min_avatar_size, stop_threshold)
+        threshold, box, candidate_offsets = _template_match_gray(
+            base_gray, avatar_gray, min_avatar_size, stop_threshold, detail=detail
+        )
+        if offsets is not None:
+            offsets[avatar_name] = candidate_offsets
         if best is None or threshold > best[0]:
             best = (threshold, box, avatar_name)
+        if threshold > confidence_target:
+            break
 
     if best is None:
         return BaseMatch(error="no readable avatar")
@@ -261,7 +355,13 @@ def match_base(
     sy = height / MATCH_SIZE
     box_orig = [round(box[0] * sx), round(box[1] * sy), round(box[2] * sx), round(box[3] * sy)]
     box_norm = [round(v / MATCH_SIZE, 6) for v in box]
-    return BaseMatch(avatar=avatar_name, threshold=threshold, box=box_orig, box_norm=box_norm)
+    return BaseMatch(
+        avatar=avatar_name,
+        threshold=threshold,
+        box=box_orig,
+        box_norm=box_norm,
+        offsets=offsets,
+    )
 
 
 def match_characters(
@@ -270,11 +370,14 @@ def match_characters(
     avatars_dir: Path,
     classified_path: Path | None = None,
     limit: int = 0,
+    character: str | None = None,
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
+    confidence_target: float = CONFIDENCE_TARGET,
+    detail: bool = False,
     progress: Callable[[int, str], None] | None = None,
 ) -> MatchReport:
-    """遍历分类报告中符合条件的角色并匹配其底图，聚合统计。"""
+    """遍历分类报告中符合条件的角色并匹配其底图，聚合统计；指定 character 时只处理该角色。"""
     stats = {
         "total": 0,
         "ok": 0,
@@ -290,13 +393,15 @@ def match_characters(
     for name, item in classified.get("characters", {}).items():
         if not _is_target_character(name):
             continue
+        if character is not None and name != character:
+            continue
         if limit and stats["total"] >= limit:
             break
         stats["total"] += 1
 
         bases = item.get("bases") or {}
         seq = _char_seq(name)
-        candidates = _avatar_candidates(avatars_dir, seq) if seq else []
+        candidates = _avatar_candidates(avatars_dir, seq, name) if seq else []
         match = CharacterMatch(name=name, status="ok", candidates=candidates)
 
         stats["base_files"] += len(bases)
@@ -312,6 +417,8 @@ def match_characters(
                     avatars_dir,
                     min_avatar_size=min_avatar_size,
                     stop_threshold=stop_threshold,
+                    confidence_target=confidence_target,
+                    detail=detail,
                 )
                 match.bases[base_name] = result
                 if result.ok:
@@ -368,6 +475,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="only process the first N matched characters (default: 0 = all)",
     )
     parser.add_argument(
+        "--character",
+        default=None,
+        help="only process the specified character name, e.g. avg_003_kalts_1 (default: all)",
+    )
+    parser.add_argument(
         "--min-avatar-size",
         type=int,
         default=MIN_AVATAR_SIZE,
@@ -378,6 +490,17 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=STOP_THRESHOLD,
         help=f"threshold guiding search direction; results below it count as low confidence (default: {STOP_THRESHOLD})",
+    )
+    parser.add_argument(
+        "--confidence-target",
+        type=float,
+        default=CONFIDENCE_TARGET,
+        help=f"stop matching further candidate avatars once one reaches this threshold (default: {CONFIDENCE_TARGET})",
+    )
+    parser.add_argument(
+        "--detail",
+        action="store_true",
+        help="include per-offset scale search details for every candidate avatar in the report (default: off)",
     )
     return parser
 
@@ -406,6 +529,17 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError) as error:
         print(f"error: cannot read {classified_path}: {error}", file=sys.stderr)
         return 1
+    if args.character is not None:
+        if args.character not in (classified.get("characters") or {}):
+            print(f"error: character not found in {classified_path}: {args.character}", file=sys.stderr)
+            return 1
+        if not _is_target_character(args.character):
+            print(
+                f"error: {args.character} is not a matchable name "
+                f"(expected avg_<id>_... or char_<id>_...)",
+                file=sys.stderr,
+            )
+            return 1
 
     report = match_characters(
         classified,
@@ -413,8 +547,11 @@ def main(argv: list[str] | None = None) -> int:
         Path(args.avatars_dir),
         classified_path=classified_path,
         limit=args.limit,
+        character=args.character,
         min_avatar_size=args.min_avatar_size,
         stop_threshold=args.stop_threshold,
+        confidence_target=args.confidence_target,
+        detail=args.detail,
         progress=_on_progress,
     )
     stats = report.stats
