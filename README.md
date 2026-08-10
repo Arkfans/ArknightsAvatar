@@ -122,7 +122,7 @@ uv run npcavatar-sample-bases --classified data/unpacked/_characters_classified.
 
 `npcavatar-detect` 使用 anime-face-detector 的 YOLOv3 人脸检测器（纯检测，
 不加载关键点模型），对每张图片只输出**最高置信度**的一个结果：`face_pos`
-（脸部中心 + 尺寸 `{x, y, w, h}`，原始像素、四舍五入）与 `confidence`。
+（左上角 + 尺寸 `{x, y, w, h}`，原始像素、四舍五入）与 `confidence`。
 置信度低于 `--conf`（默认 0.3）视为未检出。该工具未接入 fetch/unpack 主流程，
 用于为后续头像提取（goal.md 步骤 3）的模型识别接口提供识别结果；设备默认 auto
 （有 CUDA 用 GPU，否则 CPU），权重由 anime-face-detector 自动下载并缓存。
@@ -182,7 +182,7 @@ uv run npcavatar-detect-bases --character avg_003_kalts_1 --device auto
 characters}`；`characters.<角色>.bases.<底图>` 为
 `{image, avatar, threshold, box, box_norm, image_size, detected, face_pos,
 confidence, error}`，其中 `avatar/threshold/box/box_norm` 来自匹配报告，
-`face_pos/confidence` 为模型识别结果（`face_pos` 为脸部中心 + 尺寸
+`face_pos/confidence` 为模型识别结果（`face_pos` 为左上角 + 尺寸
 `{x, y, w, h}`，原始像素），`error` 非空表示读图失败或检测异常；渲染成功时
 另附 `vis_image`。`stats` 为 `{filtered, detected, not_detected, errors}`，
 `filtered` 表示实际处理的底图数（`--limit`/`--character` 后）。

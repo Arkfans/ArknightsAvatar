@@ -81,7 +81,7 @@ def _stub_top1(image_path, **kwargs):
         "image": path,
         "image_size": [100, 100],
         "detected": True,
-        "face_pos": {"x": 50, "y": 60, "w": 81, "h": 81},
+        "face_pos": {"x": 10, "y": 20, "w": 81, "h": 81},
         "confidence": 0.9,
         "error": None,
     }
@@ -91,7 +91,7 @@ def _stub_head_top1(image_path, *, conf=detect_bases.DEFAULT_HEAD_CONF, detector
     """CLI 测试用的 detect_head_top1 替身，不依赖真实模型。"""
     return {
         "head_detected": True,
-        "head_pos": {"x": 50, "y": 40, "w": 60, "h": 60},
+        "head_pos": {"x": 20, "y": 10, "w": 60, "h": 60},
         "head_confidence": 0.8,
         "head_error": None,
     }
@@ -188,7 +188,7 @@ def test_detect_matched_bases_report_and_stats(workdir: Path):
     assert list(report.characters) == ["avg_001_a_1", "avg_002_b_1"]
     item = report.characters["avg_001_a_1"].bases["a.png"]
     assert item.image_size == [100, 100]
-    assert item.face_pos == {"x": 50, "y": 60, "w": 81, "h": 81}
+    assert item.face_pos == {"x": 10, "y": 20, "w": 81, "h": 81}
 
     payload = report.as_dict()
     entry = payload["characters"]["avg_001_a_1"]["bases"]["a.png"]
@@ -198,7 +198,7 @@ def test_detect_matched_bases_report_and_stats(workdir: Path):
     assert entry["detected"] is True
     assert entry["confidence"] == 0.9
     assert entry["head_detected"] is True
-    assert entry["head_pos"] == {"x": 35, "y": 35, "w": 51, "h": 51}
+    assert entry["head_pos"] == {"x": 10, "y": 10, "w": 51, "h": 51}
     assert entry["head_confidence"] == 0.8
     assert entry["head_error"] is None
     assert "vis_image" not in entry
@@ -310,7 +310,7 @@ def test_draw_annotation_creates_png(workdir: Path):
         base,
         [10, 20, 90, 100],
         0.96,
-        {"x": 50, "y": 60, "w": 81, "h": 81},
+        {"x": 10, "y": 20, "w": 81, "h": 81},
         0.92,
         out,
     )
@@ -334,7 +334,7 @@ def test_draw_annotation_draws_head_box_blue(workdir: Path):
         None,
         None,
         out,
-        {"x": 50, "y": 50, "w": 41, "h": 41},
+        {"x": 29, "y": 29, "w": 41, "h": 41},
         0.85,
     )
 
@@ -358,7 +358,7 @@ def test_detect_head_top1_picks_highest_confidence():
 
     assert result == {
         "head_detected": True,
-        "head_pos": {"x": 50, "y": 50, "w": 61, "h": 61},
+        "head_pos": {"x": 20, "y": 20, "w": 61, "h": 61},
         "head_confidence": 0.9,
         "head_error": None,
     }
@@ -562,7 +562,7 @@ def test_cli_head_conf_flag_and_report_fields(cli_env, workdir: Path):
     payload = json.loads(output.read_text(encoding="utf8"))
     entry = payload["characters"]["avg_001_a_1"]["bases"]["a.png"]
     assert entry["head_detected"] is True
-    assert entry["head_pos"] == {"x": 50, "y": 40, "w": 60, "h": 60}
+    assert entry["head_pos"] == {"x": 20, "y": 10, "w": 60, "h": 60}
     assert entry["head_confidence"] == 0.8
     assert payload["stats"]["heads_detected"] == 1
 

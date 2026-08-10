@@ -3,7 +3,7 @@
 Ports the box-only path from NpcAvatarTest's face_detection.py: only the
 YOLOv3 face detector is loaded (no HRNetV2 keypoint model), and per image
 only the highest-confidence detection is kept, reported as face_pos
-(center + size {x, y, w, h}) plus confidence.
+(top-left + size {x, y, w, h}) plus confidence.
 
 The module is a standalone tool (npcavatar-detect) and also exposes Python
 functions for later pipeline integration (goal.md step 3, model recognition).
@@ -162,10 +162,10 @@ def _clip_bbox(
 
 
 def _bbox_to_face_pos(x0: int, y0: int, x1: int, y1: int) -> dict[str, int]:
-    """由裁剪后的检测框推导 face_pos：中心点 + 尺寸（原始像素，四舍五入）。"""
+    """由裁剪后的检测框推导 face_pos：左上角 + 尺寸（原始像素，四舍五入）。"""
     return {
-        "x": int(round((x0 + x1) / 2)),
-        "y": int(round((y0 + y1) / 2)),
+        "x": int(round(x0)),
+        "y": int(round(y0)),
         "w": int(round(x1 - x0 + 1)),
         "h": int(round(y1 - y0 + 1)),
     }

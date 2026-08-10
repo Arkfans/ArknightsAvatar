@@ -32,7 +32,7 @@ def _stub_top1(image_path, **kwargs):
         "image": path,
         "image_size": [100, 100],
         "detected": True,
-        "face_pos": {"x": 50, "y": 60, "w": 81, "h": 81},
+        "face_pos": {"x": 10, "y": 20, "w": 81, "h": 81},
         "confidence": 0.9,
         "error": None,
     }
@@ -56,9 +56,9 @@ def test_clip_bbox():
 
 
 def test_bbox_to_face_pos():
-    assert detect._bbox_to_face_pos(10, 20, 90, 100) == {"x": 50, "y": 60, "w": 81, "h": 81}
-    assert detect._bbox_to_face_pos(0, 0, 2, 2) == {"x": 1, "y": 1, "w": 3, "h": 3}
-    assert detect._bbox_to_face_pos(3, 4, 9, 12) == {"x": 6, "y": 8, "w": 7, "h": 9}
+    assert detect._bbox_to_face_pos(10, 20, 90, 100) == {"x": 10, "y": 20, "w": 81, "h": 81}
+    assert detect._bbox_to_face_pos(0, 0, 2, 2) == {"x": 0, "y": 0, "w": 3, "h": 3}
+    assert detect._bbox_to_face_pos(3, 4, 9, 12) == {"x": 3, "y": 4, "w": 7, "h": 9}
 
 
 def test_detect_top1_picks_highest_confidence(tmp_path: Path):
@@ -71,7 +71,7 @@ def test_detect_top1_picks_highest_confidence(tmp_path: Path):
     )
     assert result["detected"] is True
     assert result["confidence"] == 0.9
-    assert result["face_pos"] == {"x": 50, "y": 60, "w": 61, "h": 61}
+    assert result["face_pos"] == {"x": 20, "y": 30, "w": 61, "h": 61}
     assert result["image_size"] == [100, 100]
     assert result["error"] is None
 
@@ -108,7 +108,7 @@ def test_detect_top1_clips_out_of_bounds(tmp_path: Path):
         detector=_fake_detector((95, 95, 120, 130, 0.9)),
     )
     assert result["detected"] is True
-    assert result["face_pos"] == {"x": 98, "y": 98, "w": 6, "h": 6}
+    assert result["face_pos"] == {"x": 95, "y": 95, "w": 6, "h": 6}
 
 
 def test_detect_top1_missing_file(tmp_path: Path):
@@ -151,7 +151,7 @@ def test_detect_characters_report_and_stats(tmp_path: Path):
     assert list(report.characters) == ["avg_003_kalts_1", "avg_007_closre_1"]
     item = report.characters["avg_003_kalts_1"].images["avg_003_kalts_1$1.png"]
     assert item.image_size == [100, 100]
-    assert item.face_pos == {"x": 50, "y": 60, "w": 81, "h": 81}
+    assert item.face_pos == {"x": 10, "y": 20, "w": 81, "h": 81}
 
     payload = report.as_dict()
     assert payload["characters_dir"] == str(characters_dir)
@@ -285,7 +285,7 @@ def test_cli_single_image_mode(cli_env, tmp_path: Path):
     payload = json.loads(output.read_text(encoding="utf8"))
     assert payload["stats"] == {"images": 1, "detected": 1, "not_detected": 0, "errors": 0}
     assert str(image) in payload["images"]
-    assert payload["images"][str(image)]["face_pos"] == {"x": 50, "y": 60, "w": 81, "h": 81}
+    assert payload["images"][str(image)]["face_pos"] == {"x": 10, "y": 20, "w": 81, "h": 81}
 
 
 def test_cli_invalid_device(cli_env):

@@ -119,8 +119,8 @@ def detect_head_top1(
     x0, y0, x1, y1 = (int(round(v)) for v in bbox)
     result["head_detected"] = True
     result["head_pos"] = {
-        "x": int(round((x0 + x1) / 2)),
-        "y": int(round((y0 + y1) / 2)),
+        "x": int(round(x0)),
+        "y": int(round(y0)),
         "w": int(round(x1 - x0 + 1)),
         "h": int(round(y1 - y0 + 1)),
     }
@@ -292,10 +292,10 @@ def _read_bgra(path: Path) -> np.ndarray:
 
 
 def _face_bbox(face_pos: dict[str, int]) -> tuple[int, int, int, int]:
-    """由 face_pos（中心 + 宽高）反推检测框 [x0, y0, x1, y1]，与存储结果一致。"""
+    """由 face_pos（左上角 + 宽高）反推检测框 [x0, y0, x1, y1]，与存储结果一致。"""
     x, y, w, h = face_pos["x"], face_pos["y"], face_pos["w"], face_pos["h"]
-    x0 = x - w // 2
-    y0 = y - h // 2
+    x0 = x
+    y0 = y
     return x0, y0, x0 + w - 1, y0 + h - 1
 
 
