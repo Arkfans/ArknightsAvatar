@@ -72,9 +72,12 @@ uv run npcavatar-match
 ```
 
 输出语义：`characters.<name>.bases.<底图>` = `{avatar, threshold, box, box_norm}`，
-其中 `box` 为头像在底图原始像素中的包围盒 `[x1, y1, x2, y2]`，`box_norm` 为 0~1 归一化坐标；
+其中 `box` 为头像在底图原始像素中的包围盒 `[x1, y1, x2, y2]`，`box_norm` 为按
+1024 归一化坐标（x 为 0~1，y 可为负）；
+匹配前底图会在顶部向上扩展 76px（匹配高度 1100px），坐标原点保持原图左上角不变，
+因此 `box`/`box_norm` 的 y1/y2 可为负，负 y 表示头像位于原图顶部上方。
 加 `--detail` 后每个底图还会带 `offsets`，按候选头像列出缩放搜索中每一次 offset
-的 `{offset, size, threshold, x, y, best}`（`x/y` 为 MATCH_SIZE 坐标系中的左上角，
+的 `{offset, size, threshold, x, y, best}`（`x/y` 为匹配坐标系中的左上角，y 可为负，
 `best` 标记最终选中的 offset）。
 无候选头像的角色记为 `no_avatar`，全部底图失败记为 `failed`，阈值低于
 `--stop-threshold` 的底图计入统计 `low_confidence`。

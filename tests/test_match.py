@@ -139,6 +139,52 @@ def test_template_match_locates_pasted_avatar(tmp_path: Path):
     assert box == (300, 200, 480, 380)
 
 
+def test_template_match_located_above_top_edge(tmp_path: Path):
+    avatar = _avatar_image(180, seed=1)
+    avatar_path = tmp_path / "avatar.png"
+    base_path = tmp_path / "base.png"
+    _write_image(avatar_path, avatar)
+    _write_image(base_path, _base_with_avatar(avatar, (300, -50)))
+
+    threshold, box = template_match(base_path, avatar_path)
+
+    assert threshold > STOP_THRESHOLD
+    assert box == (300, -50, 480, 130)
+
+
+def test_match_report_negative_y_for_above_top_edge(tmp_path: Path):
+    characters_dir = tmp_path / "characters"
+    avatars_dir = tmp_path / "avatars"
+    avatar = _avatar_image(180, seed=1)
+    _write_image(avatars_dir / "char_007_closre.png", avatar)
+    _write_image(
+        characters_dir / "avg_007_closre_1" / "avg_007_closre_1$1.png",
+        _base_with_avatar(avatar, (300, -40)),
+    )
+    classified = tmp_path / "classified.json"
+    _write_classified(
+        classified,
+        {
+            "avg_007_closre_1": {
+                "status": "ok",
+                "bases": {"avg_007_closre_1$1.png": {"diff": []}},
+                "unassigned": [],
+                "sizes": {},
+            },
+        },
+    )
+
+    report = match_characters(
+        json.loads(classified.read_text(encoding="utf8")),
+        characters_dir,
+        avatars_dir,
+    )
+
+    base_result = report.characters["avg_007_closre_1"].bases["avg_007_closre_1$1.png"]
+    assert base_result.box == [300, -40, 480, 140]
+    assert base_result.box_norm is not None and base_result.box_norm[1] < 0
+
+
 def test_match_characters_end_to_end(tmp_path: Path):
     characters_dir = tmp_path / "characters"
     avatars_dir = tmp_path / "avatars"

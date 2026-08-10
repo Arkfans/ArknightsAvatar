@@ -17,6 +17,8 @@ except ImportError:  # pragma: no cover - optional dependency
     np = None  # type: ignore[assignment]
 
 MATCH_SIZE = 1024
+BASE_EXTEND_TOP = 76
+MATCH_HEIGHT = MATCH_SIZE + BASE_EXTEND_TOP
 BASE_INCREASE = 1
 MIN_AVATAR_SIZE = 130
 STOP_THRESHOLD = 0.85
@@ -204,11 +206,18 @@ def render_match_images(
 
 
 def _prepare_base(path: Path) -> tuple[np.ndarray, tuple[int, int]]:
-    """底图灰度化并缩放到 MATCH_SIZE；返回 (gray, 原始尺寸 (w, h))。"""
+    """底图灰度化、缩放到 MATCH_SIZE，并在顶部向上扩展 BASE_EXTEND_TOP 像素。
+
+    返回 (gray, 原始尺寸 (w, h))；gray 高度为 MATCH_HEIGHT，扩展区位于原图
+    上方（原图左上角对应 y=BASE_EXTEND_TOP，扩展区 y 为负）。
+    """
     image = _read_bgr(path)
     size = (image.shape[1], image.shape[0])
     resized = cv2.resize(image, (MATCH_SIZE, MATCH_SIZE))
-    return cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY), size
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    canvas = np.zeros((MATCH_HEIGHT, MATCH_SIZE), dtype=np.uint8)
+    canvas[BASE_EXTEND_TOP:BASE_EXTEND_TOP + MATCH_SIZE, :] = gray
+    return canvas, size
 
 
 def _prepare_avatar(path: Path) -> np.ndarray:
@@ -223,11 +232,13 @@ def _template_match_gray(
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
     detail: bool = False,
+    top_offset: int = 0,
 ) -> tuple[float, tuple[int, int, int, int], list[OffsetMatch]]:
     """移植自旧版：TM_CCOEFF_NORMED + 模板缩放搜索，返回 (threshold, box, offsets)。
 
     detail 为 True 时，offsets 记录每一次缩放 offset 的匹配明细（分数、位置、尺寸），
-    否则为空列表。
+    否则为空列表。坐标以底图原图左上角为原点：top_offset 表示画布顶部相对原图的
+    扩展行数，返回的 box 与 offsets.y 统一减去 top_offset，因此扩展区内坐标为负。
     """
     avatar_h, avatar_w = avatar.shape[:2]
     offsets: list[OffsetMatch] = []
@@ -243,7 +254,7 @@ def _template_match_gray(
                     size=[avatar_w + offset, avatar_h + offset],
                     threshold=float(np.max(result)),
                     x=int(x),
-                    y=int(y),
+                    y=int(y) - top_offset,
                 )
             )
         return result
@@ -300,6 +311,7 @@ def _template_match_gray(
             break
 
     y, x = np.unravel_index(int(np.argmax(res)), res.shape)
+    y -= top_offset
     w = avatar_w + best_offset
     h = avatar_h + best_offset
     if detail:
@@ -318,16 +330,18 @@ def template_match(
     min_avatar_size: int = MIN_AVATAR_SIZE,
     stop_threshold: float = STOP_THRESHOLD,
 ) -> tuple[float, tuple[int, int, int, int]]:
-    """对单张底图与单张头像做模板匹配，box 位于 MATCH_SIZE 坐标系。"""
+    """对单张底图与单张头像做模板匹配，box 位于底图坐标系（原图顶部 y=0，扩展区为负）。"""
     base, _size = _prepare_base(Path(base_path))
     avatar = _prepare_avatar(Path(avatar_path))
-    threshold, box, _offsets = _template_match_gray(base, avatar, min_avatar_size, stop_threshold)
+    threshold, box, _offsets = _template_match_gray(
+        base, avatar, min_avatar_size, stop_threshold, top_offset=BASE_EXTEND_TOP
+    )
     return threshold, box
 
 
 @dataclass
 class OffsetMatch:
-    """一次缩放 offset 的匹配明细；坐标位于 MATCH_SIZE 坐标系。"""
+    """一次缩放 offset 的匹配明细；坐标位于底图坐标系（扩展区 y 为负）。"""
 
     offset: int
     size: list[int]
@@ -426,7 +440,7 @@ def match_base(
     """用一张底图对多个候选头像匹配，取阈值最高者；坐标换算回底图原始像素。
 
     候选按传入顺序逐个完整匹配，某头像阈值高于 confidence_target 时立即采用
-    该结果并跳过后续候选（候选级早停）。
+    该结果并跳过后续候选（候选级早停）。顶部扩展区对应原始像素中的负 y。
     """
     try:
         base_gray, (width, height) = _prepare_base(base_path)
@@ -441,7 +455,12 @@ def match_base(
         except Exception:  # noqa: BLE001 - 单个头像不可读时跳过
             continue
         threshold, box, candidate_offsets = _template_match_gray(
-            base_gray, avatar_gray, min_avatar_size, stop_threshold, detail=detail
+            base_gray,
+            avatar_gray,
+            min_avatar_size,
+            stop_threshold,
+            detail=detail,
+            top_offset=BASE_EXTEND_TOP,
         )
         if offsets is not None:
             offsets[avatar_name] = candidate_offsets
