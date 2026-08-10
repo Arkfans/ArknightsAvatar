@@ -38,6 +38,9 @@ uv run npcavatar-sample-bases
 
 # 人脸识别（独立工具，暂不并入主流程）
 uv run npcavatar-detect
+
+# 高置信底图人脸识别（独立工具，暂不并入主流程）
+uv run npcavatar-detect-bases
 ```
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
@@ -146,6 +149,45 @@ uv run npcavatar-detect --conf 0.3 --device auto
 `detected=false` 表示未检出或低于阈值（此时 `face_pos`/`confidence` 为 null），
 读图失败或检测异常时 `error` 非空。单图模式输出 `{generated_at, images, stats}`。
 报告默认写入 `data/unpacked/_face_detect.json`，`--output -` 输出到 stdout。
+
+## 高置信底图人脸识别（独立工具）
+
+`npcavatar-detect-bases` 读取头像匹配报告（默认
+`data/unpacked/_avatar_match.json`），筛选 match threshold **严格大于**
+`--threshold`（默认 0.95）的底图，对每张底图用与 `npcavatar-detect`
+相同的模型识别方案（anime-face-detector YOLOv3，复用 `npcavatar.detect.detect_top1`）
+识别人脸，输出：
+
+1. JSON 报告（默认 `data/unpacked/_face_detect_matched.json`）；
+2. 标注结果图（默认 `data/unpacked/_face_detect_vis/`，扁平存放，文件名
+   `<角色名>__<底图>.png`）：绿色框为 avatar 匹配范围并标注 `match <threshold>`，
+   红色框为 YOLO 人脸框并标注 `yolo <confidence>`，未检出时标注 `no face`；
+3. tqdm 进度条显示逐张处理进度（缺 tqdm 时回退为 `[序号/总数] 角色/底图` 文本）。
+
+```bash
+# 全量处理高置信底图
+uv run npcavatar-detect-bases
+
+# 冒烟：只处理前 3 张高置信底图，输出到临时路径
+uv run npcavatar-detect-bases --limit 3 --output tmp/_face_detect_matched.json --vis-dir tmp/_face_detect_vis
+
+# 指定匹配报告、阈值与识别置信度
+uv run npcavatar-detect-bases --match data/unpacked/_avatar_match.json --threshold 0.95 --conf 0.3
+
+# 只处理指定角色；设备默认 auto（有 CUDA 用 GPU，否则 CPU）
+uv run npcavatar-detect-bases --character avg_003_kalts_1 --device auto
+```
+
+输出语义：顶层为 `{generated_at, match_file, characters_dir, threshold, stats,
+characters}`；`characters.<角色>.bases.<底图>` 为
+`{image, avatar, threshold, box, box_norm, image_size, detected, face_pos,
+confidence, error}`，其中 `avatar/threshold/box/box_norm` 来自匹配报告，
+`face_pos/confidence` 为模型识别结果（`face_pos` 为脸部中心 + 尺寸
+`{x, y, w, h}`，原始像素），`error` 非空表示读图失败或检测异常；渲染成功时
+另附 `vis_image`。`stats` 为 `{filtered, detected, not_detected, errors}`，
+`filtered` 表示实际处理的底图数（`--limit`/`--character` 后）。
+该工具不接入 fetch/unpack 主流程；模型权重首次运行时由 anime-face-detector
+自动下载并缓存（需联网）。
 
 ## 磁盘契约
 

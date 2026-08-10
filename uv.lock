@@ -685,6 +685,7 @@ detect = [
     { name = "opencv-python-headless" },
     { name = "torch" },
     { name = "torchvision" },
+    { name = "tqdm" },
 ]
 fetch = [
     { name = "adb-shell" },
@@ -719,6 +720,7 @@ requires-dist = [
     { name = "pyyaml", marker = "extra == 'fetch'", specifier = ">=6.0" },
     { name = "torch", marker = "extra == 'detect'", specifier = ">=2.2", index = "https://download.pytorch.org/whl/cu126" },
     { name = "torchvision", marker = "extra == 'detect'", specifier = ">=0.17", index = "https://download.pytorch.org/whl/cu126" },
+    { name = "tqdm", marker = "extra == 'detect'", specifier = ">=4.66" },
     { name = "unitypy", marker = "extra == 'unpack'", specifier = ">=1.10.14" },
 ]
 provides-extras = ["fetch", "unpack", "match", "detect"]
