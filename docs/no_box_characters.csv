@@ -1,0 +1,494 @@
+﻿character,category,base_file,no_box_reason,face_detected,face_conf,head_detected,head_conf,image_size,match_status,match_threshold,match_box,diff_total,diff_no_box
+avg_1042_phatm2_1,avg,avg_1042_phatm2_1$1.png,face置信度不足(0.649<=0.8),True,0.6489,True,0.844,"[1536, 1536]",ok,0.7068,"[496, 10, 774, 288]",12,12
+avg_286_cast3_1,avg,avg_286_cast3_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",ok,0.6056,"[625, 137, 765, 277]",0,0
+avg_4000_jnight_1,avg,avg_4000_jnight_1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",ok,0.3604,"[527, 286, 792, 551]",7,7
+avg_4093_frston_1,avg,avg_4093_frston_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",ok,0.4866,"[883, 103, 1018, 238]",14,14
+avg_4093_frston_1,avg,avg_4093_frston_1$2.png,face未检出; head未检出,False,,False,,"[1024, 1024]",ok,0.4866,"[883, 103, 1018, 238]",14,14
+avg_4166_varkis_1,avg,avg_4166_varkis_1$1.png,face未检出; head置信度不足(0.685<=0.7),False,,True,0.6845,"[1280, 1280]",ok,0.5941,"[540, 152, 709, 321]",32,32
+avg_4166_varkis_1,avg,avg_4166_varkis_1$2.png,face未检出; head置信度不足(0.671<=0.7),False,,True,0.6713,"[1280, 1280]",ok,0.5941,"[540, 152, 709, 321]",32,32
+avg_4188_confes_1,avg,avg_4188_confes_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",ok,0.5446,"[164, 295, 339, 470]",2,2
+avg_482_pallas_1,avg,avg_482_pallas_1.png,head置信度不足(0.653<=0.7),True,0.9601,True,0.6529,"[1024, 1024]",no_avatar,,,14,14
+avg_6d5_1,avg,avg_6D5_1.png,face未检出; head未检出,False,,False,,"[1280, 720]",,,,4,4
+avg_doc_1,avg,avg_doc_1.png,face未检出,False,,True,0.8056,"[1024, 1024]",,,,0,0
+avg_npc_005,avg,avg_npc_005.png,face未检出,False,,True,0.8961,"[1024, 1024]",,,,0,0
+avg_npc_006,avg,avg_npc_006.png,face未检出,False,,True,0.8956,"[1024, 1024]",,,,0,0
+avg_npc_007,avg,avg_npc_007.png,face置信度不足(0.356<=0.8); head置信度不足(0.680<=0.7),True,0.3557,True,0.6796,"[1024, 1024]",,,,0,0
+avg_npc_008,avg,avg_npc_008.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_009,avg,avg_npc_009.png,face未检出; head置信度不足(0.444<=0.7),False,,True,0.4442,"[1024, 1024]",,,,0,0
+avg_npc_010,avg,avg_npc_010.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,1,1
+avg_npc_011,avg,avg_npc_011.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,1,1
+avg_npc_012,avg,avg_npc_012.png,face未检出,False,,True,0.8729,"[1024, 1024]",,,,0,0
+avg_npc_013,avg,avg_npc_013.png,face未检出,False,,True,0.883,"[1024, 1024]",,,,0,0
+avg_npc_014,avg,avg_npc_014.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_015,avg,avg_npc_015.png,face未检出,False,,True,0.8293,"[1024, 1024]",,,,0,0
+avg_npc_016,avg,avg_npc_016.png,face未检出,False,,True,0.7728,"[1024, 1024]",,,,0,0
+avg_npc_017_3,avg,avg_npc_017_1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,5,5
+avg_npc_020,avg,avg_npc_020.png,face置信度不足(0.544<=0.8),True,0.5445,True,0.8909,"[1024, 1024]",,,,0,0
+avg_npc_025_1,avg,avg_npc_025_1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,2,2
+avg_npc_026,avg,avg_npc_026.png,face未检出,False,,True,0.8255,"[1024, 1024]",,,,0,0
+avg_npc_028,avg,avg_npc_028.png,face未检出,False,,True,0.9049,"[1024, 1024]",,,,4,4
+avg_npc_031,avg,avg_npc_031.png,face置信度不足(0.311<=0.8),True,0.3108,True,0.9086,"[1024, 1024]",,,,0,0
+avg_npc_034,avg,avg_npc_034.png,face未检出; head置信度不足(0.493<=0.7),False,,True,0.4929,"[1024, 1024]",,,,13,13
+avg_npc_035,avg,avg_npc_035.png,face未检出,False,,True,0.8724,"[1024, 1024]",,,,0,0
+avg_npc_037,avg,avg_npc_037.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,1,1
+avg_npc_038,avg,avg_npc_038.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_039_1,avg,avg_npc_039_1.png,face置信度不足(0.313<=0.8); head未检出,True,0.3131,False,,"[1024, 1024]",,,,0,0
+avg_npc_040,avg,avg_npc_040.png,face未检出; head置信度不足(0.643<=0.7),False,,True,0.6425,"[1024, 1024]",,,,0,0
+avg_npc_041,avg,avg_npc_041.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_043_1,avg,avg_npc_043_1.png,head置信度不足(0.655<=0.7),True,0.9985,True,0.6553,"[1024, 1024]",,,,1,1
+avg_npc_044_1,avg,avg_npc_044_1.png,face置信度不足(0.731<=0.8),True,0.7309,True,0.8871,"[1024, 1024]",,,,2,2
+avg_npc_048,avg,avg_npc_048.png,face未检出,False,,True,0.7575,"[1024, 1024]",,,,0,0
+avg_npc_053,avg,avg_npc_053.png,face未检出,False,,True,0.7697,"[1024, 1024]",,,,0,0
+avg_npc_054,avg,avg_npc_054.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_055,avg,avg_npc_055.png,face置信度不足(0.440<=0.8); head置信度不足(0.667<=0.7),True,0.4405,True,0.6667,"[1024, 1024]",,,,0,0
+avg_npc_058,avg,avg_npc_058.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_058_2,avg,avg_npc_058_2.png,face置信度不足(0.736<=0.8),True,0.7365,True,0.8879,"[1024, 1024]",,,,0,0
+avg_npc_059,avg,avg_npc_059.png,face未检出,False,,True,0.7184,"[1024, 1024]",,,,0,0
+avg_npc_060,avg,avg_npc_060.png,face置信度不足(0.695<=0.8),True,0.6945,True,0.8892,"[1024, 1024]",,,,0,0
+avg_npc_062,avg,avg_npc_062.png,face置信度不足(0.688<=0.8),True,0.6881,True,0.8758,"[1024, 1024]",,,,0,0
+avg_npc_063,avg,avg_npc_063.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_066,avg,avg_npc_066_1.png,head置信度不足(0.435<=0.7),True,0.939,True,0.4351,"[1024, 1024]",,,,4,4
+avg_npc_068,avg,avg_npc_068.png,head置信度不足(0.440<=0.7),True,0.9913,True,0.4398,"[1024, 1024]",,,,0,0
+avg_npc_070,avg,avg_npc_070.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_071,avg,avg_npc_071.png,face未检出; head置信度不足(0.675<=0.7),False,,True,0.675,"[1024, 1024]",,,,0,0
+avg_npc_074,avg,avg_npc_074.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_076,avg,avg_npc_076.png,face置信度不足(0.603<=0.8),True,0.6029,True,0.9025,"[1024, 1024]",,,,0,0
+avg_npc_077,avg,avg_npc_077.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_081,avg,avg_npc_081.png,face置信度不足(0.506<=0.8),True,0.5057,True,0.8858,"[1024, 1024]",,,,0,0
+avg_npc_082,avg,avg_npc_082.png,face未检出,False,,True,0.8246,"[1024, 1024]",,,,0,0
+avg_npc_088,avg,avg_npc_088.png,face置信度不足(0.348<=0.8),True,0.3485,True,0.8833,"[1024, 1024]",,,,0,0
+avg_npc_089,avg,avg_npc_089.png,face未检出,False,,True,0.779,"[1024, 1024]",,,,0,0
+avg_npc_090,avg,avg_npc_090.png,face未检出,False,,True,0.8829,"[1024, 1024]",,,,0,0
+avg_npc_091,avg,avg_npc_091.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_096,avg,avg_npc_096.png,face未检出,False,,True,0.8187,"[1024, 1024]",,,,0,0
+avg_npc_1002_1,avg,avg_npc_1002_1$1.png,face未检出,False,,True,0.8014,"[1024, 1024]",,,,0,0
+avg_npc_1006_1,avg,avg_npc_1006_1$1.png,head置信度不足(0.571<=0.7),True,0.9564,True,0.5709,"[1024, 1024]",,,,0,0
+avg_npc_1007_1,avg,avg_npc_1007_1$1.png,face置信度不足(0.596<=0.8); head未检出,True,0.5964,False,,"[512, 512]",,,,0,0
+avg_npc_1008_1,avg,avg_npc_1008_1$1.png,head未检出,True,0.9967,False,,"[512, 512]",,,,0,0
+avg_npc_1009_1,avg,avg_npc_1009_1$1.png,head未检出,True,0.9947,False,,"[512, 512]",,,,0,0
+avg_npc_101,avg,avg_npc_101.png,face置信度不足(0.540<=0.8); head未检出,True,0.5402,False,,"[1024, 1024]",,,,3,3
+avg_npc_1010_1,avg,avg_npc_1010_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1011_1,avg,avg_npc_1011_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1012_1,avg,avg_npc_1012_1$1.png,head未检出,True,0.8237,False,,"[512, 512]",,,,0,0
+avg_npc_1013_1,avg,avg_npc_1013_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1014_1,avg,avg_npc_1014_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_102,avg,avg_npc_102.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_102_2,avg,avg_npc_102_2.png,face未检出; head置信度不足(0.487<=0.7),False,,True,0.4865,"[1024, 1024]",,,,0,0
+avg_npc_103,avg,avg_npc_103.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1038_1,avg,avg_npc_1038_1$1.png,face未检出,False,,True,0.9075,"[1024, 1024]",,,,10,10
+avg_npc_103nc_1,avg,avg_npc_103nc_1.png,face未检出,False,,True,0.8884,"[1024, 1024]",,,,6,6
+avg_npc_104,avg,avg_npc_104.png,face未检出,False,,True,0.7075,"[1024, 1024]",,,,0,0
+avg_npc_105,avg,avg_npc_105.png,face未检出,False,,True,0.7552,"[1024, 1024]",,,,0,0
+avg_npc_106,avg,avg_npc_106.png,face置信度不足(0.776<=0.8),True,0.7761,True,0.8847,"[1024, 1024]",,,,2,2
+avg_npc_1066_1,avg,avg_npc_1066_1$1.png,face置信度不足(0.700<=0.8),True,0.7002,True,0.8717,"[1024, 1024]",,,,11,11
+avg_npc_1068_1,avg,avg_npc_1068_1$1.png,head置信度不足(0.650<=0.7),True,0.9475,True,0.6499,"[1024, 1024]",,,,10,10
+avg_npc_1071_1,avg,avg_npc_1071_1$1.png,head置信度不足(0.564<=0.7),True,0.944,True,0.5641,"[1816, 1816]",,,,10,10
+avg_npc_1072_1,avg,avg_npc_1072_1$1.png,face置信度不足(0.552<=0.8),True,0.5515,True,0.8754,"[1024, 1024]",,,,5,5
+avg_npc_109,avg,avg_npc_109.png,face置信度不足(0.681<=0.8),True,0.6812,True,0.8794,"[1024, 1024]",,,,3,3
+avg_npc_1116_1,avg,avg_npc_1116_1$1.png,face置信度不足(0.726<=0.8); head置信度不足(0.684<=0.7),True,0.7258,True,0.6843,"[1024, 1024]",,,,22,22
+avg_npc_1116_1,avg,avg_npc_1116_1$2.png,face置信度不足(0.630<=0.8); head置信度不足(0.635<=0.7),True,0.6303,True,0.6355,"[1024, 1024]",,,,22,22
+avg_npc_1117_1,avg,avg_npc_1117_1$1.png,face置信度不足(0.608<=0.8),True,0.6076,True,0.8362,"[1024, 1024]",,,,11,11
+avg_npc_1121_1,avg,avg_npc_1121_1$1.png,face置信度不足(0.799<=0.8),True,0.7989,True,0.7546,"[1024, 1024]",,,,10,10
+avg_npc_1123_1,avg,avg_npc_1123_1$1.png,face置信度不足(0.386<=0.8),True,0.3861,True,0.9004,"[1024, 1024]",,,,11,11
+avg_npc_1125_1,avg,avg_npc_1125_1$1.png,face未检出,False,,True,0.8156,"[1024, 1024]",,,,0,0
+avg_npc_1126_1,avg,avg_npc_1126_1$1.png,face未检出,False,,True,0.8185,"[1024, 1024]",,,,0,0
+avg_npc_1127_1,avg,avg_npc_1127_1$1.png,face未检出; head置信度不足(0.599<=0.7),False,,True,0.5994,"[1024, 1024]",,,,0,0
+avg_npc_1128_1,avg,avg_npc_1128_1$1.png,face未检出; head置信度不足(0.463<=0.7),False,,True,0.4632,"[1024, 1024]",,,,0,0
+avg_npc_1136_1,avg,avg_npc_1136_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1157_1,avg,avg_npc_1157_1$1.png,face未检出,False,,True,0.8956,"[1024, 1024]",,,,0,0
+avg_npc_1158_1,avg,avg_npc_1158_1$1.png,face置信度不足(0.678<=0.8),True,0.6777,True,0.9096,"[1024, 1024]",,,,0,0
+avg_npc_1160_1,avg,avg_npc_1160_1$1.png,face置信度不足(0.792<=0.8),True,0.7917,True,0.8753,"[1024, 1024]",,,,13,13
+avg_npc_1163_1,avg,avg_npc_1163_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1163_1,avg,avg_npc_1163_1$2.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1187_1,avg,avg_npc_1187_1$1.png,head未检出,True,0.9847,False,,"[512, 512]",,,,0,0
+avg_npc_1188_1,avg,avg_npc_1188_1$1.png,head未检出,True,0.816,False,,"[256, 256]",,,,8,8
+avg_npc_1189_1,avg,avg_npc_1189_1$1.png,head未检出,True,0.9921,False,,"[512, 512]",,,,0,0
+avg_npc_1190_1,avg,avg_npc_1190_1$1.png,head未检出,True,0.9813,False,,"[512, 512]",,,,0,0
+avg_npc_121,avg,avg_npc_121.png,face置信度不足(0.609<=0.8); head未检出,True,0.6091,False,,"[1024, 1024]",,,,2,2
+avg_npc_1214_1,avg,avg_npc_1214_1$1.png,face置信度不足(0.509<=0.8),True,0.5089,True,0.8904,"[1024, 1024]",,,,10,10
+avg_npc_123,avg,avg_npc_123_1.png,face置信度不足(0.528<=0.8),True,0.5277,True,0.8808,"[1024, 1024]",,,,7,7
+avg_npc_1236_1,avg,avg_npc_1236_1$1.png,head置信度不足(0.691<=0.7),True,0.8673,True,0.6908,"[1536, 1536]",,,,10,10
+avg_npc_1237_1,avg,avg_npc_1237_1$1.png,face未检出,False,,True,0.8052,"[1024, 1024]",,,,0,0
+avg_npc_1239_1,avg,avg_npc_1239_1$1.png,face置信度不足(0.369<=0.8),True,0.3689,True,0.798,"[1024, 1024]",,,,10,10
+avg_npc_1243_1,avg,avg_npc_1243_1$1.png,face置信度不足(0.542<=0.8),True,0.5418,True,0.8055,"[1024, 1024]",,,,7,7
+avg_npc_1244_1,avg,avg_npc_1244_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,4,4
+avg_npc_1245_1,avg,avg_npc_1245_1$1.png,face未检出,False,,True,0.8709,"[1024, 1024]",,,,0,0
+avg_npc_1251_1,avg,avg_npc_1251_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,5,5
+avg_npc_1256_1,avg,avg_npc_1256_1$1.png,face未检出,False,,True,0.8988,"[1024, 1024]",,,,0,0
+avg_npc_1294_1,avg,avg_npc_1294_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,2,2
+avg_npc_1299_1,avg,avg_npc_1299_1$1.png,head置信度不足(0.551<=0.7),True,0.9812,True,0.5514,"[1024, 1024]",,,,10,10
+avg_npc_130,avg,avg_npc_130.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1307_1,avg,avg_npc_1307_1$1.png,face未检出,False,,True,0.8877,"[1024, 1024]",,,,0,0
+avg_npc_1308_1,avg,avg_npc_1308_1$1.png,face置信度不足(0.516<=0.8),True,0.5161,True,0.8999,"[1024, 1024]",,,,0,0
+avg_npc_131,avg,avg_npc_131.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1311_1,avg,avg_npc_1311_1$1.png,face未检出,False,,True,0.8052,"[1024, 1024]",,,,0,0
+avg_npc_133,avg,avg_npc_133.png,face置信度不足(0.754<=0.8),True,0.7536,True,0.8883,"[1024, 1024]",,,,0,0
+avg_npc_1331_1,avg,avg_npc_1331_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1332_1,avg,avg_npc_1332_1$1.png,face未检出; head置信度不足(0.567<=0.7),False,,True,0.5669,"[1024, 1024]",,,,3,3
+avg_npc_1332_1,avg,avg_npc_1332_1$2.png,face未检出; head置信度不足(0.573<=0.7),False,,True,0.5731,"[1024, 1024]",,,,3,3
+avg_npc_1334_1,avg,avg_npc_1334_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1335_1,avg,avg_npc_1335_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1337_1,avg,avg_npc_1337_1$1.png,face置信度不足(0.483<=0.8),True,0.4829,True,0.9045,"[1024, 1024]",,,,0,0
+avg_npc_1339_1,avg,avg_npc_1339_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_134,avg,avg_npc_134.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1340_1,avg,avg_npc_1340_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1341_1,avg,avg_npc_1341_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1360_1,avg,avg_npc_1360_1$1.png,face未检出,False,,True,0.8505,"[1024, 1024]",,,,0,0
+avg_npc_1361_1,avg,avg_npc_1361_1$1.png,face未检出,False,,True,0.8784,"[1024, 1024]",,,,0,0
+avg_npc_137,avg,avg_npc_137#1.png,face置信度不足(0.795<=0.8),True,0.7946,True,0.871,"[1024, 1024]",,,,8,8
+avg_npc_1383_1,avg,avg_npc_1383_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,5,5
+avg_npc_1388_1,avg,avg_npc_1388_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1389_1,avg,avg_npc_1389_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1390_1,avg,avg_npc_1390_1$1.png,face未检出; head置信度不足(0.565<=0.7),False,,True,0.565,"[1024, 1024]",,,,0,0
+avg_npc_1391_1,avg,avg_npc_1391_1$1.png,face未检出,False,,True,0.7333,"[1024, 1024]",,,,0,0
+avg_npc_1398_1,avg,avg_npc_1398_1$1.png,face未检出,False,,True,0.8339,"[1024, 1024]",,,,0,0
+avg_npc_1399_1,avg,avg_npc_1399_1$1.png,face未检出,False,,True,0.7471,"[1024, 1024]",,,,0,0
+avg_npc_1400_1,avg,avg_npc_1400_1$1.png,face未检出; head置信度不足(0.609<=0.7),False,,True,0.6085,"[1024, 1024]",,,,0,0
+avg_npc_1401_1,avg,avg_npc_1401_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1420_1,avg,avg_npc_1420_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1421_1,avg,avg_npc_1421_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1422_1,avg,avg_npc_1422_1$1.png,face未检出; head置信度不足(0.556<=0.7),False,,True,0.5562,"[1024, 1024]",,,,0,0
+avg_npc_1423_1,avg,avg_npc_1423_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1424_1,avg,avg_npc_1424_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1425_1,avg,avg_npc_1425_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1426_1,avg,avg_npc_1426_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1426_1,avg,avg_npc_1426_1$2.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1427_1,avg,avg_npc_1427_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1428_1,avg,avg_npc_1428_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1429_1,avg,avg_npc_1429_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,7,7
+avg_npc_143,avg,avg_npc_143#1.png,head置信度不足(0.584<=0.7),True,0.9238,True,0.5841,"[512, 512]",,,,1,1
+avg_npc_1430_1,avg,avg_npc_1430_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1431_1,avg,avg_npc_1431_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1432_1,avg,avg_npc_1432_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_145,avg,avg_npc_145.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1479_1,avg,avg_npc_1479_1$1.png,face未检出,False,,True,0.8276,"[1380, 1380]",,,,5,5
+avg_npc_1480_1,avg,avg_npc_1480_1$1.png,face未检出,False,,True,0.8547,"[1024, 1024]",,,,0,0
+avg_npc_1482_1,avg,avg_npc_1482_1$1.png,face未检出; head置信度不足(0.485<=0.7),False,,True,0.485,"[512, 512]",,,,8,8
+avg_npc_1483_1,avg,avg_npc_1483_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1488_1,avg,avg_npc_1488_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1489_1,avg,avg_npc_1489_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1520_1,avg,avg_npc_1520_1$1.png,face置信度不足(0.796<=0.8),True,0.7955,True,0.9042,"[1024, 1024]",,,,6,6
+avg_npc_1548_1,avg,avg_npc_1548_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1549_1,avg,avg_npc_1549_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1550_1,avg,avg_npc_1550_1$1.png,face置信度不足(0.716<=0.8),True,0.7155,True,0.8983,"[1168, 1168]",,,,3,3
+avg_npc_1556_1,avg,avg_npc_1556_1$1.png,face未检出,False,,True,0.8491,"[1108, 1108]",,,,0,0
+avg_npc_1557_1,avg,avg_npc_1557_1$1.png,face未检出,False,,True,0.871,"[1128, 1128]",,,,0,0
+avg_npc_1558_1,avg,avg_npc_1558_1$1.png,face未检出,False,,True,0.8898,"[1096, 1096]",,,,0,0
+avg_npc_1561_1,avg,avg_npc_1561_1$1.png,face置信度不足(0.375<=0.8),True,0.3751,True,0.9037,"[1168, 1168]",,,,3,3
+avg_npc_1578_1,avg,avg_npc_1578_1$1.png,face未检出; head未检出,False,,False,,"[1096, 1096]",,,,3,3
+avg_npc_157_1,avg,avg_npc_157_1.png,face置信度不足(0.527<=0.8),True,0.5273,True,0.9027,"[1024, 1024]",,,,2,2
+avg_npc_1584_1,avg,avg_npc_1584_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1585_1,avg,avg_npc_1585_1$1.png,face未检出; head置信度不足(0.412<=0.7),False,,True,0.4118,"[512, 512]",,,,0,0
+avg_npc_1586_1,avg,avg_npc_1586_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,4,4
+avg_npc_1587_1,avg,avg_npc_1587_1$1.png,face未检出; head未检出,False,,False,,"[1212, 1212]",,,,0,0
+avg_npc_158_1,avg,avg_npc_158_1.png,face置信度不足(0.660<=0.8),True,0.6602,True,0.8968,"[1024, 1024]",,,,1,1
+avg_npc_1590_1,avg,avg_npc_1590_1$1.png,face置信度不足(0.549<=0.8),True,0.5494,True,0.9072,"[1260, 1260]",,,,6,6
+avg_npc_1591_1,avg,avg_npc_1591_1$1.png,face未检出,False,,True,0.8776,"[1300, 1300]",,,,0,0
+avg_npc_1592_1,avg,avg_npc_1592_1$1.png,face置信度不足(0.793<=0.8),True,0.793,True,0.8814,"[1300, 1300]",,,,0,0
+avg_npc_1612_1,avg,avg_npc_1612_1$1.png,head置信度不足(0.638<=0.7),True,0.9924,True,0.6377,"[1300, 1300]",,,,16,16
+avg_npc_1634_1,avg,avg_npc_1634_1$1.png,face未检出; head未检出,False,,False,,"[1296, 1296]",,,,0,0
+avg_npc_1637_1,avg,avg_npc_1637_1$1.png,head置信度不足(0.658<=0.7),True,0.8255,True,0.658,"[1128, 1128]",,,,0,0
+avg_npc_164,avg,avg_npc_164.png,face置信度不足(0.451<=0.8),True,0.4514,True,0.8761,"[1024, 1024]",,,,0,0
+avg_npc_1644_1,avg,avg_npc_1644_1$1.png,head置信度不足(0.621<=0.7),True,0.9261,True,0.6209,"[1560, 1560]",,,,16,16
+avg_npc_1664_1,avg,avg_npc_1664_1$1.png,face置信度不足(0.624<=0.8),True,0.6236,True,0.7602,"[1024, 1024]",,,,0,0
+avg_npc_167,avg,avg_npc_167.png,face未检出,False,,True,0.839,"[1024, 1024]",,,,0,0
+avg_npc_1688_1,avg,avg_npc_1688_1$1.png,face置信度不足(0.676<=0.8),True,0.6756,True,0.9131,"[1024, 1024]",,,,5,5
+avg_npc_168_1,avg,avg_npc_168_1.png,face置信度不足(0.672<=0.8),True,0.6722,True,0.9007,"[1024, 1024]",,,,6,6
+avg_npc_1690_1,avg,avg_npc_1690_1$1.png,head置信度不足(0.555<=0.7),True,0.8585,True,0.555,"[1536, 1536]",,,,26,26
+avg_npc_1690_1,avg,avg_npc_1690_1$2.png,head置信度不足(0.618<=0.7),True,0.8293,True,0.6179,"[1536, 1536]",,,,26,26
+avg_npc_1691_1,avg,avg_npc_1691_1$1.png,face未检出,False,,True,0.8917,"[1225, 1225]",,,,4,4
+avg_npc_1697_1,avg,avg_npc_1697_1$1.png,face置信度不足(0.500<=0.8),True,0.4996,True,0.8958,"[1428, 1428]",,,,11,11
+avg_npc_1698_1,avg,avg_npc_1698_1$1.png,face置信度不足(0.514<=0.8),True,0.514,True,0.9062,"[1450, 1450]",,,,7,7
+avg_npc_1720_1,avg,avg_npc_1720_1$1.png,face未检出; head未检出,False,,False,,"[1070, 1070]",,,,4,4
+avg_npc_1721_1,avg,avg_npc_1721_1$1.png,face置信度不足(0.455<=0.8),True,0.4546,True,0.8967,"[1100, 1100]",,,,0,0
+avg_npc_1722_1,avg,avg_npc_1722_1$1.png,face未检出,False,,True,0.8948,"[1100, 1100]",,,,0,0
+avg_npc_1725_1,avg,avg_npc_1725_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1726_1,avg,avg_npc_1726_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,2,2
+avg_npc_1727_1,avg,avg_npc_1727_1$1.png,face未检出; head置信度不足(0.413<=0.7),False,,True,0.4132,"[1080, 1080]",,,,0,0
+avg_npc_1728_1,avg,avg_npc_1728_1$1.png,face未检出; head未检出,False,,False,,"[1120, 1120]",,,,0,0
+avg_npc_173,avg,avg_npc_173.png,face置信度不足(0.308<=0.8); head置信度不足(0.473<=0.7),True,0.3084,True,0.4726,"[1024, 1024]",,,,0,0
+avg_npc_174,avg,avg_npc_174.png,face置信度不足(0.524<=0.8),True,0.5242,True,0.8902,"[1024, 1024]",,,,0,0
+avg_npc_1752_1,avg,avg_npc_1752_1$1.png,face置信度不足(0.525<=0.8),True,0.5252,True,0.9168,"[1024, 1024]",,,,5,5
+avg_npc_1756_1,avg,avg_npc_1756_1$1.png,face置信度不足(0.620<=0.8),True,0.6195,True,0.9106,"[1024, 1024]",,,,5,5
+avg_npc_176,avg,avg_npc_176.png,face未检出,False,,True,0.8921,"[1024, 1024]",,,,0,0
+avg_npc_1777_1,avg,avg_npc_1777_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1778_1,avg,avg_npc_1778_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1781_1,avg,avg_npc_1781_1$1.png,face置信度不足(0.561<=0.8),True,0.5614,True,0.9014,"[1024, 1024]",,,,4,4
+avg_npc_1785_1,avg,avg_npc_1785_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1786_1,avg,avg_npc_1786_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1787_1,avg,avg_npc_1787_1$1.png,face未检出; head置信度不足(0.579<=0.7),False,,True,0.5786,"[1024, 1024]",,,,0,0
+avg_npc_1788_1,avg,avg_npc_1788_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1789_1,avg,avg_npc_1789_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1790_1,avg,avg_npc_1790_1$1.png,face未检出; head置信度不足(0.652<=0.7),False,,True,0.6522,"[512, 512]",,,,0,0
+avg_npc_1791_1,avg,avg_npc_1791_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1792_1,avg,avg_npc_1792_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1794_1,avg,avg_npc_1794_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_182,avg,avg_npc_182_1.png,face置信度不足(0.546<=0.8),True,0.5464,True,0.9,"[1024, 1024]",,,,6,6
+avg_npc_1829_1,avg,avg_npc_1829_1$1.png,face置信度不足(0.585<=0.8),True,0.5848,True,0.881,"[1484, 1484]",,,,12,12
+avg_npc_184,avg,avg_npc_184.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1840_1,avg,avg_npc_1840_1$1.png,face置信度不足(0.320<=0.8),True,0.3197,True,0.8931,"[1586, 1586]",,,,11,11
+avg_npc_1848_1,avg,avg_npc_1848_1$1.png,face未检出,False,,True,0.8249,"[1152, 1152]",,,,0,0
+avg_npc_185,avg,avg_npc_185.png,head未检出,True,0.819,False,,"[1024, 1024]",,,,0,0
+avg_npc_186,avg,avg_npc_186.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_1869_1,avg,avg_npc_1869_1$1.png,face置信度不足(0.617<=0.8),True,0.6169,True,0.8788,"[1612, 1612]",,,,11,11
+avg_npc_1870_1,avg,avg_npc_1870_1$1.png,face未检出; head未检出,False,,False,,"[1204, 1204]",,,,0,0
+avg_npc_1872_1,avg,avg_npc_1872_1$1.png,face置信度不足(0.604<=0.8),True,0.6035,True,0.8737,"[1456, 1456]",,,,10,10
+avg_npc_1875_1,avg,avg_npc_1875_1$1.png,face未检出,False,,True,0.7472,"[512, 512]",,,,0,0
+avg_npc_1895_1,avg,avg_npc_1895_1$1.png,face置信度不足(0.760<=0.8),True,0.7603,True,0.869,"[1456, 1456]",,,,11,11
+avg_npc_1903_1,avg,avg_npc_1903_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,3,3
+avg_npc_1904_1,avg,avg_npc_1904_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1904_1,avg,avg_npc_1904_1$2.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1904_1,avg,avg_npc_1904_1$3.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_1905_1,avg,avg_npc_1905_1$1.png,face未检出; head未检出,False,,False,,"[1084, 1084]",,,,0,0
+avg_npc_1906_1,avg,avg_npc_1906_1$1.png,face置信度不足(0.388<=0.8),True,0.3878,True,0.9036,"[1328, 1328]",,,,0,0
+avg_npc_1916_1,avg,avg_npc_1916_1$1.png,face未检出,False,,True,0.8926,"[1316, 1316]",,,,0,0
+avg_npc_1917_1,avg,avg_npc_1917_1$1.png,face置信度不足(0.776<=0.8),True,0.7759,True,0.7714,"[1316, 1316]",,,,0,0
+avg_npc_1919_1,avg,avg_npc_1919_1$1.png,face未检出,False,,True,0.8729,"[1228, 1228]",,,,0,0
+avg_npc_193,avg,avg_npc_193.png,face置信度不足(0.646<=0.8),True,0.6461,True,0.8987,"[1024, 1024]",,,,0,0
+avg_npc_1937_1,avg,avg_npc_1937_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,5,5
+avg_npc_1938_1,avg,avg_npc_1938_1$1.png,face未检出,False,,True,0.763,"[1198, 1198]",,,,4,4
+avg_npc_194,avg,avg_npc_194.png,face置信度不足(0.522<=0.8),True,0.5224,True,0.8993,"[1024, 1024]",,,,0,0
+avg_npc_195,avg,avg_npc_195.png,face置信度不足(0.564<=0.8),True,0.5637,True,0.9077,"[1024, 1024]",,,,0,0
+avg_npc_1962_1,avg,avg_npc_1962_1$1.png,face未检出; head未检出,False,,False,,"[1280, 1280]",,,,4,4
+avg_npc_1964_1,avg,avg_npc_1964_1$1.png,face未检出; head未检出,False,,False,,"[1044, 1044]",,,,0,0
+avg_npc_1965_1,avg,avg_npc_1965_1$1.png,face未检出; head置信度不足(0.673<=0.7),False,,True,0.6727,"[1408, 1408]",,,,4,4
+avg_npc_1972_1,avg,avg_npc_1972_1$1.png,face未检出; head置信度不足(0.654<=0.7),False,,True,0.6536,"[1072, 1072]",,,,0,0
+avg_npc_1973_1,avg,avg_npc_1973_1$1.png,face未检出,False,,True,0.8354,"[1072, 1072]",,,,0,0
+avg_npc_1977_1,avg,avg_npc_1977_1$1.png,face未检出,False,,True,0.907,"[1384, 1384]",,,,0,0
+avg_npc_1978_1,avg,avg_npc_1978_1$1.png,face未检出; head未检出,False,,False,,"[1124, 1124]",,,,0,0
+avg_npc_1983_1,avg,avg_npc_1983_1$1.png,head置信度不足(0.595<=0.7),True,0.9851,True,0.5954,"[1255, 1255]",,,,10,10
+avg_npc_198_1,avg,avg_npc_198_1.png,face置信度不足(0.681<=0.8),True,0.6807,True,0.8963,"[1024, 1024]",,,,5,5
+avg_npc_200,avg,avg_npc_200.png,face置信度不足(0.641<=0.8),True,0.641,True,0.8951,"[1024, 1024]",,,,0,0
+avg_npc_2007_1,avg,avg_npc_2007_1$1.png,face未检出,False,,True,0.9088,"[1148, 1148]",,,,0,0
+avg_npc_201,avg,avg_npc_201.png,face置信度不足(0.647<=0.8),True,0.647,True,0.898,"[1024, 1024]",,,,0,0
+avg_npc_202,avg,avg_npc_202.png,face置信度不足(0.709<=0.8),True,0.7085,True,0.9037,"[1024, 1024]",,,,0,0
+avg_npc_2033_1,avg,avg_npc_2033_1$1.png,face置信度不足(0.747<=0.8),True,0.7469,True,0.8808,"[1316, 1316]",,,,3,3
+avg_npc_2034_1,avg,avg_npc_2034_1$1.png,face未检出; head未检出,False,,False,,"[1176, 1176]",,,,9,9
+avg_npc_2035_1,avg,avg_npc_2035_1$1.png,face置信度不足(0.497<=0.8),True,0.4968,True,0.8613,"[1408, 1408]",,,,9,9
+avg_npc_2036_1,avg,avg_npc_2036_1$1.png,face未检出; head未检出,False,,False,,"[1648, 1648]",,,,9,9
+avg_npc_2038_1,avg,avg_npc_2038_1$1.png,face置信度不足(0.670<=0.8); head置信度不足(0.601<=0.7),True,0.6698,True,0.6007,"[1485, 1485]",,,,11,11
+avg_npc_204,avg,avg_npc_204.png,face置信度不足(0.594<=0.8),True,0.5941,True,0.8823,"[1024, 1024]",,,,0,0
+avg_npc_2040_1,avg,avg_npc_2040_1$1.png,face未检出; head未检出,False,,False,,"[1048, 1048]",,,,0,0
+avg_npc_2040_1,avg,avg_npc_2040_1$2.png,face未检出; head未检出,False,,False,,"[1048, 1048]",,,,0,0
+avg_npc_2040_1,avg,avg_npc_2040_1$3.png,face未检出; head未检出,False,,False,,"[1048, 1048]",,,,0,0
+avg_npc_2040_1,avg,avg_npc_2040_1$4.png,face未检出; head未检出,False,,False,,"[1048, 1048]",,,,0,0
+avg_npc_2040_1,avg,avg_npc_2040_1$5.png,face未检出; head未检出,False,,False,,"[1048, 1048]",,,,0,0
+avg_npc_2040_1,avg,avg_npc_2040_1$6.png,face未检出; head未检出,False,,False,,"[1048, 1048]",,,,0,0
+avg_npc_2040_1,avg,avg_npc_2040_1$7.png,face未检出; head未检出,False,,False,,"[1048, 1048]",,,,0,0
+avg_npc_2040_1,avg,avg_npc_2040_1$8.png,face未检出; head未检出,False,,False,,"[1048, 1048]",,,,0,0
+avg_npc_2041_1,avg,avg_npc_2041_1$1.png,face未检出,False,,True,0.8885,"[1385, 1385]",,,,5,5
+avg_npc_2041_1,avg,avg_npc_2041_1$2.png,face未检出,False,,True,0.8897,"[1385, 1385]",,,,5,5
+avg_npc_2044_1,avg,avg_npc_2044_1$1.png,face置信度不足(0.445<=0.8),True,0.4446,True,0.8244,"[1408, 1408]",,,,0,0
+avg_npc_2046_1,avg,avg_npc_2046_1$1.png,face未检出,False,,True,0.9103,"[1224, 1224]",,,,0,0
+avg_npc_2068_1,avg,avg_npc_2068_1$1.png,head置信度不足(0.682<=0.7),True,0.9374,True,0.6824,"[1436, 1436]",,,,20,20
+avg_npc_2068_1,avg,avg_npc_2068_1$2.png,head置信度不足(0.685<=0.7),True,0.925,True,0.6845,"[1436, 1436]",,,,20,20
+avg_npc_207,avg,avg_npc_207.png,face置信度不足(0.557<=0.8),True,0.5573,True,0.8934,"[1024, 1024]",,,,0,0
+avg_npc_2075_1,avg,avg_npc_2075_1$1.png,face未检出,False,,True,0.8104,"[1124, 1124]",,,,0,0
+avg_npc_2076_1,avg,avg_npc_2076_1$1.png,face置信度不足(0.373<=0.8),True,0.3726,True,0.8734,"[1215, 1215]",,,,0,0
+avg_npc_208,avg,avg_npc_208.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_2082_1,avg,avg_npc_2082_1$1.png,face置信度不足(0.370<=0.8),True,0.3698,True,0.7758,"[1048, 1048]",,,,0,0
+avg_npc_2083_1,avg,avg_npc_2083_1$1.png,face置信度不足(0.787<=0.8),True,0.7871,True,0.894,"[1325, 1325]",,,,0,0
+avg_npc_2086_1,avg,avg_npc_2086_1$1.png,face未检出,False,,True,0.7801,"[1048, 1048]",,,,0,0
+avg_npc_2090_1,avg,avg_npc_2090_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_2090_1,avg,avg_npc_2090_1$2.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_2102_1,avg,avg_npc_2102_1$1.png,face未检出; head未检出,False,,False,,"[1408, 1408]",,,,0,0
+avg_npc_2102_1,avg,avg_npc_2102_1$2.png,face未检出; head未检出,False,,False,,"[1408, 1408]",,,,0,0
+avg_npc_2103_1,avg,avg_npc_2103_1$1.png,face未检出,False,,True,0.857,"[1184, 1184]",,,,0,0
+avg_npc_2104_1,avg,avg_npc_2104_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_2104_1,avg,avg_npc_2104_1$2.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_2104_1,avg,avg_npc_2104_1$3.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_2105_1,avg,avg_npc_2105_1$1.png,face未检出; head未检出,False,,False,,"[1224, 1224]",,,,0,0
+avg_npc_2106_1,avg,avg_npc_2106_1$1.png,face未检出; head未检出,False,,False,,"[1228, 1228]",,,,0,0
+avg_npc_2107_1,avg,avg_npc_2107_1$1.png,face未检出; head未检出,False,,False,,"[1228, 1228]",,,,0,0
+avg_npc_2108_1,avg,avg_npc_2108_1$1.png,face置信度不足(0.750<=0.8),True,0.7504,True,0.8896,"[1124, 1124]",,,,0,0
+avg_npc_210_1,avg,avg_npc_210_1.png,face置信度不足(0.744<=0.8),True,0.7436,True,0.8905,"[1024, 1024]",,,,6,6
+avg_npc_2110_1,avg,avg_npc_2110_1$1.png,face未检出,False,,True,0.8874,"[1200, 1200]",,,,0,0
+avg_npc_2111_1,avg,avg_npc_2111_1$1.png,face未检出; head未检出,False,,False,,"[1200, 1200]",,,,0,0
+avg_npc_2112_1,avg,avg_npc_2112_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_212_1,avg,avg_npc_212_1.png,face置信度不足(0.629<=0.8),True,0.6291,True,0.8903,"[1024, 1024]",,,,6,6
+avg_npc_2131_1,avg,avg_npc_2131_1$1.png,head置信度不足(0.676<=0.7),True,0.9063,True,0.676,"[1508, 1508]",,,,9,9
+avg_npc_2132_1,avg,avg_npc_2132_1$1.png,face未检出; head置信度不足(0.671<=0.7),False,,True,0.6709,"[1296, 1296]",,,,0,0
+avg_npc_2133_1,avg,avg_npc_2133_1$1.png,face未检出; head未检出,False,,False,,"[1268, 1268]",,,,0,0
+avg_npc_2134_1,avg,avg_npc_2134_1$1.png,face未检出; head未检出,False,,False,,"[1328, 1328]",,,,0,0
+avg_npc_2135_1,avg,avg_npc_2135_1$1.png,face未检出; head未检出,False,,False,,"[1300, 1300]",,,,0,0
+avg_npc_2136_1,avg,avg_npc_2136_1$1.png,face置信度不足(0.428<=0.8),True,0.4282,True,0.7145,"[1300, 1300]",,,,0,0
+avg_npc_214_1,avg,avg_npc_214_1$1.png,face置信度不足(0.689<=0.8),True,0.6889,True,0.7777,"[1024, 1024]",,,,14,14
+avg_npc_214_1,avg,avg_npc_214_1$2.png,face置信度不足(0.745<=0.8),True,0.7449,True,0.7498,"[1024, 1024]",,,,14,14
+avg_npc_214_1,avg,avg_npc_214_1$3.png,face置信度不足(0.730<=0.8),True,0.73,True,0.7457,"[1024, 1024]",,,,14,14
+avg_npc_215_1,avg,avg_npc_215_1.png,head未检出,True,0.995,False,,"[1024, 1024]",,,,6,6
+avg_npc_216,avg,avg_npc_216.png,face未检出,False,,True,0.7316,"[1024, 1024]",,,,0,0
+avg_npc_217,avg,avg_npc_217.png,face未检出,False,,True,0.8788,"[1024, 1024]",,,,0,0
+avg_npc_2170_1,avg,avg_npc_2170_1$1.png,face未检出,False,,True,0.8646,"[1304, 1304]",,,,0,0
+avg_npc_218,avg,avg_npc_218.png,face未检出,False,,True,0.7957,"[1024, 1024]",,,,0,0
+avg_npc_219,avg,avg_npc_219.png,face未检出; head置信度不足(0.596<=0.7),False,,True,0.5962,"[1024, 1024]",,,,0,0
+avg_npc_220,avg,avg_npc_220.png,face未检出,False,,True,0.7943,"[1024, 1024]",,,,0,0
+avg_npc_2201_1,avg,avg_npc_2201_1$1.png,face未检出; head置信度不足(0.578<=0.7),False,,True,0.578,"[1408, 1408]",,,,11,11
+avg_npc_221,avg,avg_npc_221.png,face未检出,False,,True,0.7882,"[1024, 1024]",,,,0,0
+avg_npc_222,avg,avg_npc_222.png,face置信度不足(0.645<=0.8),True,0.6453,True,0.8864,"[1024, 1024]",,,,0,0
+avg_npc_2223_1,avg,avg_npc_2223_1$1.png,face未检出,False,,True,0.8623,"[1152, 1152]",,,,0,0
+avg_npc_2226_1,avg,avg_npc_2226_1$1.png,face置信度不足(0.597<=0.8),True,0.5965,True,0.7675,"[1356, 1356]",,,,6,6
+avg_npc_2237_1,avg,avg_npc_2237_1$1.png,face置信度不足(0.523<=0.8),True,0.5232,True,0.8167,"[1484, 1484]",,,,0,0
+avg_npc_2238_1,avg,avg_npc_2238_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_2239_1,avg,avg_npc_2239_1$1.png,head置信度不足(0.686<=0.7),True,0.9991,True,0.6864,"[1472, 1472]",,,,0,0
+avg_npc_224,avg,avg_npc_224.png,face未检出,False,,True,0.8352,"[1024, 1024]",,,,0,0
+avg_npc_2240_1,avg,avg_npc_2240_1$1.png,head置信度不足(0.447<=0.7),True,0.9968,True,0.447,"[1536, 1536]",,,,0,0
+avg_npc_2244_1,avg,avg_npc_2244_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_225,avg,avg_npc_225.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_2250_1,avg,avg_npc_2250_1$1.png,face未检出; head未检出,False,,False,,"[1072, 1072]",,,,9,9
+avg_npc_2251_1,avg,avg_npc_2251_1$1.png,face未检出,False,,True,0.7703,"[1072, 1072]",,,,7,7
+avg_npc_2252_1,avg,avg_npc_2252_1$1.png,face未检出; head置信度不足(0.661<=0.7),False,,True,0.6606,"[1072, 1072]",,,,3,3
+avg_npc_2253_1,avg,avg_npc_2253_1$1.png,face未检出; head置信度不足(0.612<=0.7),False,,True,0.6121,"[1072, 1072]",,,,8,8
+avg_npc_2254_1,avg,avg_npc_2254_1$1.png,face未检出,False,,True,0.9372,"[1624, 1624]",,,,7,7
+avg_npc_2255_1,avg,avg_npc_2255_1$1.png,face置信度不足(0.434<=0.8),True,0.4341,True,0.9152,"[1528, 1528]",,,,6,6
+avg_npc_2257_1,avg,avg_npc_2257_1$1.png,head置信度不足(0.624<=0.7),True,0.9804,True,0.6242,"[1664, 1664]",,,,2,2
+avg_npc_2258_1,avg,avg_npc_2258_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_2300_1,avg,avg_npc_2300_1$1.png,face未检出,False,,True,0.8753,"[1408, 1408]",,,,11,11
+avg_npc_2326_1,avg,avg_npc_2326_1$1.png,face未检出; head未检出,False,,False,,"[1300, 1300]",,,,0,0
+avg_npc_234,avg,avg_npc_234.png,face置信度不足(0.610<=0.8),True,0.6101,True,0.8989,"[1024, 1024]",,,,0,0
+avg_npc_2345_1,avg,avg_npc_2345_1$1.png,face置信度不足(0.485<=0.8),True,0.4854,True,0.9059,"[1688, 1688]",,,,20,20
+avg_npc_2345_1,avg,avg_npc_2345_1$2.png,face置信度不足(0.405<=0.8),True,0.4048,True,0.9007,"[1688, 1688]",,,,20,20
+avg_npc_2349_1,avg,avg_npc_2349_1$1.png,face未检出; head置信度不足(0.424<=0.7),False,,True,0.4239,"[1800, 1800]",,,,2,2
+avg_npc_2349_1,avg,avg_npc_2349_1$2.png,face未检出; head置信度不足(0.524<=0.7),False,,True,0.5244,"[1800, 1800]",,,,2,2
+avg_npc_2349_1,avg,avg_npc_2349_1$3.png,face未检出; head置信度不足(0.579<=0.7),False,,True,0.5785,"[1800, 1800]",,,,2,2
+avg_npc_2349_1,avg,avg_npc_2349_1$4.png,face未检出; head置信度不足(0.539<=0.7),False,,True,0.5393,"[1800, 1800]",,,,2,2
+avg_npc_2349_1,avg,avg_npc_2349_1$5.png,face未检出,False,,True,0.775,"[1800, 1800]",,,,2,2
+avg_npc_2349_1,avg,avg_npc_2349_1$6.png,face未检出,False,,True,0.7926,"[1800, 1800]",,,,2,2
+avg_npc_2349_1,avg,avg_npc_2349_1$7.png,face未检出; head置信度不足(0.619<=0.7),False,,True,0.6195,"[1800, 1800]",,,,2,2
+avg_npc_235,avg,avg_npc_235.png,face未检出,False,,True,0.8605,"[1024, 1024]",,,,0,0
+avg_npc_2357_1,avg,avg_npc_2357_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_2357_1,avg,avg_npc_2357_1$2.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_236,avg,avg_npc_236.png,face未检出,False,,True,0.7016,"[1024, 1024]",,,,0,0
+avg_npc_2360_1,avg,avg_npc_2360_1$1.png,face置信度不足(0.476<=0.8),True,0.476,True,0.9086,"[1792, 1792]",,,,5,5
+avg_npc_244,avg,avg_npc_244.png,face置信度不足(0.708<=0.8),True,0.7077,True,0.8772,"[1024, 1024]",,,,0,0
+avg_npc_245_1,avg,avg_npc_245_1.png,face未检出,False,,True,0.8829,"[1024, 1024]",,,,7,7
+avg_npc_246,avg,avg_npc_246.png,face置信度不足(0.526<=0.8),True,0.5261,True,0.8902,"[1024, 1024]",,,,0,0
+avg_npc_249_1,avg,avg_npc_249_1$1.png,face置信度不足(0.688<=0.8),True,0.6882,True,0.8776,"[1024, 1024]",,,,0,0
+avg_npc_251,avg,avg_npc_251.png,face未检出; head未检出,False,,False,,"[256, 256]",,,,0,0
+avg_npc_252,avg,avg_npc_252.png,face未检出,False,,True,0.8879,"[1024, 1024]",,,,0,0
+avg_npc_258_1,avg,avg_npc_258_1$1.png,face置信度不足(0.371<=0.8),True,0.3709,True,0.8027,"[1024, 1024]",,,,8,8
+avg_npc_264,avg,avg_npc_264.png,face置信度不足(0.727<=0.8),True,0.7268,True,0.8629,"[1024, 1024]",,,,0,0
+avg_npc_267_1,avg,avg_npc_267_1$1.png,face置信度不足(0.647<=0.8),True,0.6468,True,0.8929,"[1024, 1024]",,,,8,8
+avg_npc_268,avg,avg_npc_268.png,face置信度不足(0.467<=0.8),True,0.4672,True,0.8617,"[1024, 1024]",,,,0,0
+avg_npc_270_1,avg,avg_npc_270_1$1.png,face置信度不足(0.576<=0.8),True,0.5759,True,0.9066,"[1024, 1024]",,,,0,0
+avg_npc_272_1,avg,avg_npc_272_1$1.png,face置信度不足(0.776<=0.8),True,0.7763,True,0.8978,"[1024, 1024]",,,,0,0
+avg_npc_275,avg,avg_npc_275.png,face置信度不足(0.459<=0.8); head未检出,True,0.4589,False,,"[1024, 1024]",,,,0,0
+avg_npc_279_1,avg,avg_npc_279_1$1.png,face置信度不足(0.656<=0.8),True,0.6565,True,0.8608,"[1024, 1024]",,,,0,0
+avg_npc_283_1,avg,avg_npc_283_1$1.png,face未检出,False,,True,0.8557,"[1024, 1024]",,,,0,0
+avg_npc_284_1,avg,avg_npc_284_1$1.png,face未检出,False,,True,0.8863,"[1024, 1024]",,,,0,0
+avg_npc_285_1,avg,avg_npc_285_1$1.png,face未检出,False,,True,0.8721,"[1024, 1024]",,,,0,0
+avg_npc_286_1,avg,avg_npc_286_1$1.png,face置信度不足(0.727<=0.8),True,0.7267,True,0.868,"[1024, 1024]",,,,0,0
+avg_npc_287_1,avg,avg_npc_287_1$1.png,face置信度不足(0.418<=0.8),True,0.4181,True,0.9001,"[1024, 1024]",,,,11,11
+avg_npc_291,avg,avg_npc_291.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_294_1,avg,avg_npc_294_1$1.png,head置信度不足(0.675<=0.7),True,0.845,True,0.6745,"[1024, 1024]",,,,9,9
+avg_npc_306_1,avg,avg_npc_306_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_327_1,avg,avg_npc_327_1$1.png,face未检出,False,,True,0.8041,"[1024, 1024]",,,,0,0
+avg_npc_328_1,avg,avg_npc_328_1$1.png,face置信度不足(0.364<=0.8),True,0.3638,True,0.8691,"[1024, 1024]",,,,0,0
+avg_npc_330_1,avg,avg_npc_330_1$1.png,face未检出; head置信度不足(0.535<=0.7),False,,True,0.5346,"[1024, 1024]",,,,0,0
+avg_npc_331_1,avg,avg_npc_331_1$1.png,head未检出,True,0.8805,False,,"[1024, 1024]",,,,0,0
+avg_npc_332_1,avg,avg_npc_332_1$1.png,face未检出; head置信度不足(0.532<=0.7),False,,True,0.5321,"[1024, 1024]",,,,0,0
+avg_npc_333_1,avg,avg_npc_333_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_334,avg,avg_npc_334.png,face未检出,False,,True,0.8357,"[1024, 1024]",,,,0,0
+avg_npc_356_1,avg,avg_npc_356_1$1.png,face未检出; head置信度不足(0.656<=0.7),False,,True,0.6561,"[1024, 1024]",,,,12,12
+avg_npc_358_1,avg,avg_npc_358_1$1.png,face未检出,False,,True,0.8581,"[1024, 1024]",,,,0,0
+avg_npc_360_1,avg,avg_npc_360_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_370_1,avg,avg_npc_370_1$1.png,face置信度不足(0.771<=0.8),True,0.7715,True,0.9085,"[1024, 1024]",,,,0,0
+avg_npc_373_1,avg,avg_npc_373_1$1.png,face未检出; head置信度不足(0.543<=0.7),False,,True,0.5432,"[1024, 1024]",,,,0,0
+avg_npc_398_1,avg,avg_npc_398_1$1.png,face未检出,False,,True,0.8518,"[1024, 1024]",,,,0,0
+avg_npc_399_1,avg,avg_npc_399_1$1.png,face置信度不足(0.319<=0.8),True,0.3187,True,0.9155,"[1024, 1024]",,,,0,0
+avg_npc_403_1,avg,avg_npc_403_1$1.png,face未检出,False,,True,0.876,"[1024, 1024]",,,,5,5
+avg_npc_406_1,avg,avg_npc_406_1$1.png,face未检出,False,,True,0.8799,"[1024, 1024]",,,,4,4
+avg_npc_409_1,avg,avg_npc_409_1$1.png,face置信度不足(0.326<=0.8),True,0.3259,True,0.9102,"[1024, 1024]",,,,0,0
+avg_npc_409_1,avg,avg_npc_409_1$2.png,face置信度不足(0.334<=0.8),True,0.3341,True,0.9099,"[1024, 1024]",,,,0,0
+avg_npc_410_1,avg,avg_npc_410_1$1.png,face置信度不足(0.607<=0.8),True,0.6067,True,0.8916,"[1024, 1024]",,,,9,9
+avg_npc_418_1,avg,avg_npc_418_1$1.png,face置信度不足(0.794<=0.8),True,0.794,True,0.9094,"[1024, 1024]",,,,0,0
+avg_npc_419_1,avg,avg_npc_419_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_420_1,avg,avg_npc_420_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_424_1,avg,avg_npc_424_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,5,5
+avg_npc_425_1,avg,avg_npc_425_1$1.png,face置信度不足(0.606<=0.8),True,0.6058,True,0.8573,"[1024, 1024]",,,,0,0
+avg_npc_445_1,avg,avg_npc_445_1$1.png,face未检出; head置信度不足(0.472<=0.7),False,,True,0.4721,"[1024, 1024]",,,,0,0
+avg_npc_446_1,avg,avg_npc_446_1$1.png,face置信度不足(0.306<=0.8),True,0.3056,True,0.8158,"[1024, 1024]",,,,10,10
+avg_npc_447_1,avg,avg_npc_447_1$1.png,face置信度不足(0.347<=0.8),True,0.3465,True,0.8883,"[1024, 1024]",,,,10,10
+avg_npc_448_1,avg,avg_npc_448_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_449_1,avg,avg_npc_449_1$1.png,face置信度不足(0.794<=0.8),True,0.794,True,0.9195,"[1024, 1024]",,,,13,13
+avg_npc_452_1,avg,avg_npc_452_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_453_1,avg,avg_npc_453_1$1.png,face置信度不足(0.699<=0.8),True,0.6986,True,0.7983,"[1024, 1024]",,,,0,0
+avg_npc_454_1,avg,avg_npc_454_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_455_1,avg,avg_npc_455_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_456_1,avg,avg_npc_456_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_457_1,avg,avg_npc_457_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,3,3
+avg_npc_458_1,avg,avg_npc_458_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_463_1,avg,avg_npc_463_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_487_1,avg,avg_npc_487_1$1.png,face置信度不足(0.650<=0.8),True,0.6504,True,0.7787,"[1024, 1024]",,,,14,14
+avg_npc_488_1,avg,avg_npc_488_1$1.png,face未检出,False,,True,0.7418,"[1024, 1024]",,,,0,0
+avg_npc_494_1,avg,avg_npc_494_1$1.png,face置信度不足(0.540<=0.8),True,0.54,True,0.8454,"[1024, 1024]",,,,6,6
+avg_npc_521_1,avg,avg_npc_521_1$1.png,face未检出,False,,True,0.8268,"[1024, 1024]",,,,0,0
+avg_npc_526_1,avg,avg_npc_526_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_528_1,avg,avg_npc_528_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_533_1,avg,avg_npc_533_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_538_1,avg,avg_npc_538_1$1.png,head未检出,True,0.9962,False,,"[256, 256]",,,,0,0
+avg_npc_542_1,avg,avg_npc_542_1$1.png,face未检出,False,,True,0.8961,"[1024, 1024]",,,,10,10
+avg_npc_545_1,avg,avg_npc_545_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_574_1,avg,avg_npc_574_1$1.png,face置信度不足(0.682<=0.8),True,0.6818,True,0.9243,"[1024, 1024]",,,,0,0
+avg_npc_575_1,avg,avg_npc_575_1$1.png,face未检出,False,,True,0.9203,"[1024, 1024]",,,,0,0
+avg_npc_576_1,avg,avg_npc_576_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_596_1,avg,avg_npc_596_1$1.png,head未检出,True,0.9921,False,,"[256, 256]",,,,6,6
+avg_npc_599_1,avg,avg_npc_599_1$1.png,face置信度不足(0.642<=0.8),True,0.6418,True,0.8235,"[512, 512]",,,,0,0
+avg_npc_600_1,avg,avg_npc_600_1$1.png,face未检出,False,,True,0.8869,"[1024, 1024]",,,,0,0
+avg_npc_601_1,avg,avg_npc_601_1$1.png,face置信度不足(0.685<=0.8),True,0.6853,True,0.9133,"[1024, 1024]",,,,0,0
+avg_npc_602_1,avg,avg_npc_602_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_603_1,avg,avg_npc_603_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_605_1,avg,avg_npc_605_1$1.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,0,0
+avg_npc_610_1,avg,avg_npc_610_1$1.png,face未检出; head置信度不足(0.604<=0.7),False,,True,0.6043,"[1024, 1024]",,,,4,4
+avg_npc_624_1,avg,avg_npc_624_1$1.png,face未检出,False,,True,0.8286,"[1024, 1024]",,,,0,0
+avg_npc_649_1,avg,avg_npc_649_1$1.png,face置信度不足(0.751<=0.8),True,0.7508,True,0.8969,"[1024, 1024]",,,,10,10
+avg_npc_651_1,avg,avg_npc_651_1$1.png,face未检出; head置信度不足(0.645<=0.7),False,,True,0.6447,"[1024, 1024]",,,,0,0
+avg_npc_652_1,avg,avg_npc_652_1$1.png,face置信度不足(0.427<=0.8),True,0.4266,True,0.8779,"[1024, 1024]",,,,10,10
+avg_npc_656_1,avg,avg_npc_656_1$1.png,face未检出,False,,True,0.7288,"[1024, 1024]",,,,6,6
+avg_npc_688_1,avg,avg_npc_688_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_695_1,avg,avg_npc_695_1$1.png,head置信度不足(0.690<=0.7),True,0.9032,True,0.6896,"[1024, 1024]",,,,6,6
+avg_npc_727_1,avg,avg_npc_727_1$1.png,face置信度不足(0.572<=0.8),True,0.5716,True,0.8788,"[1024, 1024]",,,,10,10
+avg_npc_785_1,avg,avg_npc_785_1$1.png,face置信度不足(0.748<=0.8),True,0.7477,True,0.9006,"[1024, 1024]",,,,12,12
+avg_npc_792_1,avg,avg_npc_792_1$1.png,face置信度不足(0.776<=0.8),True,0.7764,True,0.8355,"[1024, 1024]",,,,0,0
+avg_npc_794_1,avg,avg_npc_794_1$1.png,face未检出,False,,True,0.841,"[1024, 1024]",,,,0,0
+avg_npc_795_1,avg,avg_npc_795_1$1.png,face置信度不足(0.580<=0.8),True,0.5805,True,0.756,"[1024, 1024]",,,,0,0
+avg_npc_796_1,avg,avg_npc_796_1$1.png,face置信度不足(0.540<=0.8); head置信度不足(0.698<=0.7),True,0.5397,True,0.6976,"[1024, 1024]",,,,0,0
+avg_npc_800_1,avg,avg_npc_800_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_802_1,avg,avg_npc_802_1$1.png,head置信度不足(0.621<=0.7),True,0.9772,True,0.6207,"[1024, 1024]",,,,22,22
+avg_npc_802_1,avg,avg_npc_802_1$2.png,face置信度不足(0.772<=0.8); head置信度不足(0.690<=0.7),True,0.7725,True,0.6902,"[1024, 1024]",,,,22,22
+avg_npc_804_1,avg,avg_npc_804_1$1.png,face未检出,False,,True,0.8625,"[1024, 1024]",,,,10,10
+avg_npc_821_1,avg,avg_npc_821_1$1.png,face置信度不足(0.778<=0.8),True,0.7783,True,0.9069,"[1024, 1024]",,,,10,10
+avg_npc_842_1,avg,avg_npc_842_1$1.png,face置信度不足(0.759<=0.8); head未检出,True,0.7592,False,,"[512, 512]",,,,0,0
+avg_npc_867_1,avg,avg_npc_867_1$1.png,face未检出,False,,True,0.8325,"[1024, 1024]",,,,0,0
+avg_npc_869_1,avg,avg_npc_869_1$1.png,face置信度不足(0.783<=0.8); head置信度不足(0.444<=0.7),True,0.7833,True,0.4436,"[1024, 1024]",,,,11,11
+avg_npc_893_1,avg,avg_npc_893_1$1.png,face置信度不足(0.684<=0.8),True,0.6839,True,0.8948,"[1024, 1024]",,,,11,11
+avg_npc_894_1,avg,avg_npc_894_1$1.png,face置信度不足(0.631<=0.8),True,0.6306,True,0.9147,"[1024, 1024]",,,,10,10
+avg_npc_898_1,avg,avg_npc_898_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,36,36
+avg_npc_898_1,avg,avg_npc_898_1$2.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,36,36
+avg_npc_898_1,avg,avg_npc_898_1$3.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,36,36
+avg_npc_898_1,avg,avg_npc_898_1$4.png,face未检出; head未检出,False,,False,,"[512, 512]",,,,36,36
+avg_npc_899_1,avg,avg_npc_899_1$1.png,face未检出,False,,True,0.8851,"[1024, 1024]",,,,7,7
+avg_npc_900_1,avg,avg_npc_900_1$1.png,face未检出,False,,True,0.8899,"[1024, 1024]",,,,0,0
+avg_npc_901_1,avg,avg_npc_901_1$1.png,face置信度不足(0.360<=0.8),True,0.3599,True,0.8901,"[1024, 1024]",,,,0,0
+avg_npc_902_1,avg,avg_npc_902_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_923_1,avg,avg_npc_923_1$1.png,face置信度不足(0.457<=0.8),True,0.4571,True,0.8692,"[1024, 1024]",,,,10,10
+avg_npc_930_1,avg,avg_npc_930_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+avg_npc_933_1,avg,avg_npc_933_1$1.png,face置信度不足(0.412<=0.8),True,0.4122,True,0.8716,"[1024, 1024]",,,,0,0
+avg_npc_942_1,avg,avg_npc_942_1$1.png,face未检出; head置信度不足(0.686<=0.7),False,,True,0.6858,"[1024, 1024]",,,,0,0
+avg_npc_995_1,avg,avg_npc_995_1$1.png,face置信度不足(0.685<=0.8),True,0.6848,True,0.9003,"[1024, 1024]",,,,10,10
+avg_npc_9999_1,avg,avg_npc_9999_1$1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,5,5
+char_013_riop,char,char_013_riop.png,face未检出,False,,True,0.8878,"[1024, 1024]",no_avatar,,,0,0
+char_015_lmg,char,char_015_lmg.png,face未检出; head未检出,False,,False,,"[1024, 1024]",no_avatar,,,0,0
+char_1002_nsabr_1,char,char_1002_nsabr_1.png,face未检出; head置信度不足(0.556<=0.7),False,,True,0.5562,"[1024, 1024]",no_avatar,,,0,0
+char_1002_nsabr_2,char,char_1002_nsabr_2.png,face置信度不足(0.410<=0.8); head置信度不足(0.574<=0.7),True,0.4101,True,0.5743,"[1024, 1024]",no_avatar,,,0,0
+char_1011_wizard_1,char,char_1011_wizard_1.png,face未检出; head置信度不足(0.631<=0.7),False,,True,0.6307,"[1024, 1024]",ok,0.6271,"[447, 49, 607, 209]",1,1
+char_105_emper,char,char_105_emper.png,face未检出; head置信度不足(0.423<=0.7),False,,True,0.4228,"[1024, 1024]",ok,0.4721,"[354, 129, 554, 329]",0,0
+char_1500_skulsr,char,char_1500_skulsr.png,face未检出; head置信度不足(0.532<=0.7),False,,True,0.5319,"[1024, 1024]",no_avatar,,,0,0
+char_1508_faust_1,char,char_1508_Faust_1.png,face置信度不足(0.433<=0.8),True,0.433,True,0.8956,"[1024, 1024]",no_avatar,,,1,1
+char_2005_weiyw_1,char,char_2005_weiyw_1.png,face置信度不足(0.493<=0.8),True,0.4935,True,0.8051,"[1024, 1024]",no_avatar,,,4,4
+char_264_mountain_1,char,char_264_Mountain_1#1.png,head置信度不足(0.572<=0.7),True,0.9701,True,0.5716,"[1024, 1024]",ok,0.5942,"[425, 7, 580, 162]",10,10
+char_285_medic2_1,char,char_285_medic2_1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",ok,0.7079,"[80, 500, 215, 635]",0,0
+char_362_saga,char,char_362_Saga#1.png,head置信度不足(0.557<=0.7),True,0.9592,True,0.5568,"[1024, 1024]",ok,0.6951,"[432, 200, 577, 345]",5,5
+char_376_therex_1,char,char_376_therex_1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",ok,0.453,"[578, 185, 713, 320]",0,0
+char_empty,char,char_empty.png,face未检出; head未检出,False,,False,,"[24, 24]",,,,1,1
+npc_10002,npc,npc_10002_1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0
+npc_10003_1,npc,npc_10003_1.png,face未检出; head未检出,False,,False,,"[1024, 1024]",,,,0,0

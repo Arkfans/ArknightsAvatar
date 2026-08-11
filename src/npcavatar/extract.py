@@ -56,8 +56,8 @@ DEFAULT_OUTPUT_DIR = "data/export"
 DEFAULT_OUTPUT = "data/unpacked/_avatar_extract.json"
 
 MATCH_THRESHOLD = 0.8
-FACE_CONF = 0.8
-HEAD_CONF = 0.7
+FACE_CONF = 0.60
+HEAD_CONF = 0.55
 SPECIAL_MASK_IOU = 0.85
 DIFF_FINGERPRINT_VERSION = 2  # diff IoU now restricted to base face range
 DEDUP_SIM = 0.98
