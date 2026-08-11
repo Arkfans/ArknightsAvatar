@@ -184,16 +184,26 @@ def face_group_for_diff(face_groups: list[dict], diff_name: str) -> dict | None:
     return None
 
 
+def _is_alpha_diff(diff_name: str) -> bool:
+    """True when the diff file is the dedicated ``alpha.png`` alpha-channel texture."""
+    return Path(diff_name).name.lower() == "alpha.png"
+
+
 def compose_diff(
     base_img: Image.Image,
     diff_img: Image.Image,
     face_group: dict | None,
+    alpha_img: Image.Image | None = None,
 ) -> Image.Image:
     """Combine a diff with its base.
 
     Diffs whose size equals the base are already combined and returned as-is;
     smaller diffs are resized to the group's ``faceSize`` and pasted at
-    ``facePos``. A missing/invalid face group raises ValueError.
+    ``facePos``. The diff's RGB is pasted with a face-region alpha mask and the
+    resulting alpha channel is always taken from the base: the mask (and the
+    final face-region alpha) uses ``alpha_img`` (``alpha.png``, grayscale) when
+    provided, otherwise the base's own alpha in the face region. A
+    missing/invalid face group raises ValueError.
     """
     base = base_img.convert("RGBA")
     diff = diff_img.convert("RGBA")
@@ -211,8 +221,15 @@ def compose_diff(
         raise ValueError("invalid face size")
     if diff.size != (fw, fh):
         diff = diff.resize((fw, fh), Image.LANCZOS)
+    if alpha_img is not None:
+        face_alpha = alpha_img.convert("L").resize((fw, fh), Image.LANCZOS)
+    else:
+        face_alpha = base.crop((fx, fy, fx + fw, fy + fh)).split()[3]
     combined = base.copy()
-    combined.paste(diff, (fx, fy), diff)
+    combined.paste(diff.convert("RGB"), (fx, fy), face_alpha)
+    final_alpha = base.split()[3].copy()
+    final_alpha.paste(face_alpha, (fx, fy))
+    combined.putalpha(final_alpha)
     return combined
 
 
@@ -704,6 +721,13 @@ def process_character(
     out_dir = output_dir / name
     meta = _read_json(char_dir / "meta.json", {}) or {}
     face_groups = meta.get("face_groups") if isinstance(meta.get("face_groups"), list) else []
+    alpha_img = None
+    alpha_path = char_dir / "alpha.png"
+    if alpha_path.is_file():
+        try:
+            alpha_img = Image.open(alpha_path).convert("RGBA")
+        except Exception:  # noqa: BLE001 - unreadable alpha.png falls back to base alpha
+            alpha_img = None
     char_ext = CharacterExtraction(name=name)
     base_avatars: dict[str, Image.Image | None] = {}
 
@@ -784,6 +808,7 @@ def process_character(
 
     for base_name, base_entry in bases.items():
         diff_names = base_entry.get("diff") or [] if isinstance(base_entry, dict) else []
+        diff_names = [diff_name for diff_name in diff_names if not _is_alpha_diff(diff_name)]
         if char_ext.bases[base_name].status == "dropped":
             for diff_name in diff_names:
                 stats["diff_files"] += 1
@@ -803,7 +828,12 @@ def process_character(
             try:
                 diff_img = Image.open(char_dir / diff_name)
                 base_img = Image.open(char_dir / base_name)
-                composed = compose_diff(base_img, diff_img, face_group_for_diff(face_groups, diff_name))
+                composed = compose_diff(
+                    base_img,
+                    diff_img,
+                    face_group_for_diff(face_groups, diff_name),
+                    alpha_img,
+                )
             except Exception as error:  # noqa: BLE001 - single diff failure does not abort the character
                 char_ext.diffs[diff_name] = ItemExtraction(
                     status="failed", error=f"{type(error).__name__}: {error}"

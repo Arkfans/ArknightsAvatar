@@ -226,7 +226,10 @@ uv run npcavatar-extract --force-match
    `data/avatar_derive_08/model.json` 由 face/head 检测框推导正方形裁切框。
 
 diff 处理：与 base 同尺寸的 diff 直接使用；小尺寸 diff 按 `meta.json` 的
-`face_groups`（`$n` 系列对应第 n 组）缩放至 `faceSize` 后贴到 `facePos` 完成组合。
+`face_groups`（`$n` 系列对应第 n 组）缩放至 `faceSize` 后贴到 `facePos` 完成组合；
+组合结果的 A 通道取自 base，存在 `alpha.png` 时面部区域优先用其灰度作为 A 通道与
+贴图蒙版。`alpha.png` 本身是提供 alpha 通道的贴图而非真实 diff，不参与提取、不计入
+报告与统计。
 组合后与 base 比较 **alpha 不透明掩码 IoU**（默认 0.95，`--special-mask-iou`）：
 正常 diff 复用 base 裁切框；低于阈值视为**特殊 diff**（动作/姿态变化导致头像位置
 偏移），对组合图重新做人脸/头部识别并按第三档推导框提取。

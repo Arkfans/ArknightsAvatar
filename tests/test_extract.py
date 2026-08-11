@@ -218,6 +218,31 @@ def test_compose_diff_invalid_face_size_raises():
         extract.compose_diff(base, diff, group)
 
 
+def test_compose_diff_uses_base_alpha():
+    base = Image.new("RGBA", (100, 100), (0, 0, 255, 255))
+    base.putpixel((10, 20), (0, 0, 255, 0))
+    diff = Image.new("RGBA", (64, 64), (255, 0, 0, 255))
+    group = {"facePos": {"x": 10, "y": 20}, "faceSize": {"x": 64, "y": 64}}
+    composed = extract.compose_diff(base, diff, group)
+    assert composed.getpixel((10, 20)) == (0, 0, 255, 0)  # base alpha 0 respected
+    assert composed.getpixel((30, 30)) == (255, 0, 0, 255)  # base alpha 255 -> diff RGB
+    assert composed.getpixel((90, 90)) == (0, 0, 255, 255)  # outside face unchanged
+    assert np.array_equal(np.asarray(composed)[..., 3], np.asarray(base)[..., 3])
+
+
+def test_compose_diff_prefers_alpha_png():
+    base = Image.new("RGBA", (100, 100), (0, 0, 255, 255))
+    diff = Image.new("RGBA", (64, 64), (255, 0, 0, 255))
+    alpha_mask = Image.new("L", (64, 64), 0)
+    ImageDraw.Draw(alpha_mask).rectangle((32, 0, 63, 63), fill=255)
+    alpha = alpha_mask.convert("RGBA")
+    group = {"facePos": {"x": 10, "y": 20}, "faceSize": {"x": 64, "y": 64}}
+    composed = extract.compose_diff(base, diff, group, alpha_img=alpha)
+    assert composed.getpixel((10, 20)) == (0, 0, 255, 0)  # alpha.png 0 overrides base alpha
+    assert composed.getpixel((50, 20)) == (255, 0, 0, 255)  # alpha.png 255 -> diff RGB + alpha
+    assert composed.getpixel((90, 90)) == (0, 0, 255, 255)  # outside face unchanged
+
+
 def test_alpha_mask_iou():
     a = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
     b = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
@@ -518,6 +543,82 @@ def test_normal_diff_uses_base_box(workdir: Path):
     assert diff.special is False
     assert diff.method == "match"
     assert diff.box == [100, 100, 300, 300]
+
+
+def test_alpha_png_diff_ignored(workdir: Path):
+    characters_dir = workdir / "characters"
+    char_dir = characters_dir / "avg_001_a_1"
+    _write_png(char_dir / "base.png", Image.new("RGBA", (100, 100), (0, 0, 255, 255)))
+    _write_png(char_dir / "d1.png", Image.new("RGBA", (64, 64), (255, 0, 0, 255)))
+    _write_png(char_dir / "alpha.png", Image.new("RGBA", (64, 64), (255, 255, 255, 255)))
+    _write_meta(char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}])
+    classified = _classified(
+        characters_dir,
+        {"avg_001_a_1": _char_entry({"base.png": {"diff": ["d1.png", "alpha.png"]}})},
+    )
+    report = _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=_match_report(
+            characters_dir,
+            {"avg_001_a_1": {"bases": {"base.png": _base_match(box=(0, 0, 50, 50))}}},
+        ),
+        face_detector=_raising_detector(),
+        head_detector=_raising_detector(),
+    )
+    char = report.characters["avg_001_a_1"]
+    assert "alpha.png" not in char.diffs
+    assert char.diffs["d1.png"].status == "ok"
+    assert report.stats["diff_files"] == 1
+    out_dir = workdir / "export" / "avg_001_a_1"
+    assert not (out_dir / "alpha.png").exists()
+    assert (out_dir / "d1.png").is_file()
+
+
+def test_alpha_png_ignored_for_dropped_base(workdir: Path):
+    characters_dir = workdir / "characters"
+    char_dir = characters_dir / "avg_001_a_1"
+    avatar = _avatar_image(180, seed=1)
+    for base_name in ("base1.png", "base2.png"):
+        _write_png(char_dir / base_name, _base_with_avatar(avatar))
+    _write_png(char_dir / "d1.png", Image.new("RGBA", (64, 64), (255, 0, 0, 255)))
+    _write_png(char_dir / "alpha.png", Image.new("RGBA", (64, 64), (255, 255, 255, 255)))
+    _write_meta(char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}])
+    classified = _classified(
+        characters_dir,
+        {
+            "avg_001_a_1": _char_entry(
+                {
+                    "base1.png": {"diff": ["d1.png"]},
+                    "base2.png": {"diff": ["alpha.png"]},
+                }
+            )
+        },
+    )
+    match_report = _match_report(
+        characters_dir,
+        {
+            "avg_001_a_1": {
+                "bases": {
+                    "base1.png": _base_match(threshold=0.9, box=(300, 200, 480, 380)),
+                    "base2.png": _base_match(threshold=0.85, box=(300, 200, 480, 380)),
+                }
+            }
+        },
+    )
+    report = _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=match_report,
+        face_detector=_raising_detector(),
+        head_detector=_raising_detector(),
+    )
+    char = report.characters["avg_001_a_1"]
+    assert char.bases["base2.png"].status == "dropped"
+    assert "alpha.png" not in char.diffs
+    assert report.stats["diff_files"] == 1  # only d1.png for the kept base
 
 
 def _special_diff_character(workdir: Path) -> tuple[Path, dict, dict]:
