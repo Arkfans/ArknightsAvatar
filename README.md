@@ -44,6 +44,9 @@ uv run npcavatar-detect-bases
 
 # 头像提取（独立工具）
 uv run npcavatar-extract
+
+# 差分拼贴（独立工具）
+uv run npcavatar-collage
 ```
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
@@ -255,6 +258,33 @@ detect_cache_hit?}`；`stats` 汇总 base/diff 的 ok/skipped/dropped/no_box/fai
 `--force`、`--force-match`、`--device`（auto/cuda/cpu）。依赖 `uv sync --extra detect`。
 模型权重未缓存时首次运行需联网；本地已缓存且离线运行时设 `HF_HUB_OFFLINE=1`。
 
+
+## 差分拼贴（独立工具）
+
+`npcavatar-collage` 读取 `data/unpacked/_characters_classified.json` 与
+`data/export/`，把每个角色的全部 diff 头像（180×180，已由 extract 组合并裁切）
+按网格拼贴成一张 PNG，每角色一张。参考旧项目 `NpcData.draw_all_face`：黑底、
+每格白底 + 头像（RGBA 蒙版）、左上角标注 diff 文件名，缺失/读取失败的头像画
+`[x]` 占位。默认处理所有角色、默认 3 列。
+
+```bash
+# 全部角色各生成一张拼贴图
+uv run npcavatar-collage
+
+# 只处理指定角色 / 前 N 个角色
+uv run npcavatar-collage --character avg_003_kalts_1
+uv run npcavatar-collage --limit 20
+
+# 指定列数 / 关闭标注 / 自定义字体
+uv run npcavatar-collage --columns 6
+uv run npcavatar-collage --no-label
+uv run npcavatar-collage --font C:\Windows\Fonts\msyh.ttc
+```
+
+输出目录默认 `data/unpacked/_diff_collage/<角色>.png`（`-o` 可换）。只拼贴分类
+报告中归属 base 的 diff（`alpha.png` 与 `unassigned` 不计入）；无 diff 或角色
+目录缺失时跳过该角色。依赖 Pillow（`uv sync --extra unpack`）。
+
 ## 磁盘契约
 
 ```text
@@ -272,6 +302,7 @@ data/unpacked/_face_head_detect.json     # extract 的 face/head 识别缓存（
 data/unpacked/_avatar_extract_cache.json # extract 的 base 相似度 / diff 决策缓存
 data/unpacked/_avatar_extract.json       # extract 提取报告
 data/export/<npc_id>/<sprite>.png        # extract 产物：各 base/diff 的 180×180 头像（按角色分文件夹）
+data/unpacked/_diff_collage/<npc_id>.png   # collage 产物：每角色一张差分拼贴图
 ```
 
 `meta.json` 保留 textures 尺寸、sprites 列表、`face_groups`（facePos/faceSize 配对），供步骤 3 使用。
