@@ -255,6 +255,22 @@ def test_alpha_mask_iou():
     assert iou < 1.0
 
 
+def test_alpha_mask_iou_box_restricts_to_region():
+    # Body pixels unchanged between base/diff dilute the full-image IoU;
+    # restricting to the base face box makes the change detectable.
+    base = Image.new("RGBA", (100, 100), (0, 0, 0, 255))
+    base.paste(Image.new("RGBA", (20, 20), (255, 0, 0, 255)), (10, 10))
+    diff = Image.new("RGBA", (100, 100), (0, 0, 0, 255))
+    ImageDraw.Draw(diff).rectangle((10, 10, 29, 29), fill=(0, 0, 0, 0))
+
+    full = extract.alpha_mask_iou(diff, base)
+    face = extract.alpha_mask_iou(diff, base, box=[10, 10, 30, 30])
+    assert full > face
+    assert full > extract.SPECIAL_MASK_IOU >= face
+    # Out-of-range boxes are clamped instead of raising.
+    assert extract.alpha_mask_iou(diff, base, box=[-10, -10, 120, 120]) == full
+
+
 def test_avatar_similarity():
     a = _avatar_image(180, seed=1)
     b = _avatar_image(180, seed=1)

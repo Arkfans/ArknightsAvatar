@@ -59,6 +59,7 @@ MATCH_THRESHOLD = 0.8
 FACE_CONF = 0.8
 HEAD_CONF = 0.7
 SPECIAL_MASK_IOU = 0.95
+DIFF_FINGERPRINT_VERSION = 2  # diff IoU now restricted to base face range
 DEDUP_SIM = 0.98
 EXPORT_SIZE = 180
 CACHE_SAVE_INTERVAL = 50
@@ -111,6 +112,20 @@ def _valid_box(box: Any) -> bool:
 
 def _int_box(box: Sequence[float]) -> list[int]:
     return [int(round(float(v))) for v in box]
+
+
+def _crop_box(image: Image.Image, box: Sequence[int]) -> Image.Image:
+    """Crop ``[x1, y1, x2, y2]`` clamped to image bounds.
+
+    Coordinates outside the image are clipped; an empty intersection returns a
+    0x0 transparent image so out-of-range regions contribute nothing.
+    """
+    x1, y1, x2, y2 = _int_box(box)
+    x1, y1 = max(0, x1), max(0, y1)
+    x2, y2 = min(image.width, x2), min(image.height, y2)
+    if x2 <= x1 or y2 <= y1:
+        return Image.new("RGBA", (0, 0), (0, 0, 0, 0))
+    return image.crop((x1, y1, x2, y2))
 
 
 def load_manual(path: str | Path) -> dict:
@@ -233,8 +248,18 @@ def compose_diff(
     return combined
 
 
-def alpha_mask_iou(a: Image.Image, b: Image.Image) -> float:
-    """IoU of opaque (alpha > 0) masks; ignores color/expression changes."""
+def alpha_mask_iou(
+    a: Image.Image, b: Image.Image, box: Sequence[int] | None = None
+) -> float:
+    """IoU of opaque (alpha > 0) masks; ignores color/expression changes.
+
+    When ``box`` (``[x1, y1, x2, y2]``) is given, only that region of both
+    images is compared -- used to restrict the diff IoU to the base's face
+    range instead of the whole image.
+    """
+    if box is not None:
+        a = _crop_box(a, box)
+        b = _crop_box(b, box)
     ma = np.asarray(a.convert("RGBA"))[..., 3] > 0
     mb = np.asarray(b.convert("RGBA"))[..., 3] > 0
     if ma.shape != mb.shape:
@@ -281,6 +306,7 @@ def _diff_fingerprint(
     """sha256 over every input that can change a diff's match decision."""
     digest = hashlib.sha256()
     digest.update(_image_fingerprint(composed).encode("ascii"))
+    digest.update(str(DIFF_FINGERPRINT_VERSION).encode("ascii"))
     digest.update(repr((special_mask_iou, face_conf, head_conf)).encode("ascii"))
     digest.update(json.dumps(derive_model, sort_keys=True, ensure_ascii=False).encode("utf8"))
     digest.update(f"{base_box}|{base_method}|{base_confidence}".encode("utf8"))
@@ -881,7 +907,7 @@ def process_character(
                         continue
                     box = _int_box(box)
                 else:
-                    iou = alpha_mask_iou(composed, base_img)
+                    iou = alpha_mask_iou(composed, base_img, box=base_result.box)
                     if iou < special_mask_iou:
                         special = True
                         entry, cache_hit = detect_face_head_image(
