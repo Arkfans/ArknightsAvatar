@@ -4,7 +4,7 @@
 
 1. **fetch**：从 APK 解包目录 / ADB 设备获取 AB 资源，缓存到 `data/raw/`，带 sha256 manifest，增量更新。
 2. **unpack**：用 UnityPy 把 AB 解包为全分辨率 RGBA PNG + 元数据（含游戏自带 `facePos/faceSize`），输出到 `data/unpacked/`，按 `类型/id/` 层级存放。
-3. 人脸识别（规划中，匹配方式待更新）。
+3. **extract**：按 手动 > 头像匹配 > 模型推导 三档确定裁切框，提取各 base/diff 的头像（180×180 PNG），增量缓存 face/head 识别结果。
 
 ## 环境
 
@@ -41,6 +41,9 @@ uv run npcavatar-detect
 
 # 高置信底图人脸识别（独立工具，暂不并入主流程）
 uv run npcavatar-detect-bases
+
+# 头像提取（独立工具）
+uv run npcavatar-extract
 ```
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
@@ -189,6 +192,66 @@ confidence, error}`，其中 `avatar/threshold/box/box_norm` 来自匹配报告�
 该工具不接入 fetch/unpack 主流程；模型权重首次运行时由 anime-face-detector
 自动下载并缓存（需联网）。
 
+## 头像提取（独立工具）
+
+`npcavatar-extract` 读取 `data/unpacked/_characters_classified.json`，对每个角色的
+base 按 **手动指定 > 头像匹配 > 模型推导** 三档确定头像裁切框，再对 base 与全部 diff
+提取 180×180 头像 PNG（`data/export/<角色>/<图片stem>.png`，越界补透明）。提取是
+增量的：目标文件已存在则跳过（`--force` 强制重提）；face/head 识别结果缓存在
+`data/unpacked/_face_head_detect.json`（主键 `"<角色>/<图片>"`，与手动文件键格式一致），
+重复运行不重复推理；base 两两相似度与 diff 匹配决策（IoU、special、box、method、
+confidence）缓存在 `data/unpacked/_avatar_extract_cache.json`（`--cache` 可换路径），
+重跑/`--force` 不再重复计算，缓存文件本身也是调试产物。
+
+```bash
+# 提取全部角色
+uv run npcavatar-extract
+
+# 只处理指定角色 / 前 N 个角色
+uv run npcavatar-extract --character avg_003_kalts_1
+uv run npcavatar-extract --limit 20
+
+# 强制重提 / 强制重算匹配
+uv run npcavatar-extract --force
+uv run npcavatar-extract --force-match
+```
+
+裁切框三档优先级：
+
+1. **手动**：`data/unpacked/_avatar_manual.json`（键 `"<角色>/<图片>"`，值
+   `{"box": [x1, y1, x2, y2]}`，原图像素），命中即用；
+2. **匹配**：复用 `data/unpacked/_avatar_match.json` 中 threshold **> 0.8** 的结果；
+   报告缺失或加 `--force-match` 时内联调用匹配逻辑重算；
+3. **推导**：对人脸置信度 **> 0.8** 且头部置信度 **> 0.7** 的图，用
+   `data/avatar_derive_08/model.json` 由 face/head 检测框推导正方形裁切框。
+
+diff 处理：与 base 同尺寸的 diff 直接使用；小尺寸 diff 按 `meta.json` 的
+`face_groups`（`$n` 系列对应第 n 组）缩放至 `faceSize` 后贴到 `facePos` 完成组合。
+组合后与 base 比较 **alpha 不透明掩码 IoU**（默认 0.95，`--special-mask-iou`）：
+正常 diff 复用 base 裁切框；低于阈值视为**特殊 diff**（动作/姿态变化导致头像位置
+偏移），对组合图重新做人脸/头部识别并按第三档推导框提取。
+
+多 base 角色：先提取各 base 头像，两两比较相似度（透明合成灰度相关，默认
+**> 0.98** 判重复），保留置信度更高者（手动 > 匹配 > 推导，同档比分数，再按文件名
+稳定排序）；被丢弃的 base 及其 diff 不写新文件（已存在文件不删除），报告中标
+`dropped`。
+
+报告默认写入 `data/unpacked/_avatar_extract.json`（`--output -` 输出到 stdout），
+每角色 bases/diffs 各带 `{status, method, confidence, box, avatar_file, special?,
+detect_cache_hit?}`；`stats` 汇总 base/diff 的 ok/skipped/dropped/no_box/failed 与
+识别缓存及相似度/diff 决策缓存命中/新增数。两类缓存均每 50 次新写入增量落盘、结束
+再落盘；相似度缓存键为 `"<角色>/<baseA>__<baseB>"`（base 名升序对），值为两个 180×180
+头像的 sha256、裁切框与相似度，头像内容或裁切框变化即自动重算；diff 决策缓存键为
+`"<角色>/<diff>"`，值为组合图+阈值+推导模型+所属 base 裁切结果的指纹与
+`{iou, special, box, method, confidence, detect_cache_hit, error}`，任一输入变化
+即自动重算（`no_box` 决策同样回放）。缓存不做键清理，旧条目保留作调试历史。
+
+可调参数：`--match-threshold`（0.8）、`--face-conf`（0.8）、`--head-conf`（0.7）、
+`--special-mask-iou`（0.95）、`--dedup-sim`（0.98）、`--manual`、`--derive-model`、
+`--face-head-cache`、`--cache`、`--output-dir`、`--output`、`--limit`、`--character`、
+`--force`、`--force-match`、`--device`（auto/cuda/cpu）。依赖 `uv sync --extra detect`。
+模型权重未缓存时首次运行需联网；本地已缓存且离线运行时设 `HF_HUB_OFFLINE=1`。
+
 ## 磁盘契约
 
 ```text
@@ -202,6 +265,10 @@ data/unpacked/characters/<npc_id>/<sprite>.png + meta.json
 data/unpacked/chararts/<char_id>/<sprite>.png + meta.json
 data/unpacked/skins/<char_id>/<sprite>.png + meta.json
 data/unpacked/avatars/<sprite>.png + _meta/<bundle>.json   # 扁平存放，仅保留 char_* 角色头像，其余素材解包时清理
+data/unpacked/_face_head_detect.json     # extract 的 face/head 识别缓存（主键 <角色>/<图片>）
+data/unpacked/_avatar_extract_cache.json # extract 的 base 相似度 / diff 决策缓存
+data/unpacked/_avatar_extract.json       # extract 提取报告
+data/export/<npc_id>/<sprite>.png        # extract 产物：各 base/diff 的 180×180 头像（按角色分文件夹）
 ```
 
 `meta.json` 保留 textures 尺寸、sprites 列表、`face_groups`（facePos/faceSize 配对），供步骤 3 使用。

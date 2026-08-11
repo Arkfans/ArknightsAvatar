@@ -20,6 +20,7 @@ npcavatar-sample-bases = "npcavatar.sample_bases:main"
 npcavatar-match = "npcavatar.match:main"
 npcavatar-detect = "npcavatar.detect:main"
 npcavatar-detect-bases = "npcavatar.detect_bases:main"
+npcavatar-extract = "npcavatar.extract:main"
 
 [dependency-groups]
 dev = ["pytest>=8.0", "numpy>=1.26", "opencv-python-headless>=4.8", "Pillow>=10.0"]
