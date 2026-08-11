@@ -94,8 +94,8 @@ uv run npcavatar-match
 同距离按文件名稳定排序；某个候选在整次缩放搜索后阈值高于 `--confidence-target`
 即采用该结果并跳过后续候选（候选级早停）。
 可调参数：`--min-avatar-size`（默认 130）、`--max-avatar-size`（默认 325，
-缩放搜索时模板最大边长不超过该值）、`--stop-threshold`（默认 0.85）、
-`--confidence-target`（默认 0.9）、`--limit`、`--character <角色名>`
+缩放搜索时模板最大边长不超过该值）、`--stop-threshold`（默认 0.70）、
+`--confidence-target`（默认 0.85）、`--limit`、`--character <角色名>`
 （只处理指定角色，需与分类报告中的角色名完全一致）、`--detail`
 （输出逐 offset 的详细匹配情况）。
 
@@ -230,7 +230,7 @@ diff 处理：与 base 同尺寸的 diff 直接使用；小尺寸 diff 按 `meta
 组合结果的 A 通道取自 base，存在 `alpha.png` 时面部区域优先用其灰度作为 A 通道与
 贴图蒙版。`alpha.png` 本身是提供 alpha 通道的贴图而非真实 diff，不参与提取、不计入
 报告与统计。
-组合后与 base 在 base 裁切框（脸部范围）内比较 **alpha 不透明掩码 IoU**（默认 0.95，`--special-mask-iou`）：
+组合后与 base 在 base 裁切框（脸部范围）内比较 **alpha 不透明掩码 IoU**（默认 0.85，`--special-mask-iou`）：
 正常 diff 复用 base 裁切框；低于阈值视为**特殊 diff**（动作/姿态变化导致头像位置
 偏移），对组合图重新做人脸/头部识别并按第三档推导框提取。
 
@@ -250,7 +250,7 @@ detect_cache_hit?}`；`stats` 汇总 base/diff 的 ok/skipped/dropped/no_box/fai
 即自动重算（`no_box` 决策同样回放）。缓存不做键清理，旧条目保留作调试历史。
 
 可调参数：`--match-threshold`（0.8）、`--face-conf`（0.8）、`--head-conf`（0.7）、
-`--special-mask-iou`（0.95）、`--dedup-sim`（0.98）、`--manual`、`--derive-model`、
+`--special-mask-iou`（0.85）、`--dedup-sim`（0.98）、`--manual`、`--derive-model`、
 `--face-head-cache`、`--cache`、`--output-dir`、`--output`、`--limit`、`--character`、
 `--force`、`--force-match`、`--device`（auto/cuda/cpu）。依赖 `uv sync --extra detect`。
 模型权重未缓存时首次运行需联网；本地已缓存且离线运行时设 `HF_HUB_OFFLINE=1`。
