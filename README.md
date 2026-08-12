@@ -47,6 +47,9 @@ uv run npcavatar-extract
 
 # 差分拼贴（独立工具）
 uv run npcavatar-collage
+
+# PNG 转 WebP（独立工具）
+uv run npcavatar-export-webp
 ```
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
@@ -285,6 +288,64 @@ uv run npcavatar-collage --font C:\Windows\Fonts\msyh.ttc
 报告中归属 base 的 diff（`alpha.png` 与 `unassigned` 不计入）；无 diff 或角色
 目录缺失时跳过该角色。依赖 Pillow（`uv sync --extra unpack`）。
 
+## PNG 转 WebP（独立工具）
+
+`npcavatar-export-webp` 扫描 `data/export/` 下各角色文件夹内的 PNG
+头像，逐张转换为 WebP 输出到 `data/export_webp/<角色>/`，
+保持目录结构与透明通道（PNG 按 RGBA 解码后保存）。
+增量转换：输出 `.webp` 已存在时跳过，加 `--force` 强制重转。
+
+```bash
+# 全部角色转换
+uv run npcavatar-export-webp
+
+# 只转指定角色（可重复）/ 前 N 个角色
+uv run npcavatar-export-webp --character avg_003_kalts_1
+uv run npcavatar-export-webp --limit 20
+
+# 调整压缩参数 / 强制重转
+uv run npcavatar-export-webp --quality 75 --method 6
+uv run npcavatar-export-webp --force
+```
+
+可调参数：`--export-dir`（默认 `data/export`）、
+`-o/--output-dir`（默认 `data/export_webp`）、`--quality`（0-100，默认 80）、
+`--method`（0-6，默认 4，越大压缩越慢体积越小）、
+`--character`（可重复）、`--limit`、`--force`。
+依赖 Pillow（`uv sync --extra unpack`）。
+
+
+## 生成 NPC 头像索引 JSON（独立工具）
+
+`npcavatar-npc-json` 扫描 `data/export/` 下各角色文件夹内的 PNG 头像，
+生成与旧项目 `arknights_npc.json` 相同格式的索引 JSON（默认输出
+`data/arknights_npc.json`，`-o -` 输出到 stdout）：
+
+```json
+{
+  "avg_003_kalts_1": [
+    [],
+    ["1$1", "10$1", "11$1", "12$1", "13$1", "14$1", "15$1", "2$1", "3$1", "4$1", "5$1", "6$1", "7$1", "8$1", "9$1", "avg_003_kalts_1$1"],
+    ["npc"]
+  ]
+}
+```
+
+每条形如 `[表情列表, 头像列表, 标签]`：首尾两元素为旧项目保留的固定占位
+（`[]` / `["npc"]`），头像列表为目录内所有 PNG 文件名（去扩展名）的字典序。
+键与头像列表均按字典序排序，输出确定可复现。纯标准库，无额外依赖。
+
+```bash
+# 全量生成
+uv run npcavatar-npc-json
+
+# 指定输入目录 / 输出到 stdout
+uv run npcavatar-npc-json --export-dir data/export -o -
+```
+
+可调参数：`--export-dir`（默认 `data/export`）、
+`-o/--output`（默认 `data/arknights_npc.json`，`-` 输出到 stdout）。
+
 ## 磁盘契约
 
 ```text
@@ -302,6 +363,8 @@ data/unpacked/_face_head_detect.json     # extract 的 face/head 识别缓存（
 data/unpacked/_avatar_extract_cache.json # extract 的 base 相似度 / diff 决策缓存
 data/unpacked/_avatar_extract.json       # extract 提取报告
 data/export/<npc_id>/<sprite>.png        # extract 产物：各 base/diff 的 180×180 头像（按角色分文件夹）
+data/export_webp/<npc_id>/<sprite>.webp   # export-webp 产物：头像 WebP 版（目录结构与 data/export 一致）
+data/arknights_npc.json             # npc-json 产物：<npc_id> -> [[], [头像文件名], ["npc"]]
 data/unpacked/_diff_collage/<npc_id>.png   # collage 产物：每角色一张差分拼贴图
 ```
 

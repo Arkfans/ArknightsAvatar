@@ -22,6 +22,8 @@ npcavatar-detect = "npcavatar.detect:main"
 npcavatar-detect-bases = "npcavatar.detect_bases:main"
 npcavatar-extract = "npcavatar.extract:main"
 npcavatar-collage = "npcavatar.collage:main"
+npcavatar-export-webp = "npcavatar.export_webp:main"
+npcavatar-npc-json = "npcavatar.npc_json:main"
 
 [dependency-groups]
 dev = ["pytest>=8.0", "numpy>=1.26", "opencv-python-headless>=4.8", "Pillow>=10.0"]
