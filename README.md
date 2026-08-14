@@ -70,12 +70,14 @@ uv run arknightsavatar run
 # 只跑部分步骤 / 限定角色数量 / 指定设备
 uv run arknightsavatar run --from classify --until extract --limit 20 --device auto
 
-# 强制重拉/重提
+# 强制重拉/重提/重匹配
 uv run arknightsavatar run --force --source local-apk
 ```
 
 步骤在进程内依次执行（复用各单工具的 `main(argv)`，行为与逐个运行一致），失败即中止
 并指出失败步骤；每步退出码与总览写入 `data/stats/run_stats.json`（`--stats-out` 可换）。
+`match` 步骤的输出报告（默认 `data/recognition/avatar_match.json`）已存在时整步跳过，
+`--force` 强制重跑。
 `extract` 依赖推导模型，缺失时给出「先 `derive-model` 或 `sync-cache --pull --restore`」的提示。
 
 ### pull（设备侧获取）
@@ -256,7 +258,8 @@ uv run arknightsavatar-pull-apk --package com.hypergryph.arknights.bilibili --ou
 的头像（`char_<ID>_*`）作为候选，用 OpenCV 模板匹配（TM_CCOEFF_NORMED + 缩放搜索，
 移植自旧版）在每张底图上定位头像包围盒，输出报告（默认
 `data/recognition/avatar_match.json`）。该工具未接入 fetch/unpack 主流程，用于调整
-匹配参数。
+匹配参数。匹配是增量的：输出报告已存在时整步跳过（管道重跑不重复计算），
+`--force` 强制重跑。
 
 ```bash
 # 冒烟：只处理前 20 个角色，输出到 stdout
@@ -267,6 +270,9 @@ uv run arknightsavatar-match --character avg_003_kalts_1
 
 # 全量匹配
 uv run arknightsavatar-match
+
+# 报告已存在时强制重跑
+uv run arknightsavatar-match --force
 ```
 
 输出语义：`characters.<name>.bases.<底图>` = `{avatar, threshold, box, box_norm}`，
@@ -286,7 +292,7 @@ uv run arknightsavatar-match
 缩放搜索时模板最大边长不超过该值）、`--stop-threshold`（默认 0.70）、
 `--confidence-target`（默认 0.85）、`--limit`、`--character <角色名>`
 （只处理指定角色，需与分类报告中的角色名完全一致）、`--detail`
-（输出逐 offset 的详细匹配情况）。
+（输出逐 offset 的详细匹配情况）、`--force`（报告已存在时强制重跑）。
 
 ## 底图抽样（独立工具）
 

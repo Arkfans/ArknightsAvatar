@@ -706,6 +706,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="optional directory for match visualization PNGs (one per matched base; default: off)",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="re-run matching even if the report already exists",
+    )
     return parser
 
 
@@ -758,6 +763,14 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
 
+    output = Path(args.output)
+    if args.output != "-" and output.is_file() and not args.force:
+        print(
+            f"report already exists, skipping match: {output} (use --force to re-run)",
+            file=sys.stdout,
+        )
+        return 0
+
     report = match_characters(
         classified,
         Path(args.characters_dir),
@@ -788,7 +801,6 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(payload, sys.stdout, ensure_ascii=False, indent=2)
         print()
     else:
-        output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         with output.open("wt", encoding="utf8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)

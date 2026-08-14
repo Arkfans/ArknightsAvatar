@@ -76,6 +76,24 @@ def test_step_argv_npc_json():
                     "--classified", "recognition/characters_classified.json"]
 
 
+def test_step_argv_match():
+    args = _args()
+    assert run.step_argv("match", args) == [
+        "--classified", "recognition/characters_classified.json",
+        "--characters-dir", "unpacked/characters",
+        "--avatars-dir", "unpacked/avatars",
+        "--output", "recognition/avatar_match.json",
+        "--limit", "0",
+    ]
+
+
+def test_step_argv_match_force():
+    args = _args(force=True)
+    argv = run.step_argv("match", args)
+    assert argv[-1] == "--force"
+    assert argv.count("--force") == 1
+
+
 def test_run_steps_order_and_early_stop(monkeypatch):
     calls = []
 

@@ -59,7 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="pass --force to extract/export-webp",
+        help="pass --force to match/extract/export-webp",
     )
     parser.add_argument("--characters-dir", default=paths.UNPACKED_CHARACTERS_DIR)
     parser.add_argument("--avatars-dir", default=paths.UNPACKED_AVATARS_DIR)

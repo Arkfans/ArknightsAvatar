@@ -75,7 +75,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="pass --force to fetch/unpack/extract/export-webp",
+        help="pass --force to fetch/unpack/match/extract/export-webp",
     )
     parser.add_argument("--raw-dir", default=paths.RAW_DIR)
     parser.add_argument("--unpacked-dir", default=paths.UNPACKED_DIR)
@@ -133,6 +133,7 @@ def step_argv(name: str, args: argparse.Namespace) -> list[str]:
             args.match_report,
             "--limit",
             str(args.limit),
+            *(["--force"] if args.force else []),
         ]
     if name == "extract":
         return [

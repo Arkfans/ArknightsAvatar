@@ -505,6 +505,65 @@ def test_cli_output_stdout_dash(capsys, tmp_path: Path):
     assert payload["stats"]["total"] == 1
 
 
+def test_cli_skips_when_report_exists(tmp_path: Path, capsys, monkeypatch):
+    characters_dir = tmp_path / "characters"
+    avatars_dir = tmp_path / "avatars"
+    avatar = _avatar_image(180, seed=1)
+    _write_image(avatars_dir / "char_003_kalts.png", avatar)
+    _write_image(characters_dir / "avg_003_kalts_1" / "base.png", _base_with_avatar(avatar, (0, 0)))
+    classified = tmp_path / "classified.json"
+    _write_classified(
+        classified,
+        {"avg_003_kalts_1": {"status": "ok", "bases": {"base.png": {"diff": []}}, "unassigned": [], "sizes": {}}},
+    )
+    output = tmp_path / "report.json"
+    argv = [
+        "--classified", str(classified),
+        "--characters-dir", str(characters_dir),
+        "--avatars-dir", str(avatars_dir),
+        "--output", str(output),
+    ]
+
+    assert main(argv) == 0
+    before = output.read_bytes()
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("match_characters must not run when the report already exists")
+
+    monkeypatch.setattr("arknightsavatar.match.match_characters", _boom)
+    assert main(argv) == 0
+    assert "skipping match" in capsys.readouterr().out
+    assert output.read_bytes() == before
+
+
+def test_cli_force_reruns_when_report_exists(tmp_path: Path, capsys):
+    characters_dir = tmp_path / "characters"
+    avatars_dir = tmp_path / "avatars"
+    avatar = _avatar_image(180, seed=1)
+    _write_image(avatars_dir / "char_003_kalts.png", avatar)
+    _write_image(characters_dir / "avg_003_kalts_1" / "base.png", _base_with_avatar(avatar, (0, 0)))
+    classified = tmp_path / "classified.json"
+    _write_classified(
+        classified,
+        {"avg_003_kalts_1": {"status": "ok", "bases": {"base.png": {"diff": []}}, "unassigned": [], "sizes": {}}},
+    )
+    output = tmp_path / "report.json"
+    argv = [
+        "--classified", str(classified),
+        "--characters-dir", str(characters_dir),
+        "--avatars-dir", str(avatars_dir),
+        "--output", str(output),
+    ]
+
+    assert main(argv) == 0
+    assert main(argv + ["--force"]) == 0
+    out = capsys.readouterr().out
+    assert "skipping match" not in out
+    payload = json.loads(output.read_text(encoding="utf8"))
+    assert payload["stats"]["total"] == 1
+    assert payload["characters"]["avg_003_kalts_1"]["status"] == "ok"
+
+
 def _setup_match_env(tmp_path: Path, avatar_size: int = 180, seed: int = 1):
     """搭建一套角色/头像/分类文件，返回 (classified_path, characters_dir, avatars_dir, expected_box)。"""
     characters_dir = tmp_path / "characters"
