@@ -17,7 +17,7 @@ import argparse
 import importlib
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from arknightsavatar import paths
@@ -37,7 +37,7 @@ STEP_MODULES: dict[str, str] = {
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -77,6 +77,16 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="pass --force to fetch/unpack/match/extract/export-webp",
     )
+    parser.add_argument(
+        "--no-batch",
+        action="store_true",
+        help="pass --no-batch to fetch (pull AB files one by one)",
+    )
+    parser.add_argument(
+        "--compress",
+        action="store_true",
+        help="pass --compress to fetch (gzip the device-side archive)",
+    )
     parser.add_argument("--raw-dir", default=paths.RAW_DIR)
     parser.add_argument("--unpacked-dir", default=paths.UNPACKED_DIR)
     parser.add_argument("--characters-dir", default=paths.UNPACKED_CHARACTERS_DIR)
@@ -104,6 +114,10 @@ def step_argv(name: str, args: argparse.Namespace) -> list[str]:
             argv += ["--config", args.config]
         if args.force:
             argv += ["--force"]
+        if args.no_batch:
+            argv += ["--no-batch"]
+        if args.compress:
+            argv += ["--compress"]
         return argv
     if name == "unpack":
         argv = [
@@ -243,9 +257,10 @@ def main(argv: list[str] | None = None) -> int:
         print("error: --from must not be after --until", file=sys.stderr)
         return 1
 
-    if "extract" in STEPS[STEPS.index(args.from_step) : STEPS.index(args.until_step) + 1]:
-        if not check_derive_model(args.derive_model):
-            return 1
+    if "extract" in STEPS[STEPS.index(args.from_step) : STEPS.index(args.until_step) + 1] and not check_derive_model(
+        args.derive_model
+    ):
+        return 1
 
     started = _now()
     results = run_steps(args)

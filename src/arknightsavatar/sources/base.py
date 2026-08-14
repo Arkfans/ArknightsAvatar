@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -24,6 +25,22 @@ class Source(ABC):
     @abstractmethod
     def fetch_to(self, rel: str, dest: Path) -> None:
         """Copy/pull the file to dest (dest is a complete file path)."""
+
+    def fetch_many(self, items: Sequence[tuple[FileInfo, Path]]) -> list[tuple[FileInfo, Exception]]:
+        """Fetch several files in one call; dest paths are complete file paths.
+
+        Sources may override this to batch the transfer (e.g. pack files on
+        the device and pull once). The default implementation fetches one
+        file at a time and collects per-file failures, so every source keeps
+        working without a batch path.
+        """
+        failures: list[tuple[FileInfo, Exception]] = []
+        for info, dest in items:
+            try:
+                self.fetch_to(info.rel, dest)
+            except Exception as error:  # noqa: BLE001 - report and continue
+                failures.append((info, error))
+        return failures
 
     def sha256(self, rel: str) -> str | None:
         """Return the source-side sha256 if cheaply computable, else None."""

@@ -1,8 +1,53 @@
-﻿import io
+import io
+import tarfile
 from pathlib import Path
 from unittest.mock import Mock
 
-from arknightsavatar.sources.adb import AdbSource, _PullProgress, _fmt_bytes
+from arknightsavatar.sources.adb import AdbSource, _fmt_bytes, _PullProgress
+from arknightsavatar.sources.base import FileInfo
+
+
+def _make_source() -> AdbSource:
+    source = AdbSource.__new__(AdbSource)
+    source.location = "/sdcard/game"
+    source._show_progress = False
+    source._batch = True
+    source._compress = False
+    return source
+
+
+def _tar_bytes(files: dict[str, bytes], *, gzip: bool = False) -> bytes:
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz" if gzip else "w") as archive:
+        for name, data in files.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            archive.addfile(info, io.BytesIO(data))
+    return buffer.getvalue()
+
+
+def _attach_device(source: AdbSource, files: dict[str, bytes], *, gzip: bool = False) -> Mock:
+    """Wire a fake device whose pack pull yields a tar of ``files``."""
+    device = Mock()
+
+    def fake_shell(command, **kwargs):
+        return "EXIT:0" if command.startswith("tar") else ""
+
+    def fake_pull(device_path, local_path, progress_callback=None, **kwargs):
+        if device_path.startswith("/data/local/tmp"):
+            data = _tar_bytes(files, gzip=gzip)
+            progress_callback(device_path, len(data), len(data))
+            Path(local_path).write_bytes(data)
+        else:
+            name = device_path.rsplit("/", 1)[-1]
+            data = files[name]
+            progress_callback(device_path, len(data), len(data))
+            Path(local_path).write_bytes(data)
+
+    device.shell.side_effect = fake_shell
+    device.pull.side_effect = fake_pull
+    source._device = device
+    return device
 
 
 def test_fmt_bytes():
@@ -72,3 +117,206 @@ def test_fetch_to_passes_progress_callback(tmp_path: Path):
     assert dest.read_bytes() == data
     assert device.pull.call_count == 1
     assert device.pull.call_args.kwargs["progress_callback"] is not None
+
+
+def test_fetch_many_packs_pulls_once_and_extracts(tmp_path: Path):
+    source = _make_source()
+    files = {"a.ab": b"a" * 100, "b.ab": b"b" * 50}
+    device = _attach_device(source, files)
+    shells: list[str] = []
+    device.shell.side_effect = (
+        lambda command, **kwargs: shells.append(command)
+        or ("EXIT:0" if command.startswith("tar") else "")
+    )
+
+    items = [
+        (FileInfo(rel="characters/a.ab", size=100), tmp_path / "characters" / "a.ab.part"),
+        (FileInfo(rel="characters/b.ab", size=50), tmp_path / "characters" / "b.ab.part"),
+    ]
+    assert source.fetch_many(items) == []
+
+    assert (tmp_path / "characters" / "a.ab.part").read_bytes() == b"a" * 100
+    assert (tmp_path / "characters" / "b.ab.part").read_bytes() == b"b" * 50
+
+    # one pack pull, plus the per-file fallbacks that never fired
+    assert device.pull.call_count == 1
+    assert device.pull.call_args.args[0].startswith("/data/local/tmp/arknights_ab_characters_")
+
+    tar_cmd = next(cmd for cmd in shells if cmd.startswith("tar"))
+    assert "-cf" in tar_cmd and "-T" in tar_cmd and "-C" in tar_cmd
+    assert "-C /sdcard/game/avg/characters" in tar_cmd
+    assert "echo EXIT:$?" in tar_cmd
+
+    # device scratch files are cleaned up
+    rm_cmd = next(cmd for cmd in shells if cmd.startswith("rm -f"))
+    assert ".tar" in rm_cmd and ".list" in rm_cmd
+    # no leftover local pack
+    assert not list(tmp_path.rglob("arknights_ab_*"))
+
+
+def test_fetch_many_writes_listing_in_chunks(tmp_path: Path):
+    source = _make_source()
+    files = {f"f{i}.ab": b"x" for i in range(250)}
+    device = _attach_device(source, files)
+    shells: list[str] = []
+    device.shell.side_effect = (
+        lambda command, **kwargs: shells.append(command)
+        or ("EXIT:0" if command.startswith("tar") else "")
+    )
+
+    items = [(FileInfo(rel=f"characters/f{i}.ab", size=1), tmp_path / f"f{i}.ab.part") for i in range(250)]
+    assert source.fetch_many(items) == []
+    assert all((tmp_path / f"f{i}.ab.part").read_bytes() == b"x" for i in range(250))
+
+    printf_cmds = [cmd for cmd in shells if cmd.startswith("printf")]
+    assert len(printf_cmds) == 3  # 250 names / 100 per chunk
+    assert " > " in printf_cmds[0]
+    assert all(" >> " in cmd for cmd in printf_cmds[1:])
+
+
+def test_fetch_many_missing_member_falls_back_to_per_file(tmp_path: Path):
+    source = _make_source()
+    device = Mock()
+
+    def fake_shell(command, **kwargs):
+        return "EXIT:0" if command.startswith("tar") else ""
+
+    def fake_pull(device_path, local_path, progress_callback=None, **kwargs):
+        if device_path.startswith("/data/local/tmp"):
+            data = _tar_bytes({"a.ab": b"a" * 100})  # pack misses b.ab and c.ab
+        else:
+            data = {"/sdcard/game/avg/characters/b.ab": b"b" * 50,
+                    "/sdcard/game/avg/characters/c.ab": b"c" * 99}[device_path]
+        progress_callback(device_path, len(data), len(data))
+        Path(local_path).write_bytes(data)
+
+    device.shell.side_effect = fake_shell
+    device.pull.side_effect = fake_pull
+    source._device = device
+
+    items = [
+        (FileInfo(rel="characters/a.ab", size=100), tmp_path / "a.ab.part"),
+        (FileInfo(rel="characters/b.ab", size=50), tmp_path / "b.ab.part"),
+        (FileInfo(rel="characters/c.ab", size=99), tmp_path / "c.ab.part"),
+    ]
+    assert source.fetch_many(items) == []
+
+    assert (tmp_path / "a.ab.part").read_bytes() == b"a" * 100
+    # b.ab missing from the archive and c.ab size-mismatched -> re-pulled per file
+    assert (tmp_path / "b.ab.part").read_bytes() == b"b" * 50
+    assert (tmp_path / "c.ab.part").read_bytes() == b"c" * 99
+    assert device.pull.call_count == 3  # 1 pack + 2 fallbacks
+    fallback_paths = [call.args[0] for call in device.pull.call_args_list[1:]]
+    assert fallback_paths == [
+        "/sdcard/game/avg/characters/b.ab",
+        "/sdcard/game/avg/characters/c.ab",
+    ]
+
+
+def test_fetch_many_reports_failures_when_fallback_also_fails(tmp_path: Path):
+    source = _make_source()
+    files = {"a.ab": b"a" * 100}
+    device = _attach_device(source, files)
+
+    def fake_pull(device_path, local_path, progress_callback=None, **kwargs):
+        if device_path.startswith("/data/local/tmp"):
+            data = _tar_bytes(files)
+            progress_callback(device_path, len(data), len(data))
+            Path(local_path).write_bytes(data)
+        else:
+            raise OSError("device gone")
+
+    device.pull.side_effect = fake_pull
+    source._device = device
+
+    items = [
+        (FileInfo(rel="characters/a.ab", size=100), tmp_path / "a.ab.part"),
+        (FileInfo(rel="characters/b.ab", size=50), tmp_path / "b.ab.part"),
+    ]
+    failures = source.fetch_many(items)
+    assert [info.rel for info, _ in failures] == ["characters/b.ab"]
+    assert isinstance(failures[0][1], OSError)
+    assert not (tmp_path / "b.ab.part").exists()
+
+
+def test_fetch_many_falls_back_to_per_file_when_tar_fails(tmp_path: Path):
+    source = _make_source()
+    device = _attach_device(source, {"a.ab": b"abc"})
+    device.shell.side_effect = lambda command, **kwargs: "EXIT:1\ntar: not supported" if command.startswith("tar") else ""
+
+    items = [(FileInfo(rel="characters/a.ab", size=3), tmp_path / "a.ab.part")]
+    assert source.fetch_many(items) == []
+
+    assert (tmp_path / "a.ab.part").read_bytes() == b"abc"
+    # per-file fallback pulled the real AB path, not the pack
+    assert device.pull.call_count == 1
+    assert device.pull.call_args.args[0] == "/sdcard/game/avg/characters/a.ab"
+
+
+def test_fetch_many_cleanup_after_failed_pack_pull(tmp_path: Path):
+    source = _make_source()
+    files = {"a.ab": b"a" * 10, "b.ab": b"b" * 10}
+    device = _attach_device(source, files)
+    shells: list[str] = []
+    device.shell.side_effect = (
+        lambda command, **kwargs: shells.append(command)
+        or ("EXIT:0" if command.startswith("tar") else "")
+    )
+
+    def fake_pull(device_path, local_path, progress_callback=None, **kwargs):
+        if device_path.startswith("/data/local/tmp"):
+            raise RuntimeError("link down")
+        data = files[device_path.rsplit("/", 1)[-1]]
+        progress_callback(device_path, len(data), len(data))
+        Path(local_path).write_bytes(data)
+
+    device.pull.side_effect = fake_pull
+    source._device = device
+
+    items = [(FileInfo(rel=f"characters/{name}", size=10), tmp_path / f"{name}.part") for name in files]
+    assert source.fetch_many(items) == []
+
+    assert (tmp_path / "a.ab.part").read_bytes() == b"a" * 10
+    assert (tmp_path / "b.ab.part").read_bytes() == b"b" * 10
+    assert any(cmd.startswith("rm -f") for cmd in shells)
+
+
+def test_fetch_many_compress_uses_gzip(tmp_path: Path):
+    source = _make_source()
+    source._compress = True
+    files = {"a.ab": b"a" * 100}
+    device = _attach_device(source, files, gzip=True)
+    shells: list[str] = []
+    device.shell.side_effect = (
+        lambda command, **kwargs: shells.append(command)
+        or ("EXIT:0" if command.startswith("tar") else "")
+    )
+
+    items = [(FileInfo(rel="characters/a.ab", size=100), tmp_path / "a.ab.part")]
+    assert source.fetch_many(items) == []
+    assert (tmp_path / "a.ab.part").read_bytes() == b"a" * 100
+    tar_cmd = next(cmd for cmd in shells if cmd.startswith("tar"))
+    assert "-czf" in tar_cmd
+
+
+def test_fetch_many_empty_items_makes_no_device_calls(tmp_path: Path):
+    source = _make_source()
+    device = Mock()
+    source._device = device
+    assert source.fetch_many([]) == []
+    device.shell.assert_not_called()
+    device.pull.assert_not_called()
+
+
+def test_fetch_many_batch_disabled_pulls_per_file(tmp_path: Path):
+    source = _make_source()
+    source._batch = False
+    files = {"a.ab": b"a" * 10, "b.ab": b"b" * 10}
+    device = _attach_device(source, files)
+
+    items = [(FileInfo(rel=f"characters/{name}", size=10), tmp_path / f"{name}.part") for name in files]
+    assert source.fetch_many(items) == []
+    assert (tmp_path / "a.ab.part").read_bytes() == b"a" * 10
+    assert (tmp_path / "b.ab.part").read_bytes() == b"b" * 10
+    assert device.pull.call_count == 2
+    device.shell.assert_not_called()

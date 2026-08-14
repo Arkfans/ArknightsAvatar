@@ -5,17 +5,25 @@ import os
 import sys
 from pathlib import Path
 
+from arknightsavatar import paths
+
 from .config import CATEGORIES, Config, load_config
 from .manifest import FailureLog, FileRecord, Manifest
 from .sources import ApkSource, Source
 from .sources.adb import AdbSource
 from .sources.apk_adb import ApkAdbSource
+from .sources.base import FileInfo
 from .sources.device import package_from_location
 from .util import sha256_file
-from arknightsavatar import paths
 
 
-def make_source(name: str, config: Config) -> Source:
+def make_source(
+    name: str,
+    config: Config,
+    *,
+    batch: bool = True,
+    compress: bool = False,
+) -> Source:
     if name == "apk":
         return ApkAdbSource(
             host=config.adb.host,
@@ -31,6 +39,8 @@ def make_source(name: str, config: Config) -> Source:
             host=config.adb.host,
             port=config.adb.port,
             location=config.adb.resolved_location(),
+            batch=batch,
+            compress=compress,
         )
     raise SystemExit(f"unknown source: {name}")
 
@@ -54,6 +64,8 @@ def run_fetch(
     for category in categories:
         infos = source.list_files(category)
         stats[category]["listed"] = len(infos)
+
+        needed: list[tuple[FileInfo, Path]] = []
         for info in sorted(infos, key=lambda item: item.rel):
             dest = raw_dir / info.rel
             record = manifest.get(info.rel)
@@ -67,18 +79,18 @@ def run_fetch(
                 if remote_sha is None or remote_sha == record.sha256:
                     stats[category]["skipped"] += 1
                     continue
+            needed.append((info, dest.with_name(dest.name + ".part")))
 
-            tmp = dest.with_name(dest.name + ".part")
-            try:
-                source.fetch_to(info.rel, tmp)
-                size = tmp.stat().st_size
-                if size == 0:
-                    raise ValueError("file is 0 bytes")
-                digest = sha256_file(tmp)
-                os.replace(tmp, dest)
-                manifest.set(info.rel, FileRecord(size=size, sha256=digest, source=source.name))
-                stats[category]["fetched"] += 1
-            except Exception as error:  # noqa: BLE001 - record and continue
+        try:
+            batch_failures = source.fetch_many(needed)
+        except Exception as error:  # noqa: BLE001 - whole batch crashed
+            batch_failures = [(info, error) for info, _ in needed]
+        failed_rels = {info.rel: error for info, error in batch_failures}
+
+        for info, tmp in needed:
+            dest = raw_dir / info.rel
+            error = failed_rels.get(info.rel)
+            if error is not None:
                 tmp.unlink(missing_ok=True)
                 failures.add(
                     info.rel,
@@ -87,6 +99,24 @@ def run_fetch(
                     error=f"{type(error).__name__}: {error}",
                 )
                 stats[category]["failed"] += 1
+            else:
+                try:
+                    size = tmp.stat().st_size
+                    if size == 0:
+                        raise ValueError("file is 0 bytes")
+                    digest = sha256_file(tmp)
+                    os.replace(tmp, dest)
+                    manifest.set(info.rel, FileRecord(size=size, sha256=digest, source=source.name))
+                    stats[category]["fetched"] += 1
+                except Exception as error:  # noqa: BLE001 - record and continue
+                    tmp.unlink(missing_ok=True)
+                    failures.add(
+                        info.rel,
+                        source=source.name,
+                        size=info.size,
+                        error=f"{type(error).__name__}: {error}",
+                    )
+                    stats[category]["failed"] += 1
             dirty += 1
             if dirty % 50 == 0:
                 manifest.save()
@@ -104,6 +134,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--category", choices=[*CATEGORIES, "all"], default="all")
     parser.add_argument("--raw-dir", default=paths.RAW_DIR, help="Output cache directory")
     parser.add_argument("--force", action="store_true", help="Re-fetch even if manifest says unchanged")
+    parser.add_argument(
+        "--no-batch",
+        action="store_true",
+        help="disable device-side packing; pull file by file (adb source)",
+    )
+    parser.add_argument(
+        "--compress",
+        action="store_true",
+        help="gzip the device-side archive before pulling (adb source; ABs are "
+        "already compressed, so savings are small)",
+    )
     return parser
 
 
@@ -111,7 +152,12 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         config = load_config(args.config)
-        source = make_source(args.source, config)
+        source = make_source(
+            args.source,
+            config,
+            batch=not args.no_batch,
+            compress=args.compress,
+        )
         categories = list(CATEGORIES) if args.category == "all" else [args.category]
         stats = run_fetch(source, categories, Path(args.raw_dir), force=args.force, game_version=config.game_version)
     except Exception as error:  # noqa: BLE001 - CLI boundary

@@ -149,10 +149,17 @@ uv run arknightsavatar-fetch --source apk --category avatars
 uv run arknightsavatar-fetch --source local-apk --category avatars
 
 # 从 ADB 设备游戏 Bundles 拉取
+# （默认批量拉取：设备端 tar 打包 → 单次传输 → 本地解压，替代逐文件拉取）
 uv run arknightsavatar-fetch --source adb --category characters
 
 # 默认从 ADB 设备拉取 characters 与 avatars 两类资源
 uv run arknightsavatar-fetch
+
+# 逐文件拉取（禁用设备端打包，排查用）
+uv run arknightsavatar-fetch --no-batch
+
+# 设备端 gzip 压缩后再拉取（AB 已是 LZ4 压缩，实测仅省 ~10% 体积且耗设备 CPU，默认关闭）
+uv run arknightsavatar-fetch --compress
 
 # 解包
 uv run arknightsavatar-unpack --category all

@@ -1,15 +1,25 @@
 from __future__ import annotations
 
+import os
 import re
+import shlex
+import shutil
 import sys
+import tarfile
+import tempfile
 import time
+from collections.abc import Sequence
 from pathlib import Path
+from typing import ClassVar
 
 from .base import FileInfo, Source
 from .device import connect_device, load_rsa_keys
 
 _LS_LINE = re.compile(r"^[bcdlps-][rwxsStT-]{9}\s+\S+\s+\S+\s+\S+\s+(\d+)\s+(?:\S+\s+){2,3}(.+)$")
 _UNIT = 1024.0
+_DEVICE_TMP = "/data/local/tmp"
+_LIST_CHUNK = 100  # file names per printf invocation (keeps shell commands short)
+_EXIT_RE = re.compile(r"EXIT:(\d+)\s*$")
 
 
 def _fmt_bytes(value: float) -> str:
@@ -83,12 +93,21 @@ class AdbSource(Source):
 
     name = "adb"
 
-    CATEGORY_SUBPATHS = {
+    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = {
         "characters": ("avg", "characters"),
         "avatars": ("spritepack",),
     }
 
-    def __init__(self, host: str, port: int, location: str, *, progress: bool | None = None):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        location: str,
+        *,
+        progress: bool | None = None,
+        batch: bool = True,
+        compress: bool = False,
+    ):
         from adb_shell.adb_device import AdbDeviceTcp
 
         self._device = AdbDeviceTcp(host=host, port=port)
@@ -101,6 +120,8 @@ class AdbSource(Source):
         self.location = location.rstrip("/")
         self._ls_cache: dict[str, list[tuple[str, int]]] = {}
         self._show_progress = sys.stderr.isatty() if progress is None else progress
+        self._batch = batch
+        self._compress = compress
 
     def dir_for(self, category: str) -> str:
         return "/".join((self.location, *self.CATEGORY_SUBPATHS[category]))
@@ -135,3 +156,138 @@ class AdbSource(Source):
             self._device.pull(self.remote_path(rel), str(dest), progress_callback=progress)
         finally:
             progress.finish()
+
+    def fetch_many(self, items: Sequence[tuple[FileInfo, Path]]) -> list[tuple[FileInfo, Exception]]:
+        """Fetch several files at once by packing them on the device.
+
+        Each category becomes one tar archive on the device; the archive is
+        pulled with a single sync-protocol transfer and extracted locally.
+        Any file the pack path could not deliver (missing member, size
+        mismatch, failed tar, failed pull) falls back to the per-file pull,
+        so a batch failure never loses data.
+        """
+        failures: list[tuple[FileInfo, Exception]] = []
+        by_category: dict[str, list[tuple[FileInfo, Path]]] = {}
+        for info, dest in items:
+            by_category.setdefault(info.rel.split("/", 1)[0], []).append((info, dest))
+
+        for category, cat_items in by_category.items():
+            if self._batch:
+                try:
+                    pack_failures = self._fetch_category_pack(category, cat_items)
+                except Exception as error:  # noqa: BLE001 - whole pack failed
+                    pack_failures = [(info, error) for info, _ in cat_items]
+                failed_rels = {info.rel for info, _ in pack_failures}
+                if not failed_rels:
+                    continue
+                for info, dest in cat_items:
+                    if info.rel not in failed_rels:
+                        continue
+                    try:
+                        self.fetch_to(info.rel, dest)
+                    except Exception as error:  # noqa: BLE001 - report and continue
+                        failures.append((info, error))
+                continue
+
+            for info, dest in cat_items:
+                try:
+                    self.fetch_to(info.rel, dest)
+                except Exception as error:  # noqa: BLE001 - report and continue
+                    failures.append((info, error))
+        return failures
+
+    def _fetch_category_pack(
+        self,
+        category: str,
+        items: Sequence[tuple[FileInfo, Path]],
+    ) -> list[tuple[FileInfo, Exception]]:
+        """Tar the listed files on the device, pull once, extract locally.
+
+        Raises if the whole pack (tar or pull) failed; returns per-file
+        failures otherwise.
+        """
+        names = [info.rel.split("/", 1)[1] for info, _ in items]
+        directory = self.dir_for(category)
+        unique = f"{category}_{os.getpid()}"
+        pack = f"{_DEVICE_TMP}/arknights_ab_{unique}.tar"
+        listing = f"{_DEVICE_TMP}/arknights_ab_{unique}.list"
+        local_fd, local_pack = tempfile.mkstemp(suffix=".tar", prefix=f"arknights_ab_{category}_")
+        os.close(local_fd)
+        local_pack = Path(local_pack)
+        try:
+            self._write_device_listing(listing, names)
+            self._tar_on_device(pack, directory, listing)
+            progress = _PullProgress(f"{category} ({len(items)} files)", enabled=self._show_progress)
+            try:
+                self._device.pull(pack, str(local_pack), progress_callback=progress, read_timeout_s=60)
+            finally:
+                progress.finish()
+            return self._extract_pack(local_pack, items)
+        finally:
+            self._rm_device_files(pack, listing)
+            local_pack.unlink(missing_ok=True)
+
+    def _rm_device_files(self, *paths: str) -> None:
+        if not paths:
+            return
+        command = "rm -f " + " ".join(shlex.quote(path) for path in paths)
+        try:
+            self._device.shell(command, read_timeout_s=30, timeout_s=60)
+        except Exception:  # noqa: S110, BLE001 - best-effort cleanup; never mask the real error
+            pass
+
+    def _write_device_listing(self, listing: str, names: Sequence[str]) -> None:
+        """Write names to the device list file, chunked to keep commands short."""
+        for start in range(0, len(names), _LIST_CHUNK):
+            chunk = " ".join(shlex.quote(name) for name in names[start : start + _LIST_CHUNK])
+            op = ">" if start == 0 else ">>"
+            self._device.shell(
+                f"printf '%s\\n' {chunk} {op} {shlex.quote(listing)}",
+                read_timeout_s=30,
+                timeout_s=120,
+            )
+
+    def _tar_on_device(self, pack: str, directory: str, listing: str) -> None:
+        """Create the device-side archive; raise if tar failed."""
+        flags = "czf" if self._compress else "cf"
+        command = (
+            f"tar -{flags} {shlex.quote(pack)} -C {shlex.quote(directory)} "
+            f"-T {shlex.quote(listing)} ; echo EXIT:$?"
+        )
+        output = self._device.shell(command, read_timeout_s=600, timeout_s=3600)
+        match = _EXIT_RE.search(output.rstrip())
+        if match is None or match.group(1) != "0":
+            raise RuntimeError(f"device tar failed: {output.strip()[-300:] or 'no output'}")
+
+    def _extract_pack(
+        self,
+        local_pack: Path,
+        items: Sequence[tuple[FileInfo, Path]],
+    ) -> list[tuple[FileInfo, Exception]]:
+        """Extract the pulled archive into the per-file dest paths.
+
+        Verifies every member exists and its size matches the size observed
+        at listing time (catches files changed while the pack was built).
+        """
+        failures: list[tuple[FileInfo, Exception]] = []
+        mode = "r:gz" if self._compress else "r:"
+        with tarfile.open(local_pack, mode) as archive:
+            members = {member.name: member for member in archive.getmembers() if member.isfile()}
+            for info, dest in items:
+                name = info.rel.split("/", 1)[1]
+                try:
+                    member = members.get(name)
+                    if member is None:
+                        raise FileNotFoundError(f"{name} missing from device archive")
+                    if member.size != info.size:
+                        raise OSError(f"{name} size mismatch: {member.size} != {info.size}")
+                    source = archive.extractfile(member)
+                    if source is None:
+                        raise OSError(f"{name} not extractable from device archive")
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    with dest.open("wb") as target:
+                        shutil.copyfileobj(source, target)
+                except Exception as error:  # noqa: BLE001 - report and continue
+                    dest.unlink(missing_ok=True)
+                    failures.append((info, error))
+        return failures
