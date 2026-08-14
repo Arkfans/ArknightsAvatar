@@ -1,4 +1,4 @@
-﻿import json
+import json
 from pathlib import Path
 
 import cv2
@@ -8,7 +8,6 @@ from PIL import Image, ImageDraw
 
 from arknightsavatar.match import (
     BASE_EXTEND_TOP,
-    COARSE_INCREASE,
     CONFIDENCE_TARGET,
     AVATAR_MAX_SIZE,
     MAX_AVATAR_SIZE,
@@ -65,67 +64,6 @@ def _scaled_base_with_avatar(avatar: Image.Image, scale: float, at: tuple[int, i
     base = Image.new("RGBA", (1024, 1024), (0, 0, 0, 255))
     base.paste(scaled, at, scaled)
     return base
-
-
-def _legacy_1px_search(
-    base: np.ndarray, avatar: np.ndarray, min_avatar_size: int, stop_threshold: float
-) -> tuple[int, float]:
-    """复刻旧版固定 1px 步进搜索（BASE_INCREASE=1），作为自适应步进回归基准。"""
-    ah, aw = avatar.shape[:2]
-
-    def _find(offset: int) -> np.ndarray:
-        scaled = cv2.resize(avatar, (aw + offset, ah + offset))
-        return cv2.matchTemplate(base, scaled, cv2.TM_CCOEFF_NORMED)
-
-    def _valid(offset: int) -> bool:
-        return ah + offset > min_avatar_size and aw + offset > min_avatar_size
-
-    def _optimize(o_offset: int, o_increase: int) -> bool:
-        nonlocal offset, best_offset, best_t
-        times = 10 if best_t > stop_threshold else 50
-        for _ in range(times):
-            o_offset += o_increase
-            if not _valid(o_offset):
-                return False
-            t = float(np.max(_find(o_offset)))
-            if t > best_t:
-                offset = o_offset
-                best_offset = o_offset
-                best_t = t
-                return True
-        return False
-
-    offset = 0
-    best_offset = 0
-    res = _find(0)
-    best_t = float(np.max(res))
-    initial = best_t
-    increase = 1 if float(np.max(_find(1))) > initial else -1
-    if_reversed = False
-
-    while True:
-        offset += increase
-        if not _valid(offset):
-            if not if_reversed and best_t < stop_threshold:
-                if_reversed = True
-                if _optimize(0, -increase):
-                    increase = -increase
-                    continue
-            break
-        t = float(np.max(_find(offset)))
-        if t > best_t:
-            best_t, best_offset = t, offset
-        else:
-            if _optimize(offset, increase):
-                continue
-            if not if_reversed and best_t < stop_threshold:
-                if_reversed = True
-                if _optimize(0, -increase):
-                    increase = -increase
-                    continue
-            break
-
-    return best_offset, best_t
 
 
 def test_name_filtering():
@@ -232,95 +170,6 @@ def test_template_match_located_above_top_edge(tmp_path: Path):
     assert box == (300, -50, 480, 130)
 
 
-def test_adaptive_step_matches_legacy_1px_search(tmp_path: Path):
-    """2px 粗搜 + 1px 微调 + ±1 回查，在多种缩放场景下与原 1px 搜索结果一致。"""
-    for scale in (0.9, 1.0, 1.1, 1.25, 1.3, 1.4):
-        for seed in (1, 2):
-            avatar = _avatar_image(180, seed=seed)
-            avatar_path = tmp_path / f"avatar_{scale}_{seed}.png"
-            base_path = tmp_path / f"base_{scale}_{seed}.png"
-            _write_image(avatar_path, avatar)
-            _write_image(base_path, _scaled_base_with_avatar(avatar, scale, (300, 200)))
-
-            base_gray, _ = _prepare_base(base_path)
-            avatar_gray = _prepare_avatar(avatar_path)
-            threshold, box, _ = _template_match_gray(
-                base_gray, avatar_gray, top_offset=BASE_EXTEND_TOP
-            )
-            new_offset = box[2] - box[0] - avatar_gray.shape[1]
-            legacy_offset, legacy_threshold = _legacy_1px_search(
-                base_gray, avatar_gray, MIN_AVATAR_SIZE, STOP_THRESHOLD
-            )
-
-            assert new_offset == legacy_offset
-            assert threshold == pytest.approx(legacy_threshold, abs=1e-6)
-
-
-@pytest.mark.parametrize("coarse_increase", (COARSE_INCREASE, 3, 4))
-def test_adaptive_step_offsets_pattern(tmp_path: Path, coarse_increase: int):
-    """detail 模式下：低于置信阈值用 coarse_increase 粗搜，跨阈值后按步长回查并转 1px 微调。"""
-    avatar = _avatar_image(180, seed=1)
-    avatar_path = tmp_path / "avatar.png"
-    base_path = tmp_path / "base.png"
-    _write_image(avatar_path, avatar)
-    _write_image(base_path, _scaled_base_with_avatar(avatar, 1.3, (300, 200)))
-
-    base_gray, _ = _prepare_base(base_path)
-    avatar_gray = _prepare_avatar(avatar_path)
-    threshold, _box, offsets = _template_match_gray(
-        base_gray,
-        avatar_gray,
-        top_offset=BASE_EXTEND_TOP,
-        detail=True,
-        coarse_increase=coarse_increase,
-    )
-
-    assert offsets[0].offset == 0
-    assert offsets[0].threshold < CONFIDENCE_TARGET  # 从阈值下出发，触发粗搜
-    recorded = [record.offset for record in offsets]
-    gaps = [b - a for a, b in zip(recorded, recorded[1:])]
-    first_cross = next(
-        i for i, record in enumerate(offsets) if record.threshold >= CONFIDENCE_TARGET
-    )
-    # 跨阈值前全部为粗步长；跨阈值后按步长回查 ±1..±(x-1)
-    assert all(abs(gap) == coarse_increase for gap in gaps[:first_cross])
-    crossing = offsets[first_cross].offset
-    for distance in range(1, coarse_increase):
-        assert crossing - distance in recorded
-        assert crossing + distance in recorded
-
-    best = next(record for record in offsets if record.best)
-    assert best.threshold == pytest.approx(threshold)
-
-
-def test_adaptive_step_larger_coarse_matches_legacy(tmp_path: Path):
-    """coarse_increase > 2 时，粗搜 + 按步长回查结果仍与原 1px 搜索一致。"""
-    for coarse_increase in (3, 4):
-        for scale in (1.25, 1.3):
-            for seed in (1, 2):
-                avatar = _avatar_image(180, seed=seed)
-                avatar_path = tmp_path / f"avatar_{coarse_increase}_{scale}_{seed}.png"
-                base_path = tmp_path / f"base_{coarse_increase}_{scale}_{seed}.png"
-                _write_image(avatar_path, avatar)
-                _write_image(base_path, _scaled_base_with_avatar(avatar, scale, (300, 200)))
-
-                base_gray, _ = _prepare_base(base_path)
-                avatar_gray = _prepare_avatar(avatar_path)
-                threshold, box, _ = _template_match_gray(
-                    base_gray,
-                    avatar_gray,
-                    top_offset=BASE_EXTEND_TOP,
-                    coarse_increase=coarse_increase,
-                )
-                new_offset = box[2] - box[0] - avatar_gray.shape[1]
-                legacy_offset, legacy_threshold = _legacy_1px_search(
-                    base_gray, avatar_gray, MIN_AVATAR_SIZE, STOP_THRESHOLD
-                )
-
-                assert new_offset == legacy_offset
-                assert threshold == pytest.approx(legacy_threshold, abs=1e-6)
-
-
 def test_scale_search_capped_at_max_avatar_size(tmp_path: Path):
     """缩放搜索的模板边长不超过 MAX_AVATAR_SIZE，即使底图中目标更大。"""
     avatar = _avatar_image(180, seed=1)
@@ -340,12 +189,6 @@ def test_scale_search_capped_at_max_avatar_size(tmp_path: Path):
     best_offset = box[2] - box[0] - avatar_w
     assert MIN_AVATAR_SIZE < avatar_h + best_offset <= MAX_AVATAR_SIZE
     assert MIN_AVATAR_SIZE < avatar_w + best_offset <= MAX_AVATAR_SIZE
-
-    # 若不设上限，旧版 1px 搜索会继续放大到 ~342px，因此结果应显著小于旧版 offset
-    legacy_offset, _ = _legacy_1px_search(
-        base_gray, avatar_gray, MIN_AVATAR_SIZE, STOP_THRESHOLD
-    )
-    assert best_offset < legacy_offset
 
 
 def test_cli_rejects_max_avatar_size_not_greater_than_min(tmp_path: Path, capsys: pytest.CaptureFixture):

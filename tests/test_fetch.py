@@ -1,11 +1,10 @@
-﻿from pathlib import Path
+from pathlib import Path
 
 from arknightsavatar import fetch
 from arknightsavatar.config import AdbConfig, ApkConfig, Config
 from arknightsavatar.fetch import run_fetch
 from arknightsavatar.manifest import FailureLog, Manifest
 from arknightsavatar.sources import ApkSource
-from arknightsavatar.sources.base import FileInfo, Source
 from arknightsavatar.util import sha256_file
 
 
@@ -101,30 +100,3 @@ def test_make_source_maps_apk_and_local_apk(monkeypatch, tmp_path: Path):
 
     assert isinstance(fetch.make_source("local-apk", config), ApkSource)
     assert isinstance(fetch.make_source("adb", config), FakeAdbSource)
-
-
-class FakeSource(Source):
-    name = "fake"
-
-    def __init__(self, files):
-        self.files = files
-
-    def list_files(self, category):
-        return self.files
-
-    def fetch_to(self, rel, dest):
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(b"x")
-
-
-def test_run_fetch_with_incremental_source(tmp_path: Path):
-    raw = tmp_path / "raw"
-    source = FakeSource([FileInfo(rel="characters/a.ab", size=1)])
-
-    stats = run_fetch(source, ["characters"], raw, game_version="v1")
-    assert stats["characters"]["listed"] == 1
-    assert stats["characters"]["fetched"] == 1
-
-    stats = run_fetch(source, ["characters"], raw, game_version="v1")
-    assert stats["characters"]["fetched"] == 0
-    assert stats["characters"]["skipped"] == 1

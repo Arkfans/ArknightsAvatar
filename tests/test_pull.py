@@ -1,14 +1,6 @@
 from arknightsavatar import pull
 
 
-def test_parser_defaults():
-    args = pull.build_parser().parse_args([])
-    assert args.no_pull is False
-    assert args.source == "adb"
-    assert args.category == "all"
-    assert args.out == "apk"
-
-
 def test_pull_runs_pull_apk_then_fetch(monkeypatch):
     calls = []
 

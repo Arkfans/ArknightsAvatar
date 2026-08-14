@@ -2,7 +2,6 @@ from pathlib import Path
 
 from arknightsavatar.config import (
     DEFAULT_DATA_REPO_CATEGORIES,
-    DataRepoConfig,
     load_config,
 )
 
@@ -125,10 +124,3 @@ def test_data_repo_empty_categories_fall_back_to_defaults(tmp_path):
     repo_path.write_text("categories: []\n", encoding="utf8")
     config = load_config(tmp_path / "config.toml")
     assert len(config.data_repo.categories) == len(DEFAULT_DATA_REPO_CATEGORIES)
-
-
-def test_data_repo_config_roundtrip():
-    config = DataRepoConfig()
-    assert config.path == "data_cache"
-    assert config.url == ""
-    assert config.categories

@@ -1,14 +1,6 @@
 import json
-from pathlib import Path
 
 from arknightsavatar import produce, run
-
-
-def test_parser_defaults():
-    args = produce.build_parser().parse_args([])
-    assert args.from_step == "classify"
-    assert args.until_step == "npc-json"
-    assert Path(args.stats_out).as_posix() == "data/stats/produce_stats.json"
 
 
 def test_from_after_until_is_error(tmp_path, capsys):

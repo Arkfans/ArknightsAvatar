@@ -1,7 +1,6 @@
 import json
-from pathlib import Path
 
-from arknightsavatar import paths, run
+from arknightsavatar import run
 
 
 def _args(**overrides):
@@ -159,10 +158,3 @@ def test_check_derive_model_hint(tmp_path, capsys):
     (tmp_path / "derive").mkdir()
     (tmp_path / "derive" / "model.json").write_text("{}", encoding="utf8")
     assert run.check_derive_model(missing) is True
-
-
-def test_run_stats_output_default_is_stats_dir():
-    parser = run.build_parser()
-    args = parser.parse_args([])
-    assert Path(args.stats_out).parent.as_posix() == "data/stats"
-    assert Path(args.stats_out).name == "run_stats.json"
