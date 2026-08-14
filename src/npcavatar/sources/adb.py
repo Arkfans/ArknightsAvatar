@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from .base import FileInfo, Source
+from .device import connect_device, load_rsa_keys
 
 _LS_LINE = re.compile(r"^[bcdlps-][rwxsStT-]{9}\s+\S+\s+\S+\s+\S+\s+(\d+)\s+(?:\S+\s+){2,3}(.+)$")
 _UNIT = 1024.0
@@ -91,7 +92,12 @@ class AdbSource(Source):
         from adb_shell.adb_device import AdbDeviceTcp
 
         self._device = AdbDeviceTcp(host=host, port=port)
-        self._device.connect()
+        connect_device(
+            self._device,
+            load_rsa_keys(),
+            auth_timeout_s=30,
+            target=f"设备 {host}:{port}",
+        )
         self.location = location.rstrip("/")
         self._ls_cache: dict[str, list[tuple[str, int]]] = {}
         self._show_progress = sys.stderr.isatty() if progress is None else progress

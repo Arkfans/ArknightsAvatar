@@ -10,6 +10,7 @@ from .config import load_config
 from .sources.adb import _PullProgress
 from .sources.device import (
     DEFAULT_PACKAGE,
+    connect_device,
     installed_apk_paths,
     installed_version,
     load_rsa_keys,
@@ -86,18 +87,14 @@ def main(argv: list[str] | None = None) -> int:
 
         device = AdbDeviceTcp(host=config.adb.host, port=config.adb.port)
         rsa_keys = load_rsa_keys(args.adb_key)
-        try:
-            # auth_timeout_s gives the user time to accept the device's
-            # "allow debugging" prompt on first-time connections.
-            device.connect(rsa_keys=rsa_keys, auth_timeout_s=30)
-        except Exception as error:  # noqa: BLE001
-            if "DeviceAuthError" in type(error).__name__:
-                print(
-                    "设备要求调试授权：请在设备上弹出的授权对话框中点击“允许”，"
-                    "并勾选“始终允许”，然后重试。",
-                    file=sys.stderr,
-                )
-            raise
+        # auth_timeout_s gives the user time to accept the device's
+        # "allow debugging" prompt on first-time connections.
+        connect_device(
+            device,
+            rsa_keys,
+            auth_timeout_s=30,
+            target=f"设备 {config.adb.host}:{config.adb.port}",
+        )
         print(f"connected: {config.adb.host}:{config.adb.port}  package={package}")
 
         paths = installed_apk_paths(device, package)

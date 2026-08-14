@@ -5,7 +5,7 @@ import shlex
 from pathlib import Path
 
 from .base import FileInfo, Source
-from .device import installed_apk_paths, load_rsa_keys
+from .device import connect_device, installed_apk_paths, load_rsa_keys
 
 _UNZIP_L_LINE = re.compile(r"^\s*(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+(.+)$")
 
@@ -35,7 +35,12 @@ class ApkAdbSource(Source):
 
         self._device = AdbDeviceTcp(host=host, port=port)
         rsa_keys = load_rsa_keys(adb_key)
-        self._device.connect(rsa_keys=rsa_keys, auth_timeout_s=auth_timeout_s)
+        connect_device(
+            self._device,
+            rsa_keys,
+            auth_timeout_s=auth_timeout_s,
+            target=f"设备 {host}:{port}",
+        )
 
         self.package = package
         self._ls_cache: dict[str, list[FileInfo]] = {}
