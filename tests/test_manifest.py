@@ -1,6 +1,6 @@
-from pathlib import Path
+﻿from pathlib import Path
 
-from npcavatar.manifest import FailureLog, FileRecord, Manifest
+from arknightsavatar.manifest import FailureLog, FileRecord, Manifest
 
 
 def test_manifest_roundtrip(tmp_path: Path):

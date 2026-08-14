@@ -1,4 +1,4 @@
-from npcavatar.pull_apk import load_rsa_keys, package_from_location, version_stem
+﻿from arknightsavatar.pull_apk import load_rsa_keys, package_from_location, version_stem
 
 
 def test_package_from_location_official():

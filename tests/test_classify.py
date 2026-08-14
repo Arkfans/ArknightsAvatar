@@ -1,9 +1,9 @@
-import json
+﻿import json
 from pathlib import Path
 
 from PIL import Image
 
-from npcavatar.classify import classify_character_dir, classify_characters, main
+from arknightsavatar.classify import classify_character_dir, classify_characters, main
 
 
 def _write_png(path: Path, size: tuple[int, int] = (4, 4)) -> None:

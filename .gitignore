@@ -2,12 +2,15 @@ apk
 .venv/
 data/raw/
 data/unpacked/
+data/recognition/
 data/export
+data/export_webp/
+data/stats/
+data/arknights_npc.json
+data_cache/
 __pycache__/
 *.pyc
 .pytest_cache/
 dist/
 build/
 *.egg-info/
-data/export_webp/
-data/arknights_npc.json

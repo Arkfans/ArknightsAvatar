@@ -1,7 +1,7 @@
-import json
+﻿import json
 from pathlib import Path
 
-from npcavatar.sample_bases import main, select_characters
+from arknightsavatar.sample_bases import main, select_characters
 
 
 def _write_file(char_dir: Path, name: str, payload: bytes = b"base") -> None:

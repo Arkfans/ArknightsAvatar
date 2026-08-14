@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import shutil
 from uuid import uuid4
@@ -9,8 +9,8 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from npcavatar import detect, detect_bases
-from npcavatar.skip import SkipList
+from arknightsavatar import detect, detect_bases
+from arknightsavatar.skip import SkipList
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 @pytest.fixture
 def workdir():
     """项目内可写的临时目录（沙箱环境无法访问系统 Temp 时的替代实现）。"""
-    base = PROJECT_ROOT / f"npcavatar_test_{uuid4().hex[:8]}"
+    base = PROJECT_ROOT / f"arknightsavatar_test_{uuid4().hex[:8]}"
     os.makedirs(base, mode=0o777)
     yield base
     shutil.rmtree(base, ignore_errors=True)

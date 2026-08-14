@@ -1,4 +1,4 @@
-import json
+﻿import json
 from pathlib import Path
 
 import cv2
@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from PIL import Image, ImageDraw
 
-from npcavatar.match import (
+from arknightsavatar.match import (
     BASE_EXTEND_TOP,
     COARSE_INCREASE,
     CONFIDENCE_TARGET,

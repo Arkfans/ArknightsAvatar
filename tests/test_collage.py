@@ -1,4 +1,4 @@
-import json
+﻿import json
 import math
 import os
 import shutil
@@ -8,8 +8,8 @@ from uuid import uuid4
 import pytest
 from PIL import Image
 
-from npcavatar import collage
-from npcavatar.skip import SkipList
+from arknightsavatar import collage
+from arknightsavatar.skip import SkipList
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TILE = collage.TILE_SIZE
@@ -19,7 +19,7 @@ PAD = collage.PADDING
 @pytest.fixture
 def workdir():
     """Project-internal writable temp dir (system Temp is not accessible in the sandbox)."""
-    base = PROJECT_ROOT / f"npcavatar_test_{uuid4().hex[:8]}"
+    base = PROJECT_ROOT / f"arknightsavatar_test_{uuid4().hex[:8]}"
     os.makedirs(base, mode=0o777)
     yield base
     shutil.rmtree(base, ignore_errors=True)

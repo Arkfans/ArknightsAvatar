@@ -1,4 +1,4 @@
-# NpcAvatar头像提取
+# ArknightsAvatar 头像提取
 
 添加模块，用于从characters中提取处理后的npc avatar，详细职责如下：
 

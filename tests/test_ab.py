@@ -1,6 +1,6 @@
-from PIL import Image
+﻿from PIL import Image
 
-from npcavatar.unpack.ab import extract_face_groups, merge_rgba
+from arknightsavatar.unpack.ab import extract_face_groups, merge_rgba
 
 
 def test_merge_rgba():

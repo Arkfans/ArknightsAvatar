@@ -1,7 +1,7 @@
-import lz4.block
+﻿import lz4.block
 import pytest
 
-from npcavatar.unpack.ak import (
+from arknightsavatar.unpack.ak import (
     decompress_ak_lz4,
     install_unitypy_ak_patch,
     _read_extended_length,

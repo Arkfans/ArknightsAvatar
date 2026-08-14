@@ -1,7 +1,7 @@
-from pathlib import Path
+﻿from pathlib import Path
 from unittest.mock import Mock
 
-from npcavatar.sources import ApkAdbSource, ApkSource
+from arknightsavatar.sources import ApkAdbSource, ApkSource
 
 
 def _make_apk_adb_source(paths, outputs):

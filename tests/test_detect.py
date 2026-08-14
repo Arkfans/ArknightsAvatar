@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import shutil
 from pathlib import Path
@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from npcavatar import detect
-from npcavatar.skip import SkipList
+from arknightsavatar import detect
+from arknightsavatar.skip import SkipList
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -17,7 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 @pytest.fixture
 def workdir():
     """Project-internal writable temp dir (system Temp is not accessible in the sandbox)."""
-    base = PROJECT_ROOT / f"npcavatar_detect_test_{uuid4().hex[:8]}"
+    base = PROJECT_ROOT / f"arknightsavatar_detect_test_{uuid4().hex[:8]}"
     os.makedirs(base, mode=0o777)
     yield base
     shutil.rmtree(base, ignore_errors=True)

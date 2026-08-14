@@ -1,12 +1,12 @@
-from pathlib import Path
+﻿from pathlib import Path
 
-from npcavatar import fetch
-from npcavatar.config import AdbConfig, ApkConfig, Config
-from npcavatar.fetch import run_fetch
-from npcavatar.manifest import FailureLog, Manifest
-from npcavatar.sources import ApkSource
-from npcavatar.sources.base import FileInfo, Source
-from npcavatar.util import sha256_file
+from arknightsavatar import fetch
+from arknightsavatar.config import AdbConfig, ApkConfig, Config
+from arknightsavatar.fetch import run_fetch
+from arknightsavatar.manifest import FailureLog, Manifest
+from arknightsavatar.sources import ApkSource
+from arknightsavatar.sources.base import FileInfo, Source
+from arknightsavatar.util import sha256_file
 
 
 def _make_apk_source(tmp_path: Path, names: list[tuple[str, bytes]]) -> ApkSource:

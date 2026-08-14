@@ -1,10 +1,10 @@
-import json
+﻿import json
 from pathlib import Path
 
 from PIL import Image
 
-from npcavatar.util import sha256_file
-from npcavatar.unpack.unpacker import run_unpack, unpack_one
+from arknightsavatar.util import sha256_file
+from arknightsavatar.unpack.unpacker import run_unpack, unpack_one
 
 
 class FakeParse:

@@ -1,9 +1,9 @@
-# no_box 角色清单（附带 face/head 匹配数据）
+﻿# no_box 角色清单（附带 face/head 匹配数据）
 
 - 生成时间：2026-08-12 06:23:03 中国标准时间
 - 定义：**底图全部 no_box**（match 档未达标 + derive 档 face>0.8 且 head>0.7 未满足），即该角色无任何底图头像产物
-- 数据源：`data/unpacked/_avatar_extract.json`、`_face_head_detect.json`、`_avatar_match.json`
-- 产物：`docs/no_box_characters.json`（完整数据）、`docs/no_box_characters.csv`（每张 no_box 底图一行，UTF-8 BOM）
+- 数据源：`data/recognition/avatar_extract.json`、`face_head_detect.json`、`avatar_match.json`
+- 产物：`data/stats/no_box_characters.json`（完整数据）、`data/stats/no_box_characters.csv`（每张 no_box 底图一行，UTF-8 BOM）
 
 ## 汇总
 
@@ -44,7 +44,7 @@
 
 ## 说明
 
-1. no_box 底图的 face/head 数据全部来自 `_face_head_detect.json` 缓存（493 张全覆盖）。
-2. `face置信度不足`/`head置信度不足` 表示有检出但低于阈值——可考虑下调 `--face-conf`/`--head-conf` 或补手动框；`face/head未检出` 需人工确认立绘或补 `_avatar_manual.json`。
+1. no_box 底图的 face/head 数据全部来自 `face_head_detect.json` 缓存（493 张全覆盖）。
+2. `face置信度不足`/`head置信度不足` 表示有检出但低于阈值——可考虑下调 `--face-conf`/`--head-conf` 或补手动框；`face/head未检出` 需人工确认立绘或补 `avatar_manual.json`。
 3. 有 match 记录但阈值 ≤ 0.8 的底图，可考虑下调 `--match-threshold`（当前 0.8），但多数阈值远低于 0.7，收益有限。
 4. 其余 diff 的 no_box 是因为所属 base 无框直接继承失败，未做 face/head 识别。

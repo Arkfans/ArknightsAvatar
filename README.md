@@ -1,76 +1,196 @@
-# NpcAvatar
+# ArknightsAvatar
 
-明日方舟 NPC 头像提取管线（迁移重构）。分阶段解耦：
+明日方舟 NPC 头像提取管线（迁移重构），面向自动化调用：统一入口 + 编排型入口 +
+12 个单工具，分阶段解耦：
 
 1. **fetch**：从 APK 解包目录 / ADB 设备获取 AB 资源，缓存到 `data/raw/`，带 sha256 manifest，增量更新。
 2. **unpack**：用 UnityPy 把 AB 解包为全分辨率 RGBA PNG + 元数据（含游戏自带 `facePos/faceSize`），输出到 `data/unpacked/`，按 `类型/id/` 层级存放。
 3. **extract**：按 手动 > 头像匹配 > 模型推导 三档确定裁切框，提取各 base/diff 的头像（180×180 PNG），增量缓存 face/head 识别结果。
 
+识别数据统一存放在 `data/recognition/`（文件名不带 `_` 前缀）；识别数据 / 原始 avatar /
+提取 avatar / 统计列表由独立的 GitHub 数据仓库承载（`arknightsavatar sync-cache`
+以「本地 git 工作副本 + git CLI」自动增量提交），主仓库不跟踪这些数据。
+
 ## 环境
 
-依赖由 uv 管理（Python >= 3.12）：
+依赖由 uv 管理（Python >= 3.12）。**GPU 依赖可选，默认 CPU**：`detect`（CPU 推理栈，
+torch `+cpu` 轮子）作为默认 dependency-group 与 extra，`detect-gpu`（pytorch-cu126
+索引，torch `+cu126` 轮子，仅 Windows / Linux x86_64）为互斥的 extra，二者二选一：
 
 ```bash
-uv python pin 3.12
-uv sync --extra fetch --extra unpack --extra match --extra detect --group dev
+# 默认即为 CPU（安装 dev + detect 组，含 CPU 版 torch/torchvision）
+uv sync
+
+# 显式指定 CPU 推理栈（等价形式）
+uv sync --extra detect
+
+# GPU：排除默认 detect 组后安装 cu126（二选一，不可同时装 detect）
+uv sync --no-group detect --extra detect-gpu
+
+# 其它可选依赖
+uv sync --extra fetch --extra unpack --extra match
 ```
 
-> 注意：pytorch 官方索引的 `torchvision 0.28.0+cu126` Windows wheel 不带
-> `#sha256=` 片段，`uv.lock` 已手工补入 cp312-win_amd64 的 hash（否则 Windows 上
-> `uv sync` 报 hash mismatch）。若重新执行 `uv lock` 后再次报错，需按
-> `uv.lock` 中 torchvision 的 cp312-win_amd64 条目重新补回该 hash。
+- `uv sync` 默认安装 `dev` + `detect` 两个 dependency-group（`[tool.uv] default-groups`）。
+- `detect` 与 `detect-gpu` 在 `[tool.uv] conflicts` 中声明互斥；同时安装会得到清晰的
+  冲突报错。CUDA 不可用时 `--device auto` 自动回退 CPU。
+- macOS 与 Linux aarch64 无专用 GPU 轮子，`detect-gpu` 在那些平台上回落到默认索引的
+  CPU 轮子。
+- `uv.lock` 中同时存有 `2.13.0+cpu` 与 `2.13.0+cu126` 两个 fork（conflicting extras）。
 
-## 用法
+> 注意：pytorch 官方索引的 torchvision cu126 Windows wheel 可能不带 `#sha256=`
+> 片段，`uv lock` 重新生成后若 Windows 上 `uv sync` 报 hash mismatch，需按
+> `uv.lock` 中 torchvision 的 cp312-win_amd64 条目手工补回该 hash（历史版本即如此处理）。
+
+## 统一入口与编排型入口
+
+统一入口 `arknightsavatar` 按子命令分发；5 个编排型入口各自也有独立脚本。
+
+```bash
+uv run arknightsavatar --help            # 子命令总览
+uv run arknightsavatar detect --conf 0.3 # 子命令分发到单工具（argv 透传）
+```
+
+### 编排型入口
+
+| 命令 | 职责 |
+| --- | --- |
+| `arknightsavatar run` | 全流程：fetch → unpack → classify → match → extract → export-webp → npc-json |
+| `arknightsavatar pull` | 设备侧获取：pull-apk（可 `--no-pull` 跳过）→ fetch |
+| `arknightsavatar produce` | 离线生产：classify → match → extract → export-webp → npc-json（不触设备） |
+| `arknightsavatar derive-model` | 由 `data/recognition/face_detect_matched.json` 重新拟合 face/head → 裁切框推导模型 |
+| `arknightsavatar sync-cache` | 把数据目录同步提交到 GitHub 数据仓库（本地 git 工作副本 + git CLI） |
+
+### run（全流程）
+
+```bash
+# 全流程（默认 source=adb、category=all）
+uv run arknightsavatar run
+
+# 只跑部分步骤 / 限定角色数量 / 指定设备
+uv run arknightsavatar run --from classify --until extract --limit 20 --device auto
+
+# 强制重拉/重提
+uv run arknightsavatar run --force --source local-apk
+```
+
+步骤在进程内依次执行（复用各单工具的 `main(argv)`，行为与逐个运行一致），失败即中止
+并指出失败步骤；每步退出码与总览写入 `data/stats/run_stats.json`（`--stats-out` 可换）。
+`extract` 依赖推导模型，缺失时给出「先 `derive-model` 或 `sync-cache --pull --restore`」的提示。
+
+### pull（设备侧获取）
+
+```bash
+uv run arknightsavatar pull                     # pull-apk + fetch
+uv run arknightsavatar pull --no-pull           # 只 fetch
+uv run arknightsavatar pull --package com.hypergryph.arknights.bilibili --out apk
+```
+
+### produce（离线生产）
+
+```bash
+uv run arknightsavatar produce                  # classify → … → npc-json
+uv run arknightsavatar produce --limit 20 --device cpu
+```
+
+产物与 `run` 的后半段一致；统计写入 `data/stats/produce_stats.json`。
+
+### derive-model（推导模型）
+
+```bash
+uv run arknightsavatar derive-model             # 读 face_detect_matched.json，写 data/recognition/derive/
+uv run arknightsavatar derive-model --min-conf 0.8 --out-dir data/recognition/derive
+```
+
+产物：`model.json`（extract 第 3 档读取）、`derive_coords.json`、`stats.json`、
+`compare/`（抽样可视化，`--no-compare` 跳过）。输入由
+`arknightsavatar detect-bases`（阈值 > 0.95 的高置信底图）生成。
+
+### sync-cache（数据仓库同步）
+
+识别数据 / 原始 avatar / 提取 avatar / 统计列表由独立 GitHub 数据仓库承载。创建好
+GitHub 数据仓库后，把地址填入 `config.yaml` 的 `data_repo.url` 即可使用：
+
+```bash
+# 把本地四类数据镜像进本地工作副本 data_cache/ 并自动增量提交（无变化不产生提交）
+uv run arknightsavatar sync-cache
+
+# 先 git pull 工作副本；把数据仓库中有而本地缺失的文件取回（如 derive 模型）
+uv run arknightsavatar sync-cache --pull --restore
+
+# 只镜像不提交 / 自定义提交信息
+uv run arknightsavatar sync-cache --dry-run
+uv run arknightsavatar sync-cache --message "sync after 2.7.61"
+```
+
+分类映射（可在 `config.yaml` 的 `data_repo.categories` 调整）：
+
+| 数据类别 | 本地路径 | 数据仓库路径 |
+| --- | --- | --- |
+| 识别数据 | `data/recognition/` | `recognition/` |
+| 原始 avatar | `data/unpacked/avatars/` | `avatars/` |
+| 提取 avatar | `data/export/`、`data/export_webp/` | `export/`、`export_webp/` |
+| 统计列表 | `data/stats/`、`data/arknights_npc.json` | `stats/`、`arknights_npc.json` |
+
+工作副本默认 `data_cache/`（已 gitignore）；url 为空时工具会提示先创建仓库并填写配置。
+全程调用 git CLI（clone / pull / add / diff / commit），无其它依赖。
+
+## 单工具
+
+12 个单工具保留（改名），既可直接运行也可经统一入口调用：
 
 ```bash
 # 从设备上已安装 APK 中，由设备端 unzip 解压并按需拉取头像
-uv run npcavatar-fetch --source apk --category avatars
+uv run arknightsavatar-fetch --source apk --category avatars
 
 # 从本地 APK 解包目录取头像（回退来源）
-uv run npcavatar-fetch --source local-apk --category avatars
+uv run arknightsavatar-fetch --source local-apk --category avatars
 
 # 从 ADB 设备游戏 Bundles 拉取
-uv run npcavatar-fetch --source adb --category characters
+uv run arknightsavatar-fetch --source adb --category characters
 
 # 默认从 ADB 设备拉取 characters 与 avatars 两类资源
-uv run npcavatar-fetch
+uv run arknightsavatar-fetch
 
 # 解包
-uv run npcavatar-unpack --category all
+uv run arknightsavatar-unpack --category all
 
 # 立绘分类（独立工具，暂不并入主流程）
-uv run npcavatar-classify
+uv run arknightsavatar-classify
 
 # 底图抽样（独立工具，暂不并入主流程）
-uv run npcavatar-sample-bases
+uv run arknightsavatar-sample-bases
 
 # 人脸识别（独立工具，暂不并入主流程）
-uv run npcavatar-detect
+uv run arknightsavatar-detect
 
 # 高置信底图人脸识别（独立工具，暂不并入主流程）
-uv run npcavatar-detect-bases
+uv run arknightsavatar-detect-bases
 
 # 头像提取（独立工具）
-uv run npcavatar-extract
+uv run arknightsavatar-extract
 
 # 差分拼贴（独立工具）
-uv run npcavatar-collage
+uv run arknightsavatar-collage
 
 # PNG 转 WebP（独立工具）
-uv run npcavatar-export-webp
+uv run arknightsavatar-export-webp
+
+# NPC 头像索引 JSON（独立工具）
+uv run arknightsavatar-npc-json
 ```
 
-配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
+配置优先级：CLI 参数 > `ARKNIGHTSAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
 
 ## 从设备拉取已安装 APK（独立工具）
 
-`npcavatar-fetch --source apk` 通过 adb_shell 直连设备（本机无需安装 adb），从手机上
-已安装的 APK 用设备端 `unzip` 直接解压单个 AB 条目后拉回本地；不传输完整 APK，也
-不在设备上落地解包目录，只拉取本地缺少或大小变化的 AB 文件。`--source local-apk`
+`arknightsavatar-fetch --source apk` 通过 adb_shell 直连设备（本机无需安装 adb），
+从手机上已安装的 APK 用设备端 `unzip` 直接解压单个 AB 条目后拉回本地；不传输完整
+APK，也不在设备上落地解包目录，只拉取本地缺少或大小变化的 AB 文件。`--source local-apk`
 仍可读取本地 APK 解包目录。
 
-`npcavatar-pull-apk` 通过 adb_shell 直连设备（本机无需安装 adb），从手机上已安装的
-游戏包拉取 APK 到本地。包名默认从 `config.yaml` 配置的 game location
+`arknightsavatar-pull-apk` 通过 adb_shell 直连设备（本机无需安装 adb），从手机上已
+安装的游戏包拉取 APK 到本地。包名默认从 `config.yaml` 配置的 game location
 （official/bilibili）自动推导（如 `com.hypergryph.arknights`）；`pm path` 查询安装
 路径，`dumpsys` 读取版本，产物沿用 `arknights-hg-<版本>.apk` 命名
 （versionName 2.7.61 → 2761）。拉取先写 `.part` 临时文件并计算 sha256，与本地已有
@@ -81,13 +201,13 @@ uv run npcavatar-export-webp
 uv sync --extra fetch
 
 # 只探测设备（连接 + pm path + 版本），不拉取
-uv run npcavatar-pull-apk --no-pull
+uv run arknightsavatar-pull-apk --no-pull
 
 # 完整拉取并比对（默认输出 apk/）
-uv run npcavatar-pull-apk
+uv run arknightsavatar-pull-apk
 
 # 指定包名 / 输出目录
-uv run npcavatar-pull-apk --package com.hypergryph.arknights.bilibili --out apk
+uv run arknightsavatar-pull-apk --package com.hypergryph.arknights.bilibili --out apk
 ```
 
 主机/端口来自 `config.yaml` 的 `adb.host` / `adb.port`，服务区由 `adb.game.server`
@@ -95,9 +215,9 @@ uv run npcavatar-pull-apk --package com.hypergryph.arknights.bilibili --out apk
 
 ## 跳过清单
 
-`npcavatar-detect`、`npcavatar-detect-bases`、`npcavatar-extract`、
-`npcavatar-collage`、`npcavatar-export-webp`、`npcavatar-npc-json`
-支持读取 `data/unpacked/_avatar_skip.json` 跳过指定角色或图片。格式：
+`arknightsavatar-detect`、`arknightsavatar-detect-bases`、`arknightsavatar-extract`、
+`arknightsavatar-collage`、`arknightsavatar-export-webp`、`arknightsavatar-npc-json`
+支持读取 `data/recognition/avatar_skip.json` 跳过指定角色或图片。格式：
 
 ```json
 {
@@ -110,15 +230,15 @@ uv run npcavatar-pull-apk --package com.hypergryph.arknights.bilibili --out apk
 - sprite 名可写文件名或省略 `.png`，大小写不敏感。
 - 跳过 base 时同时跳过该 base 名下所有 diff；跳过 diff 时只跳过该 diff。
 - 文件缺失或内容非法时视为空清单，不报错。
-- 各命令可用 `--skip <path>` 覆盖默认路径；`npcavatar-export-webp` 与
-  `npcavatar-npc-json` 还可用 `--classified <path>` 指定分类报告，用于把
+- 各命令可用 `--skip <path>` 覆盖默认路径；`arknightsavatar-export-webp` 与
+  `arknightsavatar-npc-json` 还可用 `--classified <path>` 指定分类报告，用于把
   base 跳过展开到所属 diff。未提供分类报告时，base 级跳过只精确匹配该文件。
 
 ## 立绘分类（独立工具）
 
-`npcavatar-classify` 扫描 `data/unpacked/characters/<npc_id>/`，按文件名把每个角色的 PNG
-划分为底图与差分，并让差分按所属底图分组，输出 JSON 报告（默认
-`data/unpacked/_characters_classified.json`，`--output -` 输出到 stdout）。规则：
+`arknightsavatar-classify` 扫描 `data/unpacked/characters/<npc_id>/`，按文件名把每个
+角色的 PNG 划分为底图与差分，并让差分按所属底图分组，输出 JSON 报告（默认
+`data/recognition/characters_classified.json`，`--output -` 输出到 stdout）。规则：
 以角色 id 形似纹理（`avg_/char_/avgnew_/npc_`，不区分大小写）的公共前缀为角色根名，
 裸根名或 `根名_1`/`根名#1`（序号 1）为底图，`根名$n` 全部为底图（多底图切分），
 其余为差分；目录内仅有一张图片时无论名称如何都算底图。差分按 `$n` 归属对应底图
@@ -129,21 +249,22 @@ uv run npcavatar-pull-apk --package com.hypergryph.arknights.bilibili --out apk
 
 ## 头像匹配（独立工具）
 
-`npcavatar-match` 读取 `data/unpacked/_characters_classified.json`，只处理命名符合
-`avg_\d+_.+` / `char_\d+_.*` 的角色，从 `data/unpacked/avatars/` 取数字 ID 对应的头像
-（`char_<ID>_*`）作为候选，用 OpenCV 模板匹配（TM_CCOEFF_NORMED + 缩放搜索，移植自旧版）
-在每张底图上定位头像包围盒，输出报告（默认 `data/unpacked/_avatar_match.json`）。
-该工具未接入 fetch/unpack 主流程，用于调整匹配参数。
+`arknightsavatar-match` 读取 `data/recognition/characters_classified.json`，只处理命名
+符合 `avg_\d+_.+` / `char_\d+_.*` 的角色，从 `data/unpacked/avatars/` 取数字 ID 对应
+的头像（`char_<ID>_*`）作为候选，用 OpenCV 模板匹配（TM_CCOEFF_NORMED + 缩放搜索，
+移植自旧版）在每张底图上定位头像包围盒，输出报告（默认
+`data/recognition/avatar_match.json`）。该工具未接入 fetch/unpack 主流程，用于调整
+匹配参数。
 
 ```bash
 # 冒烟：只处理前 20 个角色，输出到 stdout
-uv run npcavatar-match --limit 20 --output -
+uv run arknightsavatar-match --limit 20 --output -
 
 # 只匹配指定角色
-uv run npcavatar-match --character avg_003_kalts_1
+uv run arknightsavatar-match --character avg_003_kalts_1
 
 # 全量匹配
-uv run npcavatar-match
+uv run arknightsavatar-match
 ```
 
 输出语义：`characters.<name>.bases.<底图>` = `{avatar, threshold, box, box_norm}`，
@@ -167,21 +288,21 @@ uv run npcavatar-match
 
 ## 底图抽样（独立工具）
 
-`npcavatar-sample-bases` 读取 `_characters_classified.json`，从有底图的角色中随机抽取
-指定数量（默认 100），把每个角色的底图复制到新文件夹（默认
-`data/unpacked/bases_sample/`），图片展平存放在同一层级，不建角色子目录。
+`arknightsavatar-sample-bases` 读取 `characters_classified.json`，从有底图的角色中
+随机抽取指定数量（默认 100），把每个角色的底图复制到新文件夹（默认
+`data/recognition/bases_sample/`），图片展平存放在同一层级，不建角色子目录。
 只复制底图，不复制差分，也不改动源目录；若不同角色的底图同名，自动加
 `<角色 id>_` 前缀避免覆盖。
 
 ```bash
 # 随机抽取 100 个角色并复制底图
-uv run npcavatar-sample-bases
+uv run arknightsavatar-sample-bases
 
 # 指定抽样数量、目标目录与随机种子（同一种子结果可复现）
-uv run npcavatar-sample-bases -n 50 -o data/unpacked/bases_sample --seed 42
+uv run arknightsavatar-sample-bases -n 50 -o data/recognition/bases_sample --seed 42
 
 # 使用其它位置的分类报告
-uv run npcavatar-sample-bases --classified data/unpacked/_characters_classified.json
+uv run arknightsavatar-sample-bases --classified data/recognition/characters_classified.json
 ```
 
 源角色目录默认取自分类报告内的 `characters_dir` 字段，也可用
@@ -189,62 +310,62 @@ uv run npcavatar-sample-bases --classified data/unpacked/_characters_classified.
 
 ## 人脸识别（独立工具）
 
-`npcavatar-detect` 使用 anime-face-detector 的 YOLOv3 人脸检测器（纯检测，
+`arknightsavatar-detect` 使用 anime-face-detector 的 YOLOv3 人脸检测器（纯检测，
 不加载关键点模型），对每张图片只输出**最高置信度**的一个结果：`face_pos`
 （左上角 + 尺寸 `{x, y, w, h}`，原始像素、四舍五入）与 `confidence`。
 置信度低于 `--conf`（默认 0.3）视为未检出。该工具未接入 fetch/unpack 主流程，
-用于为后续头像提取（goal.md 步骤 3）的模型识别接口提供识别结果；设备默认 auto
+用于为后续头像提取的模型识别接口提供识别结果；设备默认 auto
 （有 CUDA 用 GPU，否则 CPU），权重由 anime-face-detector 自动下载并缓存。
 
 ```bash
 # 批量识别 characters 目录下所有角色（底图 + 差分）
-uv run npcavatar-detect
+uv run arknightsavatar-detect
 
 # 只识别指定角色
-uv run npcavatar-detect --character avg_003_kalts_1
+uv run arknightsavatar-detect --character avg_003_kalts_1
 
 # 只处理前 20 个角色，输出到 stdout
-uv run npcavatar-detect --limit 20 --output -
+uv run arknightsavatar-detect --limit 20 --output -
 
 # 单张/多张图片快速测试
-uv run npcavatar-detect path/to/a.png path/to/b.png
+uv run arknightsavatar-detect path/to/a.png path/to/b.png
 
 # 指定置信度阈值与设备
-uv run npcavatar-detect --conf 0.3 --device auto
+uv run arknightsavatar-detect --conf 0.3 --device auto
 ```
 
 输出语义：批量模式 `characters.<角色名>.images.<文件名>` 为
 `{image, image_size, detected, face_pos, confidence, error}`；
 `detected=false` 表示未检出或低于阈值（此时 `face_pos`/`confidence` 为 null），
 读图失败或检测异常时 `error` 非空。单图模式输出 `{generated_at, images, stats}`。
-报告默认写入 `data/unpacked/_face_detect.json`，`--output -` 输出到 stdout。
+报告默认写入 `data/recognition/face_detect.json`，`--output -` 输出到 stdout。
 
 ## 高置信底图人脸识别（独立工具）
 
-`npcavatar-detect-bases` 读取头像匹配报告（默认
-`data/unpacked/_avatar_match.json`），筛选 match threshold **严格大于**
-`--threshold`（默认 0.95）的底图，对每张底图用与 `npcavatar-detect`
-相同的模型识别方案（anime-face-detector YOLOv3，复用 `npcavatar.detect.detect_top1`）
+`arknightsavatar-detect-bases` 读取头像匹配报告（默认
+`data/recognition/avatar_match.json`），筛选 match threshold **严格大于**
+`--threshold`（默认 0.95）的底图，对每张底图用与 `arknightsavatar-detect`
+相同的模型识别方案（anime-face-detector YOLOv3，复用 `arknightsavatar.detect.detect_top1`）
 识别人脸，输出：
 
-1. JSON 报告（默认 `data/unpacked/_face_detect_matched.json`）；
-2. 标注结果图（默认 `data/unpacked/_face_detect_vis/`，扁平存放，文件名
+1. JSON 报告（默认 `data/recognition/face_detect_matched.json`）；
+2. 标注结果图（默认 `data/recognition/face_detect_vis/`，扁平存放，文件名
    `<角色名>__<底图>.png`）：绿色框为 avatar 匹配范围并标注 `match <threshold>`，
    红色框为 YOLO 人脸框并标注 `yolo <confidence>`，未检出时标注 `no face`；
 3. tqdm 进度条显示逐张处理进度（缺 tqdm 时回退为 `[序号/总数] 角色/底图` 文本）。
 
 ```bash
 # 全量处理高置信底图
-uv run npcavatar-detect-bases
+uv run arknightsavatar-detect-bases
 
 # 冒烟：只处理前 3 张高置信底图，输出到临时路径
-uv run npcavatar-detect-bases --limit 3 --output tmp/_face_detect_matched.json --vis-dir tmp/_face_detect_vis
+uv run arknightsavatar-detect-bases --limit 3 --output tmp/face_detect_matched.json --vis-dir tmp/face_detect_vis
 
 # 指定匹配报告、阈值与识别置信度
-uv run npcavatar-detect-bases --match data/unpacked/_avatar_match.json --threshold 0.95 --conf 0.3
+uv run arknightsavatar-detect-bases --match data/recognition/avatar_match.json --threshold 0.95 --conf 0.3
 
 # 只处理指定角色；设备默认 auto（有 CUDA 用 GPU，否则 CPU）
-uv run npcavatar-detect-bases --character avg_003_kalts_1 --device auto
+uv run arknightsavatar-detect-bases --character avg_003_kalts_1 --device auto
 ```
 
 输出语义：顶层为 `{generated_at, match_file, characters_dir, threshold, stats,
@@ -260,52 +381,52 @@ confidence, error}`，其中 `avatar/threshold/box/box_norm` 来自匹配报告�
 
 ## 头像提取（独立工具）
 
-`npcavatar-extract` 读取 `data/unpacked/_characters_classified.json`，对每个角色的
-base 按 **手动指定 > 头像匹配 > 模型推导** 三档确定头像裁切框，再对 base 与全部 diff
-提取 180×180 头像 PNG（`data/export/<角色>/<图片stem>.png`，越界补透明）。提取是
-增量的：目标文件已存在则跳过（`--force` 强制重提）；face/head 识别结果缓存在
-`data/unpacked/_face_head_detect.json`（主键 `"<角色>/<图片>"`，与手动文件键格式一致），
-重复运行不重复推理；base 两两相似度与 diff 匹配决策（IoU、special、box、method、
-confidence）缓存在 `data/unpacked/_avatar_extract_cache.json`（`--cache` 可换路径），
-重跑/`--force` 不再重复计算，缓存文件本身也是调试产物。
+`arknightsavatar-extract` 读取 `data/recognition/characters_classified.json`，对每个
+角色的 base 按 **手动指定 > 头像匹配 > 模型推导** 三档确定头像裁切框，再对 base 与
+全部 diff 提取 180×180 头像 PNG（`data/export/<角色>/<图片stem>.png`，越界补透明）。
+提取是增量的：目标文件已存在则跳过（`--force` 强制重提）；face/head 识别结果缓存在
+`data/recognition/face_head_detect.json`（主键 `"<角色>/<图片>"`，与手动文件键格式
+一致），重复运行不重复推理；base 两两相似度与 diff 匹配决策（IoU、special、box、
+method、confidence）缓存在 `data/recognition/avatar_extract_cache.json`（`--cache`
+可换路径），重跑/`--force` 不再重复计算，缓存文件本身也是调试产物。
 
 ```bash
 # 提取全部角色
-uv run npcavatar-extract
+uv run arknightsavatar-extract
 
 # 只处理指定角色 / 前 N 个角色
-uv run npcavatar-extract --character avg_003_kalts_1
-uv run npcavatar-extract --limit 20
+uv run arknightsavatar-extract --character avg_003_kalts_1
+uv run arknightsavatar-extract --limit 20
 
 # 强制重提 / 强制重算匹配
-uv run npcavatar-extract --force
-uv run npcavatar-extract --force-match
+uv run arknightsavatar-extract --force
+uv run arknightsavatar-extract --force-match
 ```
 
 裁切框三档优先级：
 
-1. **手动**：`data/unpacked/_avatar_manual.json`（键 `"<角色>/<图片>"`，值
+1. **手动**：`data/recognition/avatar_manual.json`（键 `"<角色>/<图片>"`，值
    `{"box": [x1, y1, x2, y2]}`，原图像素），命中即用；
-2. **匹配**：复用 `data/unpacked/_avatar_match.json` 中 threshold **> 0.8** 的结果；
+2. **匹配**：复用 `data/recognition/avatar_match.json` 中 threshold **> 0.8** 的结果；
    报告缺失或加 `--force-match` 时内联调用匹配逻辑重算；
 3. **推导**：对人脸置信度 **> 0.8** 且头部置信度 **> 0.7** 的图，用
-   `data/avatar_derive_08/model.json` 由 face/head 检测框推导正方形裁切框。
+   `data/recognition/derive/model.json` 由 face/head 检测框推导正方形裁切框。
 
 diff 处理：与 base 同尺寸的 diff 直接使用；小尺寸 diff 按 `meta.json` 的
 `face_groups`（`$n` 系列对应第 n 组）缩放至 `faceSize` 后贴到 `facePos` 完成组合；
 组合结果的 A 通道取自 base，存在 `alpha.png` 时面部区域优先用其灰度作为 A 通道与
 贴图蒙版。`alpha.png` 本身是提供 alpha 通道的贴图而非真实 diff，不参与提取、不计入
 报告与统计。
-组合后与 base 在 base 裁切框（脸部范围）内比较 **alpha 不透明掩码 IoU**（默认 0.85，`--special-mask-iou`）：
-正常 diff 复用 base 裁切框；低于阈值视为**特殊 diff**（动作/姿态变化导致头像位置
-偏移），对组合图重新做人脸/头部识别并按第三档推导框提取。
+组合后与 base 在 base 裁切框（脸部范围）内比较 **alpha 不透明掩码 IoU**（默认 0.85，
+`--special-mask-iou`）：正常 diff 复用 base 裁切框；低于阈值视为**特殊 diff**
+（动作/姿态变化导致头像位置偏移），对组合图重新做人脸/头部识别并按第三档推导框提取。
 
 多 base 角色：先提取各 base 头像，两两比较相似度（透明合成灰度相关，默认
 **> 0.98** 判重复），保留置信度更高者（手动 > 匹配 > 推导，同档比分数，再按文件名
 稳定排序）；被丢弃的 base 及其 diff 不写新文件（已存在文件不删除），报告中标
 `dropped`。
 
-报告默认写入 `data/unpacked/_avatar_extract.json`（`--output -` 输出到 stdout），
+报告默认写入 `data/recognition/avatar_extract.json`（`--output -` 输出到 stdout），
 每角色 bases/diffs 各带 `{status, method, confidence, box, avatar_file, special?,
 detect_cache_hit?}`；`stats` 汇总 base/diff 的 ok/skipped/dropped/no_box/failed 与
 识别缓存及相似度/diff 决策缓存命中/新增数。两类缓存均每 50 次新写入增量落盘、结束
@@ -318,13 +439,12 @@ detect_cache_hit?}`；`stats` 汇总 base/diff 的 ok/skipped/dropped/no_box/fai
 可调参数：`--match-threshold`（0.8）、`--face-conf`（0.8）、`--head-conf`（0.7）、
 `--special-mask-iou`（0.85）、`--dedup-sim`（0.98）、`--manual`、`--derive-model`、
 `--face-head-cache`、`--cache`、`--output-dir`、`--output`、`--limit`、`--character`、
-`--force`、`--force-match`、`--device`（auto/cuda/cpu）。依赖 `uv sync --extra detect`。
+`--force`、`--force-match`、`--device`（auto/cuda/cpu）。依赖 `uv sync`（detect 组）。
 模型权重未缓存时首次运行需联网；本地已缓存且离线运行时设 `HF_HUB_OFFLINE=1`。
-
 
 ## 差分拼贴（独立工具）
 
-`npcavatar-collage` 读取 `data/unpacked/_characters_classified.json` 与
+`arknightsavatar-collage` 读取 `data/recognition/characters_classified.json` 与
 `data/export/`，把每个角色的全部 diff 头像（180×180，已由 extract 组合并裁切）
 按网格拼贴成一张 PNG，每角色一张。参考旧项目 `NpcData.draw_all_face`：黑底、
 每格白底 + 头像（RGBA 蒙版）、左上角标注 diff 文件名，缺失/读取失败的头像画
@@ -332,40 +452,40 @@ detect_cache_hit?}`；`stats` 汇总 base/diff 的 ok/skipped/dropped/no_box/fai
 
 ```bash
 # 全部角色各生成一张拼贴图
-uv run npcavatar-collage
+uv run arknightsavatar-collage
 
 # 只处理指定角色 / 前 N 个角色
-uv run npcavatar-collage --character avg_003_kalts_1
-uv run npcavatar-collage --limit 20
+uv run arknightsavatar-collage --character avg_003_kalts_1
+uv run arknightsavatar-collage --limit 20
 
 # 指定列数 / 关闭标注 / 自定义字体
-uv run npcavatar-collage --columns 6
-uv run npcavatar-collage --no-label
-uv run npcavatar-collage --font C:\Windows\Fonts\msyh.ttc
+uv run arknightsavatar-collage --columns 6
+uv run arknightsavatar-collage --no-label
+uv run arknightsavatar-collage --font C:\Windows\Fonts\msyh.ttc
 ```
 
-输出目录默认 `data/unpacked/_diff_collage/<角色>.png`（`-o` 可换）。只拼贴分类
+输出目录默认 `data/recognition/diff_collage/<角色>.png`（`-o` 可换）。只拼贴分类
 报告中归属 base 的 diff（`alpha.png` 与 `unassigned` 不计入）；无 diff 或角色
 目录缺失时跳过该角色。依赖 Pillow（`uv sync --extra unpack`）。
 
 ## PNG 转 WebP（独立工具）
 
-`npcavatar-export-webp` 扫描 `data/export/` 下各角色文件夹内的 PNG
+`arknightsavatar-export-webp` 扫描 `data/export/` 下各角色文件夹内的 PNG
 头像，逐张转换为 WebP 输出到 `data/export_webp/<角色>/`，
 保持目录结构与透明通道（PNG 按 RGBA 解码后保存）。
 增量转换：输出 `.webp` 已存在时跳过，加 `--force` 强制重转。
 
 ```bash
 # 全部角色转换
-uv run npcavatar-export-webp
+uv run arknightsavatar-export-webp
 
 # 只转指定角色（可重复）/ 前 N 个角色
-uv run npcavatar-export-webp --character avg_003_kalts_1
-uv run npcavatar-export-webp --limit 20
+uv run arknightsavatar-export-webp --character avg_003_kalts_1
+uv run arknightsavatar-export-webp --limit 20
 
 # 调整压缩参数 / 强制重转
-uv run npcavatar-export-webp --quality 75 --method 6
-uv run npcavatar-export-webp --force
+uv run arknightsavatar-export-webp --quality 75 --method 6
+uv run arknightsavatar-export-webp --force
 ```
 
 可调参数：`--export-dir`（默认 `data/export`）、
@@ -374,10 +494,9 @@ uv run npcavatar-export-webp --force
 `--character`（可重复）、`--limit`、`--force`。
 依赖 Pillow（`uv sync --extra unpack`）。
 
-
 ## 生成 NPC 头像索引 JSON（独立工具）
 
-`npcavatar-npc-json` 扫描 `data/export/` 下各角色文件夹内的 PNG 头像，
+`arknightsavatar-npc-json` 扫描 `data/export/` 下各角色文件夹内的 PNG 头像，
 生成与旧项目 `arknights_npc.json` 相同格式的索引 JSON（默认输出
 `data/arknights_npc.json`，`-o -` 输出到 stdout）：
 
@@ -397,10 +516,10 @@ uv run npcavatar-export-webp --force
 
 ```bash
 # 全量生成
-uv run npcavatar-npc-json
+uv run arknightsavatar-npc-json
 
 # 指定输入目录 / 输出到 stdout
-uv run npcavatar-npc-json --export-dir data/export -o -
+uv run arknightsavatar-npc-json --export-dir data/export -o -
 ```
 
 可调参数：`--export-dir`（默认 `data/export`）、
@@ -409,21 +528,41 @@ uv run npcavatar-npc-json --export-dir data/export -o -
 ## 磁盘契约
 
 ```text
+# 本地缓存（不进数据仓库）
 data/raw/manifest.json          # {game_version, updated_at, files: {rel: {size, sha256, source}}}
 data/raw/_failed.json           # 拉取失败清单
 data/raw/<category>/<name>.ab   # 原始 AB 缓存
-
-data/unpacked/_manifest.json    # {rel: source_sha256}，增量解包依据
-data/unpacked/_failed.json      # 解包失败清单
+data/unpacked/_manifest.json    # {rel: source_sha256}，增量解包依据（解包簿记）
+data/unpacked/_failed.json      # 解包失败清单（解包簿记）
 data/unpacked/characters/<npc_id>/<sprite>.png + meta.json
-data/unpacked/avatars/<sprite>.png + _meta/<bundle>.json   # 扁平存放，仅保留 char_* 角色头像，其余素材解包时清理
-data/unpacked/_face_head_detect.json     # extract 的 face/head 识别缓存（主键 <角色>/<图片>）
-data/unpacked/_avatar_extract_cache.json # extract 的 base 相似度 / diff 决策缓存
-data/unpacked/_avatar_extract.json       # extract 提取报告
-data/export/<npc_id>/<sprite>.png        # extract 产物：各 base/diff 的 180×180 头像（按角色分文件夹）
-data/export_webp/<npc_id>/<sprite>.webp   # export-webp 产物：头像 WebP 版（目录结构与 data/export 一致）
-data/arknights_npc.json             # npc-json 产物：<npc_id> -> [[], [头像文件名], ["npc"]]
-data/unpacked/_diff_collage/<npc_id>.png   # collage 产物：每角色一张差分拼贴图
+data/unpacked/avatars/<sprite>.png + _meta/<bundle>.json   # 原始 avatar（数据仓库承载）
+
+# 识别数据（数据仓库承载，文件名不带 _ 前缀）
+data/recognition/characters_classified.json  # classify 产物
+data/recognition/avatar_match.json           # match 产物
+data/recognition/face_detect.json            # detect 产物
+data/recognition/face_detect_matched.json    # detect-bases 产物（derive-model 输入）
+data/recognition/face_head_detect.json       # extract 的 face/head 识别缓存
+data/recognition/avatar_extract_cache.json   # base 相似度 / diff 决策缓存
+data/recognition/avatar_extract.json         # extract 提取报告
+data/recognition/avatar_manual.json          # 手动裁切框（可选）
+data/recognition/avatar_skip.json            # 跳过清单（可选）
+data/recognition/face_detect_vis/            # detect-bases 标注可视化
+data/recognition/diff_collage/               # collage 差分拼贴
+data/recognition/bases_sample/               # sample-bases 抽样
+data/recognition/derive/model.json           # derive-model 产物（extract 第 3 档输入）
+
+# 提取 avatar（数据仓库承载）
+data/export/<npc_id>/<sprite>.png        # extract 产物：180×180 头像（按角色分文件夹）
+data/export_webp/<npc_id>/<sprite>.webp  # export-webp 产物
+
+# 统计列表（数据仓库承载）
+data/stats/*.json                        # 统计报告（extract_stats、no_box_characters、run/produce_stats 等）
+data/arknights_npc.json                  # npc-json 产物：<npc_id> -> [[], [头像文件名], ["npc"]]
 ```
 
-`meta.json` 保留 textures 尺寸、sprites 列表、`face_groups`（facePos/faceSize 配对），供步骤 3 使用。
+`meta.json` 保留 textures 尺寸、sprites 列表、`face_groups`（facePos/faceSize 配对），
+供步骤 3 使用。所有默认路径常量集中在 `src/arknightsavatar/paths.py`。
+
+历史分析产物（旧 derive 实验、match 性能基准等）归档在 `docs/analysis/`，见其中
+`README.md`。

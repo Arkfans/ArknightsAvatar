@@ -1,8 +1,8 @@
-import io
+﻿import io
 from pathlib import Path
 from unittest.mock import Mock
 
-from npcavatar.sources.adb import AdbSource, _PullProgress, _fmt_bytes
+from arknightsavatar.sources.adb import AdbSource, _PullProgress, _fmt_bytes
 
 
 def test_fmt_bytes():

@@ -8,3 +8,17 @@ adb:
 apk:
   file: apk/arknights-hg-2761.apk
   dir: apk/arknights-hg-2761
+
+# GitHub 数据仓库：承载识别数据 / 原始 avatar / 提取 avatar / 统计列表。
+# 仓库创建后把地址填入 url 即可使用 `uv run arknightsavatar-sync-cache`。
+data_repo:
+  path: data_cache          # 本地 git 工作副本（.gitignore 已忽略）
+  url: ""                   # 例：https://github.com/<owner>/arknightsavatar-data.git
+  branch: main
+  categories:
+    - {local: data/recognition,      remote: recognition}          # 识别数据
+    - {local: data/unpacked/avatars, remote: avatars}              # 原始 avatar
+    - {local: data/export,           remote: export}               # 提取 avatar
+    - {local: data/export_webp,      remote: export_webp}          # 提取 avatar（WebP）
+    - {local: data/stats,            remote: stats}                # 统计列表
+    - {local: data/arknights_npc.json, remote: arknights_npc.json} # NPC 头像索引
