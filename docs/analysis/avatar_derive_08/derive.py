@@ -101,7 +101,6 @@ def norm_box(box, size):
 
 def build_outputs(report, rows, coef, out_dir: Path, min_conf: float = DEFAULT_MIN_CONF):
     X = feature_matrix(rows)
-    Y = target_center_size(rows)
     centers, boxes = predict_boxes(coef, X)
     ious = [iou(b["box"], boxes[i]) for i, (_, _, b) in enumerate(rows)]
 

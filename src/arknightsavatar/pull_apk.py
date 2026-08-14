@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import os
@@ -9,7 +9,6 @@ from pathlib import Path
 from .config import load_config
 from .sources.adb import _PullProgress
 from .sources.device import (
-    DEFAULT_PACKAGE,
     connect_device,
     installed_apk_paths,
     installed_version,

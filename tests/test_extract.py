@@ -1,10 +1,9 @@
-﻿import json
+import json
 import os
 import shutil
 from pathlib import Path
 from uuid import uuid4
 
-import cv2
 import numpy as np
 import pytest
 from PIL import Image, ImageDraw
