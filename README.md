@@ -15,13 +15,21 @@ uv python pin 3.12
 uv sync --extra fetch --extra unpack --extra match --extra detect --group dev
 ```
 
+> 注意：pytorch 官方索引的 `torchvision 0.28.0+cu126` Windows wheel 不带
+> `#sha256=` 片段，`uv.lock` 已手工补入 cp312-win_amd64 的 hash（否则 Windows 上
+> `uv sync` 报 hash mismatch）。若重新执行 `uv lock` 后再次报错，需按
+> `uv.lock` 中 torchvision 的 cp312-win_amd64 条目重新补回该 hash。
+
 ## 用法
 
 ```bash
-# 从 APK 解包目录取头像
+# 从设备上已安装 APK 中，由设备端 unzip 解压并按需拉取头像
 uv run npcavatar-fetch --source apk --category avatars
 
-# 从 ADB 设备拉取
+# 从本地 APK 解包目录取头像（回退来源）
+uv run npcavatar-fetch --source local-apk --category avatars
+
+# 从 ADB 设备游戏 Bundles 拉取
 uv run npcavatar-fetch --source adb --category characters
 
 # 默认从 ADB 设备拉取 characters 与 avatars 两类资源
@@ -53,6 +61,37 @@ uv run npcavatar-export-webp
 ```
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
+
+## 从设备拉取已安装 APK（独立工具）
+
+`npcavatar-fetch --source apk` 通过 adb_shell 直连设备（本机无需安装 adb），从手机上
+已安装的 APK 用设备端 `unzip` 直接解压单个 AB 条目后拉回本地；不传输完整 APK，也
+不在设备上落地解包目录，只拉取本地缺少或大小变化的 AB 文件。`--source local-apk`
+仍可读取本地 APK 解包目录。
+
+`npcavatar-pull-apk` 通过 adb_shell 直连设备（本机无需安装 adb），从手机上已安装的
+游戏包拉取 APK 到本地。包名默认从 `config.yaml` 配置的 game location
+（official/bilibili）自动推导（如 `com.hypergryph.arknights`）；`pm path` 查询安装
+路径，`dumpsys` 读取版本，产物沿用 `arknights-hg-<版本>.apk` 命名
+（versionName 2.7.61 → 2761）。拉取先写 `.part` 临时文件并计算 sha256，与本地已有
+文件相同则删除临时文件，不同才替换；同步协议失败时自动降级为 `shell cat`。
+
+```bash
+# 同步环境（本工具只需 fetch 依赖：adb-shell、PyYAML）
+uv sync --extra fetch
+
+# 只探测设备（连接 + pm path + 版本），不拉取
+uv run npcavatar-pull-apk --no-pull
+
+# 完整拉取并比对（默认输出 apk/）
+uv run npcavatar-pull-apk
+
+# 指定包名 / 输出目录
+uv run npcavatar-pull-apk --package com.hypergryph.arknights.bilibili --out apk
+```
+
+主机/端口来自 `config.yaml` 的 `adb.host` / `adb.port`，服务区由 `adb.game.server`
+决定（official / bilibili）。
 
 ## 跳过清单
 

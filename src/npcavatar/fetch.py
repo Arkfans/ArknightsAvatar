@@ -9,11 +9,19 @@ from .config import CATEGORIES, Config, load_config
 from .manifest import FailureLog, FileRecord, Manifest
 from .sources import ApkSource, Source
 from .sources.adb import AdbSource
+from .sources.apk_adb import ApkAdbSource
+from .sources.device import package_from_location
 from .util import sha256_file
 
 
 def make_source(name: str, config: Config) -> Source:
     if name == "apk":
+        return ApkAdbSource(
+            host=config.adb.host,
+            port=config.adb.port,
+            package=package_from_location(config.adb.resolved_location()),
+        )
+    if name == "local-apk":
         if not config.apk.dir:
             raise SystemExit("apk.dir is not configured (config.yaml or NPCAVATAR_APK_DIR)")
         return ApkSource(config.apk.dir)
@@ -91,7 +99,7 @@ def run_fetch(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="npcavatar-fetch", description="Fetch AB resources into data/raw.")
     parser.add_argument("--config", help="Path to config file")
-    parser.add_argument("--source", choices=["apk", "adb"], default="adb")
+    parser.add_argument("--source", choices=["apk", "local-apk", "adb"], default="adb")
     parser.add_argument("--category", choices=[*CATEGORIES, "all"], default="all")
     parser.add_argument("--raw-dir", default="data/raw", help="Output cache directory")
     parser.add_argument("--force", action="store_true", help="Re-fetch even if manifest says unchanged")
