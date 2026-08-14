@@ -11,7 +11,7 @@ GAME_LOCATIONS = {
     "bilibili": "/storage/emulated/0/Android/data/com.hypergryph.arknights.bilibili/files/Bundles",
 }
 
-CATEGORIES = ("characters", "chararts", "skins", "avatars")
+CATEGORIES = ("characters", "avatars")
 
 DEFAULT_CONFIG_FILE = "config.yaml"
 ENV_PREFIX = "NPCAVATAR_"

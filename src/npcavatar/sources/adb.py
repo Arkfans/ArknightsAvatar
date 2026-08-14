@@ -84,8 +84,6 @@ class AdbSource(Source):
 
     CATEGORY_SUBPATHS = {
         "characters": ("avg", "characters"),
-        "chararts": ("chararts",),
-        "skins": ("skinpack",),
         "avatars": ("spritepack",),
     }
 

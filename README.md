@@ -24,7 +24,7 @@ uv run npcavatar-fetch --source apk --category avatars
 # 从 ADB 设备拉取
 uv run npcavatar-fetch --source adb --category characters
 
-# 默认从 ADB 设备拉取全部四类资源
+# 默认从 ADB 设备拉取 characters 与 avatars 两类资源
 uv run npcavatar-fetch
 
 # 解包
@@ -377,8 +377,6 @@ data/raw/<category>/<name>.ab   # 原始 AB 缓存
 data/unpacked/_manifest.json    # {rel: source_sha256}，增量解包依据
 data/unpacked/_failed.json      # 解包失败清单
 data/unpacked/characters/<npc_id>/<sprite>.png + meta.json
-data/unpacked/chararts/<char_id>/<sprite>.png + meta.json
-data/unpacked/skins/<char_id>/<sprite>.png + meta.json
 data/unpacked/avatars/<sprite>.png + _meta/<bundle>.json   # 扁平存放，仅保留 char_* 角色头像，其余素材解包时清理
 data/unpacked/_face_head_detect.json     # extract 的 face/head 识别缓存（主键 <角色>/<图片>）
 data/unpacked/_avatar_extract_cache.json # extract 的 base 相似度 / diff 决策缓存

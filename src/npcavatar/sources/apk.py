@@ -14,8 +14,6 @@ class ApkSource(Source):
 
     CATEGORY_SUBPATHS = {
         "characters": ("avg", "characters"),
-        "chararts": ("chararts",),
-        "skins": ("avg", "skinpack"),
         "avatars": ("spritepack",),
     }
 
