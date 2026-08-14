@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -13,7 +14,8 @@ GAME_LOCATIONS = {
 
 CATEGORIES = ("characters", "avatars")
 
-DEFAULT_CONFIG_FILE = "config.yaml"
+DEFAULT_CONFIG_FILE = "config.toml"
+DEFAULT_DATA_REPO_CONFIG_FILE = "data_repo.yaml"
 ENV_PREFIX = "ARKNIGHTSAVATAR_"
 
 # 数据仓库（sync-cache）默认分类映射：本地路径 -> 数据仓库内路径。
@@ -55,7 +57,7 @@ class DataRepoConfig:
     """GitHub 数据仓库承载配置（sync-cache 使用）。
 
     ``url`` 为空表示数据仓库尚未创建/未配置，sync-cache 会给出友好提示；
-    仓库创建后把地址填入 config.yaml 的 ``data_repo.url`` 即可使用。
+    仓库创建后把地址填入 data_repo.yaml 的 ``url`` 即可使用。
     """
 
     path: str = "data_cache"
@@ -107,12 +109,31 @@ def _parse_data_repo(data: dict) -> DataRepoConfig:
     )
 
 
-def load_config(path: str | Path | None = None) -> Config:
+def load_config(
+    path: str | Path | None = None,
+    data_repo_path: str | Path | None = None,
+) -> Config:
+    """Load the main TOML config (adb/apk) plus the data repo YAML config.
+
+    ``path`` points at the main config file (default ``config.toml``);
+    ``data_repo_path`` points at the data repo config (default
+    ``data_repo.yaml`` next to the main config file). Either may be overridden
+    through ``ARKNIGHTSAVATAR_CONFIG`` / ``ARKNIGHTSAVATAR_DATA_REPO_CONFIG``;
+    a missing file falls back to built-in defaults.
+    """
     path = Path(path or _env("CONFIG") or DEFAULT_CONFIG_FILE)
     data: dict = {}
     if path.exists():
-        with path.open("rt", encoding="utf8") as f:
-            data = yaml.safe_load(f) or {}
+        with path.open("rb") as f:
+            data = tomllib.load(f)
+
+    data_repo_path = Path(
+        data_repo_path or _env("DATA_REPO_CONFIG") or path.parent / DEFAULT_DATA_REPO_CONFIG_FILE
+    )
+    data_repo_data: dict = {}
+    if data_repo_path.exists():
+        with data_repo_path.open("rt", encoding="utf8") as f:
+            data_repo_data = yaml.safe_load(f) or {}
 
     adb_data = data.get("adb") or {}
     game_data = adb_data.get("game") or {}
@@ -131,7 +152,6 @@ def load_config(path: str | Path | None = None) -> Config:
         dir=Path(_env("APK_DIR")) if _env("APK_DIR") else (Path(apk_data["dir"]) if apk_data.get("dir") else None),
     )
 
-    data_repo_data = data.get("data_repo") or {}
     data_repo = _parse_data_repo(data_repo_data)
     data_repo.path = _env("DATA_REPO_PATH") or data_repo.path
     data_repo.url = _env("DATA_REPO_URL") or data_repo.url

@@ -1,0 +1,19 @@
+# 配置示例：复制为 config.toml 并按需修改（config.toml 已被 .gitignore 忽略）。
+# 数据仓库配置不在此文件，见同目录 data_repo.yaml。
+
+# 可选：覆盖从 apk 文件名推断的游戏版本。
+# 注意：顶层键必须位于任何 [表头] 之前。
+# game_version = "2.7.61"
+
+[adb]
+host = "192.168.2.121"   # ADB 主机地址
+port = 16448             # ADB 端口
+
+[adb.game]
+server = "official"      # 服务区：official / bilibili
+# location 留空时按 server 使用内置默认路径（GAME_LOCATIONS）
+# location = "/storage/emulated/0/Android/data/com.hypergryph.arknights/files/Bundles"
+
+[apk]
+file = "apk/arknights-hg-2761.apk"   # 本地 APK 文件（可选）
+dir = "apk/arknights-hg-2761"        # 本地 APK 解包目录（fetch --source local-apk 使用）

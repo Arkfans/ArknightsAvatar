@@ -1,4 +1,5 @@
 apk
+config.toml
 .venv/
 data/raw/
 data/unpacked/

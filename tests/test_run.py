@@ -56,10 +56,10 @@ def test_step_argv_fetch():
 
 
 def test_step_argv_fetch_with_config_and_force():
-    args = _args(config="cfg.yaml", force=True)
+    args = _args(config="cfg.toml", force=True)
     argv = run.step_argv("fetch", args)
     assert argv == ["--source", "adb", "--category", "all", "--raw-dir", "raw",
-                    "--config", "cfg.yaml", "--force"]
+                    "--config", "cfg.toml", "--force"]
 
 
 def test_step_argv_extract():

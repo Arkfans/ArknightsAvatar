@@ -109,7 +109,7 @@ uv run arknightsavatar derive-model --min-conf 0.8 --out-dir data/recognition/de
 ### sync-cache（数据仓库同步）
 
 识别数据 / 原始 avatar / 提取 avatar / 统计列表由独立 GitHub 数据仓库承载。创建好
-GitHub 数据仓库后，把地址填入 `config.yaml` 的 `data_repo.url` 即可使用：
+GitHub 数据仓库后，把地址填入 `data_repo.yaml` 的 `url` 即可使用：
 
 ```bash
 # 把本地四类数据镜像进本地工作副本 data_cache/ 并自动增量提交（无变化不产生提交）
@@ -123,7 +123,7 @@ uv run arknightsavatar sync-cache --dry-run
 uv run arknightsavatar sync-cache --message "sync after 2.7.61"
 ```
 
-分类映射（可在 `config.yaml` 的 `data_repo.categories` 调整）：
+分类映射（可在 `data_repo.yaml` 的 `categories` 调整）：
 
 | 数据类别 | 本地路径 | 数据仓库路径 |
 | --- | --- | --- |
@@ -180,7 +180,9 @@ uv run arknightsavatar-export-webp
 uv run arknightsavatar-npc-json
 ```
 
-配置优先级：CLI 参数 > `ARKNIGHTSAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
+配置优先级：CLI 参数 > `ARKNIGHTSAVATAR_*` 环境变量 > `config.toml`（数据仓库见
+`data_repo.yaml`）> 内置默认值。首次使用把 `config.example.toml` 复制为
+`config.toml` 并按需修改（`config.toml` 已 gitignore）。
 
 ## 从设备拉取已安装 APK（独立工具）
 
@@ -190,7 +192,7 @@ APK，也不在设备上落地解包目录，只拉取本地缺少或大小变�
 仍可读取本地 APK 解包目录。
 
 `arknightsavatar-pull-apk` 通过 adb_shell 直连设备（本机无需安装 adb），从手机上已
-安装的游戏包拉取 APK 到本地。包名默认从 `config.yaml` 配置的 game location
+安装的游戏包拉取 APK 到本地。包名默认从 `config.toml` 配置的 game location
 （official/bilibili）自动推导（如 `com.hypergryph.arknights`）；`pm path` 查询安装
 路径，`dumpsys` 读取版本，产物沿用 `arknights-hg-<版本>.apk` 命名
 （versionName 2.7.61 → 2761）。拉取先写 `.part` 临时文件并计算 sha256，与本地已有
@@ -210,7 +212,7 @@ uv run arknightsavatar-pull-apk
 uv run arknightsavatar-pull-apk --package com.hypergryph.arknights.bilibili --out apk
 ```
 
-主机/端口来自 `config.yaml` 的 `adb.host` / `adb.port`，服务区由 `adb.game.server`
+主机/端口来自 `config.toml` 的 `adb.host` / `adb.port`，服务区由 `adb.game.server`
 决定（official / bilibili）。
 
 ## 跳过清单

@@ -24,7 +24,7 @@ def make_source(name: str, config: Config) -> Source:
         )
     if name == "local-apk":
         if not config.apk.dir:
-            raise SystemExit("apk.dir is not configured (config.yaml or ARKNIGHTSAVATAR_APK_DIR)")
+            raise SystemExit("apk.dir is not configured (config.toml or ARKNIGHTSAVATAR_APK_DIR)")
         return ApkSource(config.apk.dir)
     if name == "adb":
         return AdbSource(

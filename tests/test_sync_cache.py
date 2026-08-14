@@ -41,10 +41,13 @@ def _make_remote(remote: Path) -> None:
 
 
 def _write_config(tmp_path: Path, url: str, categories: list[dict]) -> Path:
-    config = tmp_path / "config.yaml"
-    config.write_text(
-        json.dumps({"data_repo": {"path": "data_cache", "url": url, "branch": "main",
-                                  "categories": categories}}),
+    config = tmp_path / "config.toml"
+    config.write_text("# main config\n", encoding="utf8")
+    repo = tmp_path / "data_repo.yaml"
+    # JSON 是合法 YAML，data_repo 配置与主配置同目录（load_config 的默认查找位置）。
+    repo.write_text(
+        json.dumps({"path": "data_cache", "url": url, "branch": "main",
+                    "categories": categories}),
         encoding="utf8",
     )
     return config

@@ -6,10 +6,10 @@ raw avatars (``data/unpacked/avatars``), extracted avatars (``data/export``,
 ``data/arknights_npc.json``) -- are carried by a separate GitHub data repo.
 
 This tool mirrors those local paths into a local git working copy of the data
-repo (``config.yaml: data_repo.path``, default ``data_cache``) and commits
+repo (``data_repo.yaml: path``, default ``data_cache``) and commits
 incrementally through the git CLI: a commit is only created when something
 changed, so repeated runs are cheap. Create the GitHub repo first, then fill
-``config.yaml: data_repo.url`` and run -- the tool is ready as-is.
+``data_repo.yaml: url`` and run -- the tool is ready as-is.
 
 Options:
 - ``--pull``    update the working copy from the remote before mirroring;
@@ -70,7 +70,7 @@ def ensure_working_copy(repo: DataRepoConfig, root: Path, pull: bool) -> Path:
     if not repo.url:
         raise SyncError(
             "data_repo.url is empty: create the GitHub data repo first, then fill "
-            "data_repo.url in config.yaml and run again"
+            "url in data_repo.yaml and run again"
         )
     if workdir.exists() and any(workdir.iterdir()):
         raise SyncError(
