@@ -77,6 +77,31 @@ def test_pull_progress_reports_percentage_bytes_and_speed():
     assert out.endswith("\n")
 
 
+def test_pull_progress_with_position_shows_file_counter():
+    stream = io.StringIO()
+    progress = _PullProgress("characters/a.ab", enabled=True, stream=stream, position=(2, 10))
+
+    chunk = 64 * 1024
+    for _ in range(2):
+        progress("characters/a.ab", chunk, chunk * 4)
+    progress.finish()
+
+    out = stream.getvalue()
+    assert out.startswith("\r[2/10] ")
+    assert "characters/a.ab" in out
+    assert "50.0%" in out
+
+
+def test_pull_progress_without_position_has_no_counter():
+    stream = io.StringIO()
+    progress = _PullProgress("characters/a.ab", enabled=True, stream=stream)
+    progress("characters/a.ab", 512, 512)
+    progress.finish()
+
+    out = stream.getvalue()
+    assert "[" not in out.split("\r")[-1]
+
+
 def test_pull_progress_without_total_shows_no_percent():
     stream = io.StringIO()
     progress = _PullProgress("characters/a.ab", enabled=True, stream=stream)
@@ -320,3 +345,81 @@ def test_fetch_many_batch_disabled_pulls_per_file(tmp_path: Path):
     assert (tmp_path / "b.ab.part").read_bytes() == b"b" * 10
     assert device.pull.call_count == 2
     device.shell.assert_not_called()
+
+
+def test_fetch_many_per_file_pull_shows_file_counter(tmp_path: Path):
+    source = _make_source()
+    source._batch = False
+    files = {"a.ab": b"a" * 10, "b.ab": b"b" * 10}
+    device = _attach_device(source, files)
+    positions: list[tuple[int, int] | None] = []
+
+    def fake_pull(device_path, local_path, progress_callback=None, **kwargs):
+        positions.append(progress_callback._position)
+        name = device_path.rsplit("/", 1)[-1]
+        data = files[name]
+        progress_callback(device_path, len(data), len(data))
+        Path(local_path).write_bytes(data)
+
+    device.pull.side_effect = fake_pull
+
+    items = [
+        (FileInfo(rel="characters/a.ab", size=10), tmp_path / "a.ab.part"),
+        (FileInfo(rel="characters/b.ab", size=10), tmp_path / "b.ab.part"),
+    ]
+    assert source.fetch_many(items) == []
+    # [done/total]: 0 and 1 files already pulled out of 2
+    assert positions == [(0, 2), (1, 2)]
+
+
+def test_fetch_many_single_file_has_no_counter(tmp_path: Path):
+    source = _make_source()
+    source._batch = False
+    device = _attach_device(source, {"a.ab": b"a" * 10})
+    positions: list[tuple[int, int] | None] = []
+
+    def fake_pull(device_path, local_path, progress_callback=None, **kwargs):
+        positions.append(progress_callback._position)
+        data = b"a" * 10
+        progress_callback(device_path, len(data), len(data))
+        Path(local_path).write_bytes(data)
+
+    device.pull.side_effect = fake_pull
+
+    items = [(FileInfo(rel="characters/a.ab", size=10), tmp_path / "a.ab.part")]
+    assert source.fetch_many(items) == []
+    assert positions == [None]
+
+
+def test_fetch_many_fallback_pull_shows_file_counter(tmp_path: Path):
+    source = _make_source()
+    device = Mock()
+
+    def fake_shell(command, **kwargs):
+        return "EXIT:0" if command.startswith("tar") else ""
+
+    def fake_pull(device_path, local_path, progress_callback=None, **kwargs):
+        if device_path.startswith("/data/local/tmp"):
+            data = _tar_bytes({"a.ab": b"a" * 100})  # pack misses b.ab and c.ab
+        else:
+            data = {"/sdcard/game/avg/characters/b.ab": b"b" * 50,
+                    "/sdcard/game/avg/characters/c.ab": b"c" * 99}[device_path]
+        progress_callback(device_path, len(data), len(data))
+        Path(local_path).write_bytes(data)
+
+    device.shell.side_effect = fake_shell
+    device.pull.side_effect = fake_pull
+    source._device = device
+
+    items = [
+        (FileInfo(rel="characters/a.ab", size=100), tmp_path / "a.ab.part"),
+        (FileInfo(rel="characters/b.ab", size=50), tmp_path / "b.ab.part"),
+        (FileInfo(rel="characters/c.ab", size=99), tmp_path / "c.ab.part"),
+    ]
+    assert source.fetch_many(items) == []
+    assert device.pull.call_count == 3  # 1 pack + 2 fallbacks
+    # fallback counter counts within the fallback list only: [0/2], [1/2]
+    fallback_positions = [
+        call.kwargs["progress_callback"]._position for call in device.pull.call_args_list[1:]
+    ]
+    assert fallback_positions == [(0, 2), (1, 2)]

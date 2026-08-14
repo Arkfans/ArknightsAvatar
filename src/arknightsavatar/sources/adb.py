@@ -38,13 +38,27 @@ class _PullProgress:
 
     adb_shell calls the callback as ``callback(device_path, chunk_bytes,
     total_bytes)``; the callback is responsible for accumulating bytes itself.
+
+    ``position`` is an optional ``(done, total)`` file counter shown as a
+    ``[done/total]`` prefix (已拉取/需拉取总量) when pulling file by file:
+    ``done`` is how many files were already pulled before this one, ``total``
+    how many files this run needs to pull.
     """
 
-    def __init__(self, name: str, *, enabled: bool = True, stream=None, min_interval: float = 0.1):
+    def __init__(
+        self,
+        name: str,
+        *,
+        enabled: bool = True,
+        stream=None,
+        min_interval: float = 0.1,
+        position: tuple[int, int] | None = None,
+    ):
         self.name = name
         self.enabled = enabled
         self._stream = stream if stream is not None else sys.stderr
         self._min_interval = min_interval
+        self._position = position
         self._received = 0
         self._total = 0
         self._started = time.monotonic()
@@ -67,14 +81,18 @@ class _PullProgress:
         self._last_draw = now
         elapsed = now - self._started
         speed = self._received / elapsed if elapsed > 0 else 0.0
+        prefix = ""
+        if self._position is not None:
+            done, total = self._position
+            prefix = f"[{done}/{total}] "
         if self._total > 0:
             percent = min(100.0, self._received / self._total * 100.0)
             line = (
-                f"{self.name}  {percent:5.1f}%  "
+                f"{prefix}{self.name}  {percent:5.1f}%  "
                 f"{_fmt_bytes(self._received)}/{_fmt_bytes(self._total)}  {_fmt_bytes(speed)}/s"
             )
         else:
-            line = f"{self.name}  {_fmt_bytes(self._received)}  {_fmt_bytes(speed)}/s"
+            line = f"{prefix}{self.name}  {_fmt_bytes(self._received)}  {_fmt_bytes(speed)}/s"
         pad = " " * max(0, self._last_len - len(line))
         self._stream.write("\r" + line + pad)
         self._stream.flush()
@@ -149,9 +167,15 @@ class AdbSource(Source):
                 results.append(FileInfo(rel=f"{category}/{name}", size=size))
         return results
 
-    def fetch_to(self, rel: str, dest: Path) -> None:
+    def fetch_to(
+        self,
+        rel: str,
+        dest: Path,
+        *,
+        position: tuple[int, int] | None = None,
+    ) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
-        progress = _PullProgress(rel, enabled=self._show_progress)
+        progress = _PullProgress(rel, enabled=self._show_progress, position=position)
         try:
             self._device.pull(self.remote_path(rel), str(dest), progress_callback=progress)
         finally:
@@ -180,21 +204,29 @@ class AdbSource(Source):
                 failed_rels = {info.rel for info, _ in pack_failures}
                 if not failed_rels:
                     continue
-                for info, dest in cat_items:
-                    if info.rel not in failed_rels:
-                        continue
-                    try:
-                        self.fetch_to(info.rel, dest)
-                    except Exception as error:  # noqa: BLE001 - report and continue
-                        failures.append((info, error))
+                fallback = [(info, dest) for info, dest in cat_items if info.rel in failed_rels]
+                self._fetch_one_by_one(fallback, failures)
                 continue
 
-            for info, dest in cat_items:
-                try:
-                    self.fetch_to(info.rel, dest)
-                except Exception as error:  # noqa: BLE001 - report and continue
-                    failures.append((info, error))
+            self._fetch_one_by_one(cat_items, failures)
         return failures
+
+    def _fetch_one_by_one(
+        self,
+        items: Sequence[tuple[FileInfo, Path]],
+        failures: list[tuple[FileInfo, Exception]],
+    ) -> None:
+        """Pull each file individually, showing a [done/total] file counter.
+
+        ``position`` shows 已拉取/需拉取总量: how many files were already
+        pulled before the current one, out of the total this run needs.
+        """
+        total = len(items)
+        for index, (info, dest) in enumerate(items):
+            try:
+                self.fetch_to(info.rel, dest, position=(index, total) if total > 1 else None)
+            except Exception as error:  # noqa: BLE001 - report and continue
+                failures.append((info, error))
 
     def _fetch_category_pack(
         self,

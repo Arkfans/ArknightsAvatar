@@ -155,7 +155,7 @@ uv run arknightsavatar-fetch --source adb --category characters
 # 默认从 ADB 设备拉取 characters 与 avatars 两类资源
 uv run arknightsavatar-fetch
 
-# 逐文件拉取（禁用设备端打包，排查用）
+# 逐文件拉取（禁用设备端打包，排查用）；进度行显示 [已拉取/需拉取总量]
 uv run arknightsavatar-fetch --no-batch
 
 # 设备端 gzip 压缩后再拉取（AB 已是 LZ4 压缩，实测仅省 ~10% 体积且耗设备 CPU，默认关闭）
