@@ -40,6 +40,7 @@ except ImportError:  # pragma: no cover - optional dependency
     tqdm = None  # type: ignore[assignment]
 
 from npcavatar import detect
+from npcavatar.skip import DEFAULT_SKIP, SkipList
 
 DEFAULT_MATCH = "data/unpacked/_avatar_match.json"
 DEFAULT_OUTPUT = "data/unpacked/_face_detect_matched.json"
@@ -67,6 +68,7 @@ def filter_bases(
     match_report: dict,
     threshold: float = DEFAULT_THRESHOLD,
     characters_dir: str | Path | None = None,
+    skip: SkipList | None = None,
 ) -> list[tuple[str, str, dict, Path]]:
     """从匹配报告中筛选 match threshold 严格大于阈值的底图。
 
@@ -75,9 +77,14 @@ def filter_bases(
     characters_dir 缺省时取报告内的 ``characters_dir`` 字段。
     """
     characters_dir = Path(characters_dir or match_report.get("characters_dir", DEFAULT_CHARACTERS_DIR))
+    skip = skip or SkipList()
     selected: list[tuple[str, str, dict, Path]] = []
     for name, item in (match_report.get("characters") or {}).items():
+        if skip.is_character_skipped(name):
+            continue
         for base_name, entry in (item.get("bases") or {}).items():
+            if skip.is_sprite_skipped(name, base_name):
+                continue
             entry_threshold = entry.get("threshold")
             if not isinstance(entry_threshold, (int, float)) or entry_threshold <= threshold:
                 continue
@@ -211,6 +218,7 @@ def detect_matched_bases(
     detector: Callable[[np.ndarray], list[dict]] | None = None,
     head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
     progress: Callable[[int, int, str], None] | None = None,
+    skip: SkipList | None = None,
 ) -> MatchedDetectReport:
     """筛选高置信底图并逐张模型识别人脸，聚合报告。
 
@@ -222,7 +230,12 @@ def detect_matched_bases(
     stats = {"filtered": 0, "detected": 0, "not_detected": 0, "errors": 0, "heads_detected": 0}
     characters: dict[str, CharacterFaceDetection] = {}
 
-    selected = filter_bases(match_report, threshold=threshold, characters_dir=characters_dir)
+    selected = filter_bases(
+        match_report,
+        threshold=threshold,
+        characters_dir=characters_dir,
+        skip=skip,
+    )
     if character is not None:
         selected = [item for item in selected if item[0] == character]
     if limit:
@@ -460,6 +473,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_VIS_DIR,
         help=f"directory for annotated PNGs (default: {DEFAULT_VIS_DIR})",
     )
+    parser.add_argument(
+        "--skip",
+        default=DEFAULT_SKIP,
+        help=f"skip-list JSON path (default: {DEFAULT_SKIP})",
+    )
     return parser
 
 
@@ -540,7 +558,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: character not found in {match_path}: {args.character}", file=sys.stderr)
         return 1
 
-    selected = filter_bases(match_report, threshold=args.threshold, characters_dir=characters_dir)
+    skip_list = SkipList.load(args.skip)
+    selected = filter_bases(
+        match_report,
+        threshold=args.threshold,
+        characters_dir=characters_dir,
+        skip=skip_list,
+    )
     if args.character is not None:
         selected = [item for item in selected if item[0] == args.character]
     if args.limit:
@@ -560,6 +584,7 @@ def main(argv: list[str] | None = None) -> int:
             limit=args.limit,
             character=args.character,
             progress=progress,
+            skip=skip_list,
         )
     finally:
         close_progress()

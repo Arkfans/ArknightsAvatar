@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 
 from npcavatar import npc_json
+from npcavatar.skip import SkipList
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -71,6 +72,44 @@ def test_build_npc_avatar_map_empty(workdir):
     export = Path(workdir) / "export"
     export.mkdir(parents=True)
     assert npc_json.build_npc_avatar_map(export) == {}
+
+
+def test_build_npc_avatar_map_respects_skip(workdir):
+    export = Path(workdir) / "export"
+    _write_png(export / "c1" / "base.png")
+    _write_png(export / "c1" / "d1.png")
+    _write_png(export / "c1" / "d2.png")
+    _write_png(export / "c2" / "other.png")
+
+    classified = {
+        "characters": {
+            "c1": {"bases": {"base.png": {"diff": ["d1.png", "d2.png"]}}},
+            "c2": {"bases": {"other.png": {"diff": []}}},
+        }
+    }
+    skip = SkipList({"c2": "skip character", "c1/base.png": "skip base"})
+
+    data = npc_json.build_npc_avatar_map(export, skip=skip, classified=classified)
+
+    assert data == {"c1": [[], [], ["npc"]]}
+
+
+def test_build_npc_avatar_map_skip_diff_only(workdir):
+    export = Path(workdir) / "export"
+    _write_png(export / "c1" / "base.png")
+    _write_png(export / "c1" / "d1.png")
+    _write_png(export / "c1" / "d2.png")
+
+    classified = {
+        "characters": {
+            "c1": {"bases": {"base.png": {"diff": ["d1.png", "d2.png"]}}},
+        }
+    }
+    skip = SkipList({"c1/d1.png": "skip diff"})
+
+    data = npc_json.build_npc_avatar_map(export, skip=skip, classified=classified)
+
+    assert data == {"c1": [[], ["base", "d2"], ["npc"]]}
 
 
 def test_main_end_to_end(workdir):

@@ -54,6 +54,27 @@ uv run npcavatar-export-webp
 
 配置优先级：CLI 参数 > `NPCAVATAR_*` 环境变量 > `config.yaml` > 内置默认值。
 
+## 跳过清单
+
+`npcavatar-detect`、`npcavatar-detect-bases`、`npcavatar-extract`、
+`npcavatar-collage`、`npcavatar-export-webp`、`npcavatar-npc-json`
+支持读取 `data/unpacked/_avatar_skip.json` 跳过指定角色或图片。格式：
+
+```json
+{
+  "avg_003_kalts_1": "该角色整体跳过，原因...",
+  "avg_007_closre_1/base.png": "该图片跳过，原因..."
+}
+```
+
+- 键没有 `/` 时跳过该角色全部图片；带 `/` 时只跳过对应 sprite。
+- sprite 名可写文件名或省略 `.png`，大小写不敏感。
+- 跳过 base 时同时跳过该 base 名下所有 diff；跳过 diff 时只跳过该 diff。
+- 文件缺失或内容非法时视为空清单，不报错。
+- 各命令可用 `--skip <path>` 覆盖默认路径；`npcavatar-export-webp` 与
+  `npcavatar-npc-json` 还可用 `--classified <path>` 指定分类报告，用于把
+  base 跳过展开到所属 diff。未提供分类报告时，base 级跳过只精确匹配该文件。
+
 ## 立绘分类（独立工具）
 
 `npcavatar-classify` 扫描 `data/unpacked/characters/<npc_id>/`，按文件名把每个角色的 PNG

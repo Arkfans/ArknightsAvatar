@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from npcavatar.skip import DEFAULT_SKIP, SkipList
+
 try:
     import cv2
     import numpy as np
@@ -289,6 +291,7 @@ def detect_characters(
     character: str | None = None,
     detector: Callable[[np.ndarray], list[dict]] | None = None,
     progress: Callable[[int, str], None] | None = None,
+    skip: SkipList | None = None,
 ) -> DetectionReport:
     """扫描 characters 目录下每个角色的全部图片（底图 + 差分）并聚合统计。"""
     stats = {
@@ -300,8 +303,11 @@ def detect_characters(
     }
     characters: dict[str, CharacterDetection] = {}
     characters_dir = Path(characters_dir)
+    skip = skip or SkipList()
     for char_dir in sorted(p for p in characters_dir.iterdir() if p.is_dir()):
         if character is not None and char_dir.name != character:
+            continue
+        if skip.is_character_skipped(char_dir.name):
             continue
         if limit and stats["total_characters"] >= limit:
             break
@@ -312,6 +318,8 @@ def detect_characters(
         )
         char_det = CharacterDetection(name=char_dir.name)
         for path in files:
+            if skip.is_sprite_skipped(char_dir.name, path.name):
+                continue
             raw = detect_top1(path, device=device, conf=conf, detector=detector)
             char_det.images[path.name] = ImageDetection(**raw)
             stats["total_images"] += 1
@@ -403,6 +411,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_OUTPUT,
         help=f"JSON report path, or '-' for stdout (default: {DEFAULT_OUTPUT})",
     )
+    parser.add_argument(
+        "--skip",
+        default=DEFAULT_SKIP,
+        help=f"skip-list JSON path (default: {DEFAULT_SKIP})",
+    )
     return parser
 
 
@@ -463,6 +476,7 @@ def main(argv: list[str] | None = None) -> int:
             device=device,
             limit=args.limit,
             character=args.character,
+            skip=SkipList.load(args.skip),
             progress=_on_progress,
         )
         stats = report.stats

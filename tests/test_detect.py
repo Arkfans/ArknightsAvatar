@@ -1,11 +1,26 @@
 import json
+import os
+import shutil
 from pathlib import Path
+from uuid import uuid4
 
 import numpy as np
 import pytest
 from PIL import Image
 
 from npcavatar import detect
+from npcavatar.skip import SkipList
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+@pytest.fixture
+def workdir():
+    """Project-internal writable temp dir (system Temp is not accessible in the sandbox)."""
+    base = PROJECT_ROOT / f"npcavatar_detect_test_{uuid4().hex[:8]}"
+    os.makedirs(base, mode=0o777)
+    yield base
+    shutil.rmtree(base, ignore_errors=True)
 
 
 def _write_image(path: Path, size: tuple[int, int] = (100, 100)) -> None:
@@ -197,6 +212,31 @@ def test_detect_characters_error_image(tmp_path: Path):
     assert report.stats["errors"] == 1
     assert report.stats["detected"] == 0
     assert report.characters["avg_001_a_1"].images["broken.png"].error is not None
+
+
+def test_detect_characters_respects_skip(workdir: Path):
+    characters_dir = workdir / "characters"
+    _write_image(characters_dir / "skip_all" / "a.png")
+    _write_image(characters_dir / "avg_001_a_1" / "keep.png")
+    _write_image(characters_dir / "avg_001_a_1" / "skip.png")
+    detector = _fake_detector((10, 20, 90, 100, 0.9))
+
+    report = detect.detect_characters(
+        characters_dir,
+        conf=0.1,
+        detector=detector,
+        skip=SkipList({"skip_all": "reason", "avg_001_a_1/skip.png": "bad"}),
+    )
+
+    assert list(report.characters) == ["avg_001_a_1"]
+    assert list(report.characters["avg_001_a_1"].images) == ["keep.png"]
+    assert report.stats == {
+        "total_characters": 1,
+        "total_images": 1,
+        "detected": 1,
+        "not_detected": 0,
+        "errors": 0,
+    }
 
 
 def test_cli_missing_ml_deps(monkeypatch, capsys: pytest.CaptureFixture):

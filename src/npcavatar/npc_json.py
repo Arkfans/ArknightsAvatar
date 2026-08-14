@@ -27,8 +27,19 @@ import json
 import sys
 from pathlib import Path
 
+from npcavatar.skip import DEFAULT_SKIP, SkipList
+
 DEFAULT_EXPORT_DIR = "data/export"
 DEFAULT_OUTPUT_FILE = "data/arknights_npc.json"
+DEFAULT_CLASSIFIED = "data/unpacked/_characters_classified.json"
+
+
+def _read_json(path: Path) -> object | None:
+    try:
+        with path.open("rt", encoding="utf8") as file:
+            return json.load(file)
+    except (OSError, ValueError):
+        return None
 
 
 def iter_character_dirs(export_dir: Path) -> list[Path]:
@@ -43,13 +54,26 @@ def iter_png_stems(char_dir: Path) -> list[str]:
     return sorted(p.stem for p in char_dir.glob("*.png") if p.is_file())
 
 
-def build_npc_avatar_map(export_dir: Path) -> dict[str, list]:
+def build_npc_avatar_map(
+    export_dir: Path,
+    skip: SkipList | None = None,
+    classified: dict | None = None,
+) -> dict[str, list]:
     """Build the legacy ``{npc_id: [[], [avatars], ["npc"]]}`` mapping."""
+    skip = skip or SkipList()
+    skipped_characters, skipped_stems = skip.expand(classified)
     data: dict[str, list] = {}
     for char_dir in iter_character_dirs(export_dir):
+        if char_dir.name.casefold() in skipped_characters:
+            continue
+        stems = [
+            stem
+            for stem in iter_png_stems(char_dir)
+            if stem.casefold() not in skipped_stems.get(char_dir.name.casefold(), set())
+        ]
         data[char_dir.name] = [
             [],
-            iter_png_stems(char_dir),
+            stems,
             ["npc"],
         ]
     return data
@@ -78,6 +102,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_OUTPUT_FILE,
         help=f"JSON output path, or '-' for stdout (default: {DEFAULT_OUTPUT_FILE})",
     )
+    parser.add_argument(
+        "--classified",
+        default=DEFAULT_CLASSIFIED,
+        help=f"classification JSON for base-to-diff skip expansion (default: {DEFAULT_CLASSIFIED})",
+    )
+    parser.add_argument(
+        "--skip",
+        default=DEFAULT_SKIP,
+        help=f"skip-list JSON path (default: {DEFAULT_SKIP})",
+    )
     return parser
 
 
@@ -88,7 +122,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: export directory not found: {export_dir}", file=sys.stderr)
         return 1
 
-    data = build_npc_avatar_map(export_dir)
+    classified = _read_json(Path(args.classified))
+    if not isinstance(classified, dict):
+        classified = None
+    skip_list = SkipList.load(args.skip)
+    data = build_npc_avatar_map(export_dir, skip=skip_list, classified=classified)
     characters = len(data)
     images = sum(len(item[1]) for item in data.values())
 

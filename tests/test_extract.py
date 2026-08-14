@@ -10,6 +10,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from npcavatar import detect, detect_bases, extract
+from npcavatar.skip import SkipList
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -153,6 +154,7 @@ def _run(
     special_mask_iou: float = extract.SPECIAL_MASK_IOU,
     face_detector=None,
     head_detector=None,
+    skip=None,
 ) -> extract.ExtractionReport:
     return extract.extract_characters(
         classified,
@@ -170,6 +172,7 @@ def _run(
         special_mask_iou=special_mask_iou,
         face_detector=face_detector,
         head_detector=head_detector,
+        skip=skip,
     )
 
 
@@ -559,6 +562,65 @@ def test_normal_diff_uses_base_box(workdir: Path):
     assert diff.special is False
     assert diff.method == "match"
     assert diff.box == [100, 100, 300, 300]
+
+
+def test_skip_character_removes_all_outputs(workdir: Path):
+    characters_dir, classified = _standard_character(workdir)
+    report = _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=_match_report(
+            characters_dir, {"avg_001_a_1": {"bases": {"base.png": _base_match()}}}
+        ),
+        face_detector=_raising_detector(),
+        head_detector=_raising_detector(),
+        skip=SkipList({"avg_001_a_1": "skip all"}),
+    )
+
+    assert report.characters == {}
+    assert report.stats["characters"] == 0
+    assert not (workdir / "export" / "avg_001_a_1" / "base.png").exists()
+
+
+def test_skip_base_removes_base_and_diffs(workdir: Path):
+    characters_dir, classified = _standard_character(workdir)
+    report = _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=_match_report(
+            characters_dir, {"avg_001_a_1": {"bases": {"base.png": _base_match()}}}
+        ),
+        face_detector=_raising_detector(),
+        head_detector=_raising_detector(),
+        skip=SkipList({"avg_001_a_1/base.png": "skip base"}),
+    )
+
+    assert report.characters == {}
+    assert not (workdir / "export" / "avg_001_a_1" / "base.png").exists()
+    assert not (workdir / "export" / "avg_001_a_1" / "d1.png").exists()
+
+
+def test_skip_diff_keeps_base(workdir: Path):
+    characters_dir, classified = _standard_character(workdir)
+    report = _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=_match_report(
+            characters_dir, {"avg_001_a_1": {"bases": {"base.png": _base_match()}}}
+        ),
+        face_detector=_raising_detector(),
+        head_detector=_raising_detector(),
+        skip=SkipList({"avg_001_a_1/d1.png": "skip diff"}),
+    )
+
+    char = report.characters["avg_001_a_1"]
+    assert char.bases["base.png"].status == "ok"
+    assert "d1.png" not in char.diffs
+    assert (workdir / "export" / "avg_001_a_1" / "base.png").is_file()
+    assert not (workdir / "export" / "avg_001_a_1" / "d1.png").exists()
 
 
 def test_alpha_png_diff_ignored(workdir: Path):

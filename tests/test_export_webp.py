@@ -7,6 +7,7 @@ import pytest
 from PIL import Image
 
 from npcavatar import export_webp
+from npcavatar.skip import SkipList
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -116,6 +117,75 @@ def test_convert_characters_filter_and_limit(workdir):
     out3 = root / "out3"
     stats = export_webp.convert_characters(export, out3, limit=99)
     assert stats["characters"] == 3
+
+
+def test_convert_characters_respects_skip(workdir):
+    root = Path(workdir)
+    export = root / "export"
+    _write_png(export / "c1" / "base.png")
+    _write_png(export / "c1" / "d1.png")
+    _write_png(export / "c1" / "d2.png")
+    _write_png(export / "c2" / "other.png")
+    out = root / "out"
+
+    classified = {
+        "characters": {
+            "c1": {
+                "bases": {
+                    "base.png": {"diff": ["d1.png", "d2.png"]},
+                }
+            },
+            "c2": {"bases": {"other.png": {"diff": []}}},
+        }
+    }
+    skip = SkipList({"c2": "skip character", "c1/base.png": "skip base"})
+
+    stats = export_webp.convert_characters(
+        export,
+        out,
+        skip=skip,
+        classified=classified,
+    )
+
+    assert stats["characters"] == 1
+    assert stats["images"] == 0
+    assert not (out / "c1" / "base.webp").exists()
+    assert not (out / "c1" / "d1.webp").exists()
+    assert not (out / "c1" / "d2.webp").exists()
+    assert not (out / "c2").exists()
+
+
+def test_convert_characters_skip_diff_only(workdir):
+    root = Path(workdir)
+    export = root / "export"
+    _write_png(export / "c1" / "base.png")
+    _write_png(export / "c1" / "d1.png")
+    _write_png(export / "c1" / "d2.png")
+    out = root / "out"
+
+    classified = {
+        "characters": {
+            "c1": {
+                "bases": {
+                    "base.png": {"diff": ["d1.png", "d2.png"]},
+                }
+            }
+        }
+    }
+    skip = SkipList({"c1/d1.png": "skip diff"})
+
+    stats = export_webp.convert_characters(
+        export,
+        out,
+        skip=skip,
+        classified=classified,
+    )
+
+    assert stats["characters"] == 1
+    assert stats["images"] == 2
+    assert (out / "c1" / "base.webp").is_file()
+    assert not (out / "c1" / "d1.webp").exists()
+    assert (out / "c1" / "d2.webp").is_file()
 
 
 def test_convert_characters_counts_bad_image_as_failed(workdir):

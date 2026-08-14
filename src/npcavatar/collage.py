@@ -26,6 +26,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from npcavatar.skip import DEFAULT_SKIP, SkipList
+
 try:
     from PIL import Image, ImageDraw, ImageFont
 except ImportError:  # pragma: no cover - optional dependency
@@ -271,8 +273,11 @@ def process_characters(
     skipped: dict[str, set[str]] | None = None,
     show_skipped: bool = False,
     progress: Callable[[int, int, str], None] | None = None,
+    skip: SkipList | None = None,
 ) -> dict[str, int]:
     """Collage every (selected) character and aggregate stats."""
+    skip = skip or SkipList()
+    classified = skip.filter_classified(classified)
     characters = classified.get("characters")
     if not isinstance(characters, dict):
         raise ValueError("invalid classified report: missing 'characters'")
@@ -369,6 +374,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="TTF/TTC font path for labels (default: PIL built-in font)",
     )
+    parser.add_argument(
+        "--skip",
+        default=DEFAULT_SKIP,
+        help=f"skip-list JSON path (default: {DEFAULT_SKIP})",
+    )
     return parser
 
 
@@ -400,6 +410,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
+    skip_list = SkipList.load(args.skip)
     extract_report_path = Path(args.extract_report)
     skipped: dict[str, set[str]] = {}
     if extract_report_path.is_file():
@@ -434,6 +445,7 @@ def main(argv: list[str] | None = None) -> int:
         skipped=skipped,
         show_skipped=args.show_skipped,
         progress=lambda index, total, message: print(f"[{index}/{total}] {message}"),
+        skip=skip_list,
     )
     print(
         f"collaged: {stats['collaged']}  skipped_no_diff: {stats['skipped_no_diff']}  "

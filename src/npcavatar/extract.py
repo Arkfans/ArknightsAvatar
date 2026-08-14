@@ -43,6 +43,7 @@ except ImportError:  # pragma: no cover - optional dependency
     tqdm = None  # type: ignore[assignment]
 
 from npcavatar import detect, detect_bases, match
+from npcavatar.skip import DEFAULT_SKIP, SkipList
 
 DEFAULT_CLASSIFIED = "data/unpacked/_characters_classified.json"
 DEFAULT_CHARACTERS_DIR = "data/unpacked/characters"
@@ -1028,11 +1029,14 @@ def extract_characters(
     face_detector: Callable[[np.ndarray], list[dict]] | None = None,
     head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
     progress: Callable[[int, int, str], None] | None = None,
+    skip: SkipList | None = None,
 ) -> ExtractionReport:
     """Extract avatars for all (or filtered) characters and aggregate a report."""
     characters_dir = Path(characters_dir)
     output_dir = Path(output_dir)
     avatars_dir = Path(avatars_dir)
+    skip = skip or SkipList()
+    classified = skip.filter_classified(classified)
     names = sorted((classified.get("characters") or {}).keys())
     if character is not None:
         names = [name for name in names if name == character]
@@ -1122,6 +1126,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--special-mask-iou", type=float, default=SPECIAL_MASK_IOU)
     parser.add_argument("--dedup-sim", type=float, default=DEDUP_SIM)
     parser.add_argument("--device", choices=("auto", "cuda", "cpu"), default="auto")
+    parser.add_argument(
+        "--skip",
+        default=DEFAULT_SKIP,
+        help=f"skip-list JSON path (default: {DEFAULT_SKIP})",
+    )
     return parser
 
 
@@ -1178,6 +1187,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: character not found in {classified_path}: {args.character}", file=sys.stderr)
         return 1
 
+    skip_list = SkipList.load(args.skip)
     try:
         derive_model = load_derive_model(args.derive_model)
     except ValueError as error:
@@ -1189,7 +1199,8 @@ def main(argv: list[str] | None = None) -> int:
     extract_cache = ExtractCache(args.cache)
     device = None if args.device == "auto" else args.device
 
-    names = sorted(classified["characters"])
+    run_classified = skip_list.filter_classified(classified)
+    names = sorted(run_classified["characters"])
     if args.character is not None:
         names = [name for name in names if name == args.character]
     if args.limit:
@@ -1221,6 +1232,7 @@ def main(argv: list[str] | None = None) -> int:
             limit=args.limit,
             character=args.character,
             progress=progress,
+            skip=skip_list,
         )
     finally:
         cache.save()

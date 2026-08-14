@@ -10,6 +10,7 @@ import pytest
 from PIL import Image
 
 from npcavatar import detect, detect_bases
+from npcavatar.skip import SkipList
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -144,6 +145,28 @@ def test_filter_bases_skips_entries_without_threshold(workdir: Path):
     selected = detect_bases.filter_bases(report, threshold=0.95)
 
     assert [(name, base) for name, base, _, _ in selected] == [("avg_001_a_1", "ok.png")]
+
+
+def test_filter_bases_respects_skip(workdir: Path):
+    characters_dir = workdir / "characters"
+    report = _match_report(
+        characters_dir,
+        {
+            "skip_all": {"a.png": _entry(0.96)},
+            "avg_001_a_1": {
+                "keep.png": _entry(0.96),
+                "skip.png": _entry(0.97),
+            },
+        },
+    )
+
+    result = detect_bases.filter_bases(
+        report,
+        threshold=0.95,
+        skip=SkipList({"skip_all": "reason", "avg_001_a_1/skip.png": "bad"}),
+    )
+
+    assert [(name, base) for name, base, _, _ in result] == [("avg_001_a_1", "keep.png")]
 
 
 def test_filter_bases_characters_dir_override(workdir: Path):

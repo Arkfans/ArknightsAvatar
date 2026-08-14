@@ -11,9 +11,12 @@ CLI: ``npcavatar-export-webp``. Only depends on Pillow.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
+
+from npcavatar.skip import DEFAULT_SKIP, SkipList
 
 try:
     from PIL import Image
@@ -29,8 +32,17 @@ DEFAULT_EXPORT_DIR = "data/export"
 DEFAULT_OUTPUT_DIR = "data/export_webp"
 DEFAULT_QUALITY = 80
 DEFAULT_METHOD = 4  # Pillow WebP default compression method (0-6)
+DEFAULT_CLASSIFIED = "data/unpacked/_characters_classified.json"
 
 STATS_KEYS = ["characters", "images", "converted", "skipped", "failed"]
+
+
+def _read_json(path: Path) -> object | None:
+    try:
+        with path.open("rt", encoding="utf8") as file:
+            return json.load(file)
+    except (OSError, ValueError):
+        return None
 
 
 def iter_character_dirs(export_dir: Path) -> list[Path]:
@@ -72,6 +84,8 @@ def convert_characters(
     quality: int = DEFAULT_QUALITY,
     method: int = DEFAULT_METHOD,
     progress: Callable[[int, int, str], None] | None = None,
+    skip: SkipList | None = None,
+    classified: dict | None = None,
 ) -> dict[str, int]:
     """Convert PNG avatars from ``export_dir`` into ``output_dir``.
 
@@ -81,7 +95,10 @@ def convert_characters(
     ``STATS_KEYS``.
     """
     stats = {key: 0 for key in STATS_KEYS}
+    skip = skip or SkipList()
+    skipped_characters, skipped_stems = skip.expand(classified)
     names = [p.name for p in iter_character_dirs(export_dir)]
+    names = [name for name in names if name.casefold() not in skipped_characters]
     if characters is not None:
         wanted = set(characters)
         names = [name for name in names if name in wanted]
@@ -92,7 +109,11 @@ def convert_characters(
     for index, name in enumerate(names, start=1):
         char_dir = export_dir / name
         out_dir = output_dir / name
-        pngs = iter_pngs(char_dir)
+        pngs = [
+            png_path
+            for png_path in iter_pngs(char_dir)
+            if png_path.stem.casefold() not in skipped_stems.get(name.casefold(), set())
+        ]
         stats["characters"] += 1
         stats["images"] += len(pngs)
         converted = skipped = failed = 0
@@ -160,6 +181,16 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="re-convert even when the WebP output already exists",
     )
+    parser.add_argument(
+        "--classified",
+        default=DEFAULT_CLASSIFIED,
+        help=f"classification JSON for base-to-diff skip expansion (default: {DEFAULT_CLASSIFIED})",
+    )
+    parser.add_argument(
+        "--skip",
+        default=DEFAULT_SKIP,
+        help=f"skip-list JSON path (default: {DEFAULT_SKIP})",
+    )
     return parser
 
 
@@ -199,7 +230,13 @@ def main(argv: list[str] | None = None) -> int:
     if not export_dir.is_dir():
         print(f"error: export directory not found: {export_dir}", file=sys.stderr)
         return 1
+    classified = _read_json(Path(args.classified))
+    if not isinstance(classified, dict):
+        classified = None
+    skip_list = SkipList.load(args.skip)
     names = [p.name for p in iter_character_dirs(export_dir)]
+    skipped_characters, _ = skip_list.expand(classified)
+    names = [name for name in names if name.casefold() not in skipped_characters]
     if args.character is not None:
         unknown = [name for name in args.character if name not in names]
         if unknown:
@@ -224,6 +261,8 @@ def main(argv: list[str] | None = None) -> int:
             quality=args.quality,
             method=args.method,
             progress=progress,
+            skip=skip_list,
+            classified=classified,
         )
     finally:
         close_progress()

@@ -9,6 +9,7 @@ import pytest
 from PIL import Image
 
 from npcavatar import collage
+from npcavatar.skip import SkipList
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TILE = collage.TILE_SIZE
@@ -317,6 +318,54 @@ def test_process_character_all_skipped(workdir):
     assert result.skipped_omitted == 2
     assert result.output is None
     assert not out.exists()
+
+
+def test_process_characters_respects_skip(workdir):
+    root = Path(workdir)
+    report = _build_report(
+        root,
+        {
+            "c1": {"c1.png": ["1$1.png", "2$1.png"]},
+            "c2": {"c2.png": ["3$1.png"]},
+        },
+    )
+    export = root / "export"
+    _write_avatar(export / "c1" / "1$1.png")
+    _write_avatar(export / "c1" / "2$1.png")
+    _write_avatar(export / "c2" / "3$1.png")
+    out = root / "out"
+
+    stats = collage.process_characters(
+        json.loads(report.read_text(encoding="utf8")),
+        export,
+        out,
+        skip=SkipList({"c2": "skip character", "c1/c1.png": "skip base"}),
+    )
+
+    assert stats["characters"] == 0
+    assert stats["collaged"] == 0
+    assert not out.exists()
+
+
+def test_process_characters_skip_diff_only(workdir):
+    root = Path(workdir)
+    report = _build_report(root, {"c1": {"c1.png": ["1$1.png", "2$1.png"]}})
+    export = root / "export"
+    _write_avatar(export / "c1" / "1$1.png")
+    _write_avatar(export / "c1" / "2$1.png")
+    out = root / "out"
+
+    stats = collage.process_characters(
+        json.loads(report.read_text(encoding="utf8")),
+        export,
+        out,
+        skip=SkipList({"c1/1$1.png": "skip diff"}),
+    )
+
+    assert stats["characters"] == 1
+    assert stats["collaged"] == 1
+    image = Image.open(out / "c1.png")
+    assert image.size == (3 * TILE + 4 * PAD, TILE + 2 * PAD)
 
 
 def test_process_characters_invalid_report_raises(workdir):
