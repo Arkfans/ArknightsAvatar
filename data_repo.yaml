@@ -4,12 +4,12 @@ path: data_cache          # 本地 git 工作副本（.gitignore 已忽略）
 url: "https://github.com/Arkfans/ArknightsAvatarResource.git"                   # 例：https://github.com/<owner>/arknightsavatar-data.git
 branch: main
 categories:
-  - {local: data/recognition,      remote: recognition}          # 识别数据
-  - {local: data/unpacked/avatars, remote: avatars}              # 原始 avatar
-  - {local: data/export,           remote: export}               # 提取 avatar
-  - {local: data/export_webp,      remote: export_webp}          # 提取 avatar（WebP）
-  - {local: data/stats,            remote: stats}                # 统计列表
-  - {local: data/arknights_npc.json, remote: arknights_npc.json} # NPC 头像索引
-  - {local: data/version.json,     remote: version.json}         # 顶层版本指针
-  - {local: data/changelog.ndjson, remote: changelog.ndjson}     # 追加式变更日志
-  - {local: data/schema,           remote: schema}               # 数据文件格式 Schema
+  - {local: data/recognition,      remote: recognition,          desc: 识别数据}
+  - {local: data/unpacked/avatars, remote: avatars,              desc: 原始 avatar}
+  - {local: data/export,           remote: export,               desc: 提取 avatar}
+  - {local: data/export_webp,      remote: export_webp,          desc: 提取 avatar（WebP）}
+  - {local: data/stats,            remote: stats,                desc: 统计列表}
+  - {local: data/arknights_npc.json, remote: arknights_npc.json, desc: NPC 头像索引}
+  - {local: data/version.json,     remote: version.json,         desc: 顶层版本指针}
+  - {local: data/changelog.ndjson, remote: changelog.ndjson,     desc: 追加式变更日志}
+  - {local: data/schema,           remote: schema,               desc: 数据文件格式 Schema}

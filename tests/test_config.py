@@ -78,7 +78,7 @@ path: cache_dir
 url: https://github.com/me/arknightsavatar-data.git
 branch: trunk
 categories:
-  - {local: data/recognition, remote: recognition}
+  - {local: data/recognition, remote: recognition, desc: 识别数据}
 """,
         encoding="utf8",
     )
@@ -89,6 +89,23 @@ categories:
     assert len(config.data_repo.categories) == 1
     assert config.data_repo.categories[0].local == "data/recognition"
     assert config.data_repo.categories[0].remote == "recognition"
+    assert config.data_repo.categories[0].desc == "识别数据"
+
+
+def test_data_repo_category_desc_defaults_to_empty(tmp_path):
+    repo_path = tmp_path / "data_repo.yaml"
+    repo_path.write_text(
+        "categories:\n  - {local: data/recognition, remote: recognition}\n",
+        encoding="utf8",
+    )
+    config = load_config(tmp_path / "config.toml")
+    assert config.data_repo.categories[0].desc == ""
+
+
+def test_data_repo_default_categories_have_descriptions(tmp_path):
+    config = load_config(tmp_path / "missing.toml")
+    assert all(item["desc"] for item in DEFAULT_DATA_REPO_CATEGORIES)
+    assert all(category.desc for category in config.data_repo.categories)
 
 
 def test_data_repo_env_overrides(tmp_path, monkeypatch):

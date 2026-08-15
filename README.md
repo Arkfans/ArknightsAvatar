@@ -44,7 +44,7 @@ uv sync --extra fetch --extra unpack --extra match
 
 ## 统一入口与编排型入口
 
-统一入口 `arknightsavatar` 按子命令分发；5 个编排型入口各自也有独立脚本。
+统一入口 `arknightsavatar` 按子命令分发；6 个编排型入口各自也有独立脚本。
 
 ```bash
 uv run arknightsavatar --help            # 子命令总览
@@ -60,6 +60,7 @@ uv run arknightsavatar detect --conf 0.3 # 子命令分发到单工具（argv �
 | `arknightsavatar produce` | 离线生产：classify → match → extract → export-webp → npc-json（不触设备） |
 | `arknightsavatar derive-model` | 由 `data/recognition/face_detect_matched.json` 重新拟合 face/head → 裁切框推导模型 |
 | `arknightsavatar sync-cache` | 把数据目录同步提交到 GitHub 数据仓库（本地 git 工作副本 + git CLI） |
+| `arknightsavatar setup` | 初始化向导：全量同步（含 export）或交互选择分类仅下载数据文件 |
 
 ### run（全流程）
 
@@ -146,6 +147,30 @@ uv run arknightsavatar sync-cache --size-mtime     # 旧行为：size + mtime
 
 工作副本默认 `data_cache/`（已 gitignore）；url 为空时工具会提示先创建仓库并填写配置。
 全程调用 git CLI（clone / pull / add / diff / commit），无其它依赖。
+
+### setup（初始化）
+
+交互式初始化向导（`uv run arknightsavatar setup`），数据仓库与分类以
+`data_repo.yaml`（与 sync-cache 相同配置）为准，提供两个选项：
+
+- **a) 全量同步（含 export）**：等价 `sync-cache --pull --restore` —— 克隆/拉取
+  工作副本，把全部分类（识别数据、原始/提取 avatar、export / export_webp、统计、
+  增量更新数据文件等）取回本地，再把本地变更镜像回工作副本并增量提交；
+- **b) 仅下载数据文件**：交互多选分类（↑/↓ 移动，空格 选择/取消，回车 确认，
+  Esc 取消，默认全选），只把选中分类从数据仓库取回本地 —— 补缺不覆盖、
+  不镜像、不提交。
+
+```bash
+uv run arknightsavatar setup            # 交互菜单（↑/↓ + 回车，或直接按 a / b）
+uv run arknightsavatar setup --full     # 直接全量同步（选项 a）
+uv run arknightsavatar setup --download --category recognition --category schema
+                                        # 只下载指定分类（跳过交互选择）
+```
+
+`restore` 只补本地缺失文件、不覆盖已有文件，重复运行幂等；仓库尚无文件时提示
+「暂无文件可下载」，不报错。数据仓库未创建（`data_repo.yaml` 的 `url` 为空）时
+提示先创建仓库并填写配置。菜单与选择列表需要交互式终端；非交互环境请用
+`--full` 或 `--download --category <名称>`。
 
 ### manifest（增量更新数据文件）
 

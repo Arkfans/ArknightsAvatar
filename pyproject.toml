@@ -28,6 +28,8 @@ arknightsavatar-pull = "arknightsavatar.pull:main"
 arknightsavatar-produce = "arknightsavatar.produce:main"
 arknightsavatar-derive-model = "arknightsavatar.derive_model:main"
 arknightsavatar-sync-cache = "arknightsavatar.sync_cache:main"
+# 交互初始化（全量同步 / 选择分类下载）
+arknightsavatar-setup = "arknightsavatar.setup:main"
 # 单工具
 arknightsavatar-fetch = "arknightsavatar.fetch:main"
 arknightsavatar-unpack = "arknightsavatar.unpack.unpacker:main"

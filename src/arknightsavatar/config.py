@@ -19,16 +19,17 @@ DEFAULT_DATA_REPO_CONFIG_FILE = "data_repo.yaml"
 ENV_PREFIX = "ARKNIGHTSAVATAR_"
 
 # 数据仓库（sync-cache）默认分类映射：本地路径 -> 数据仓库内路径。
+# desc 为该分类的一句话说明，交互选择（setup 选项 b）与下载进度中展示。
 DEFAULT_DATA_REPO_CATEGORIES = [
-    {"local": "data/recognition", "remote": "recognition"},
-    {"local": "data/unpacked/avatars", "remote": "avatars"},
-    {"local": "data/export", "remote": "export"},
-    {"local": "data/export_webp", "remote": "export_webp"},
-    {"local": "data/stats", "remote": "stats"},
-    {"local": "data/arknights_npc.json", "remote": "arknights_npc.json"},
-    {"local": "data/version.json", "remote": "version.json"},
-    {"local": "data/changelog.ndjson", "remote": "changelog.ndjson"},
-    {"local": "data/schema", "remote": "schema"},
+    {"local": "data/recognition", "remote": "recognition", "desc": "识别数据"},
+    {"local": "data/unpacked/avatars", "remote": "avatars", "desc": "原始 avatar"},
+    {"local": "data/export", "remote": "export", "desc": "提取 avatar"},
+    {"local": "data/export_webp", "remote": "export_webp", "desc": "提取 avatar（WebP）"},
+    {"local": "data/stats", "remote": "stats", "desc": "统计列表"},
+    {"local": "data/arknights_npc.json", "remote": "arknights_npc.json", "desc": "NPC 头像索引"},
+    {"local": "data/version.json", "remote": "version.json", "desc": "顶层版本指针"},
+    {"local": "data/changelog.ndjson", "remote": "changelog.ndjson", "desc": "追加式变更日志"},
+    {"local": "data/schema", "remote": "schema", "desc": "数据文件格式 Schema"},
 ]
 
 
@@ -53,6 +54,7 @@ class ApkConfig:
 class DataRepoCategory:
     local: str
     remote: str
+    desc: str = ""  # 一句话说明，交互选择与下载进度中展示
 
 
 @dataclass
@@ -103,7 +105,13 @@ def _parse_data_repo(data: dict) -> DataRepoConfig:
     categories = []
     for item in raw_categories:
         if isinstance(item, dict) and item.get("local") and item.get("remote"):
-            categories.append(DataRepoCategory(local=str(item["local"]), remote=str(item["remote"])))
+            categories.append(
+                DataRepoCategory(
+                    local=str(item["local"]),
+                    remote=str(item["remote"]),
+                    desc=str(item.get("desc") or ""),
+                )
+            )
     return DataRepoConfig(
         path=str(data.get("path") or "data_cache"),
         url=str(data.get("url") or ""),

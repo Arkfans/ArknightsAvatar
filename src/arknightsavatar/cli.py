@@ -1,9 +1,9 @@
 """Unified ``arknightsavatar`` entry point (subcommand dispatch).
 
-Routes one subcommand to its module: the five orchestration entries
-(run / pull / produce / derive-model / sync-cache) plus the thirteen single
-tools. Each target module exposes ``main(argv) -> int``; the exit code is
-propagated.
+Routes one subcommand to its module: the six orchestration entries
+(run / pull / produce / derive-model / sync-cache / setup) plus the thirteen
+single tools. Each target module exposes ``main(argv) -> int``; the exit code
+is propagated.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ ORCHESTRATION: dict[str, tuple[str, str]] = {
     "produce": ("arknightsavatar.produce", "离线生产：classify → match → extract → export-webp → npc-json"),
     "derive-model": ("arknightsavatar.derive_model", "由 face/head 识别报告重新拟合头像推导模型"),
     "sync-cache": ("arknightsavatar.sync_cache", "同步数据目录到 GitHub 数据仓库并自动增量提交"),
+    "setup": ("arknightsavatar.setup", "初始化：全量同步（含 export）或交互选择分类下载数据文件"),
 }
 
 TOOLS: dict[str, tuple[str, str]] = {
