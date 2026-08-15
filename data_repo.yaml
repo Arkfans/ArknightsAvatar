@@ -1,7 +1,7 @@
 # GitHub 数据仓库：承载识别数据 / 原始 avatar / 提取 avatar / 统计列表。
 # 仓库创建后把地址填入 url 即可使用 `uv run arknightsavatar-sync-cache`。
 path: data_cache          # 本地 git 工作副本（.gitignore 已忽略）
-url: ""                   # 例：https://github.com/<owner>/arknightsavatar-data.git
+url: "https://github.com/Arkfans/ArknightsAvatarResource.git"                   # 例：https://github.com/<owner>/arknightsavatar-data.git
 branch: main
 categories:
   - {local: data/recognition,      remote: recognition}          # 识别数据
