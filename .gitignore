@@ -8,6 +8,10 @@ data/export
 data/export_webp/
 data/stats/
 data/arknights_npc.json
+# 增量更新数据文件（数据仓库承载）
+data/version.json
+data/changelog.ndjson
+data/schema/
 data_cache/
 __pycache__/
 *.pyc

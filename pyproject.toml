@@ -41,6 +41,8 @@ arknightsavatar-collage = "arknightsavatar.collage:main"
 arknightsavatar-export-webp = "arknightsavatar.export_webp:main"
 arknightsavatar-npc-json = "arknightsavatar.npc_json:main"
 arknightsavatar-pull-apk = "arknightsavatar.pull_apk:main"
+# 增量更新数据文件（manifest / version.json / changes / changelog / characters.csv）
+arknightsavatar-manifest = "arknightsavatar.manifest_tool:main"
 
 [dependency-groups]
 dev = ["pytest>=8.0", "numpy>=1.26", "opencv-python-headless>=4.8", "Pillow>=10.0", "lz4>=4.0", "unitypy>=1.10.14", "adb-shell>=0.4.4"]

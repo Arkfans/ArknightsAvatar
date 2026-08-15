@@ -49,5 +49,15 @@ NPC_JSON = "data/arknights_npc.json"
 # 统计列表
 STATS_DIR = "data/stats"
 
+# 增量更新数据文件（数据仓库承载，manifest 位于各分类目录内）
+VERSION_JSON = "data/version.json"
+CHANGELOG = "data/changelog.ndjson"
+SCHEMA_DIR = "data/schema"
+EXPORT_MANIFEST = "data/export/manifest.json"
+EXPORT_WEBP_MANIFEST = "data/export_webp/manifest.json"
+RECOGNITION_MANIFEST = "data/recognition/manifest.json"
+STATS_MANIFEST = "data/stats/manifest.json"
+CHARACTERS_CSV = "data/stats/characters.csv"
+
 # 数据仓库本地 git 工作副本（sync-cache）
 DATA_REPO_DIR = "data_cache"

@@ -110,11 +110,11 @@ uv run arknightsavatar derive-model --min-conf 0.8 --out-dir data/recognition/de
 
 ### sync-cache（数据仓库同步）
 
-识别数据 / 原始 avatar / 提取 avatar / 统计列表由独立 GitHub 数据仓库承载。创建好
-GitHub 数据仓库后，把地址填入 `data_repo.yaml` 的 `url` 即可使用：
+识别数据 / 原始 avatar / 提取 avatar / 统计列表 / 增量更新数据文件由独立 GitHub 数据仓库
+承载。创建好 GitHub 数据仓库后，把地址填入 `data_repo.yaml` 的 `url` 即可使用：
 
 ```bash
-# 把本地四类数据镜像进本地工作副本 data_cache/ 并自动增量提交（无变化不产生提交）
+# 把本地数据镜像进本地工作副本 data_cache/ 并自动增量提交（无变化不产生提交）
 uv run arknightsavatar sync-cache
 
 # 先 git pull 工作副本；把数据仓库中有而本地缺失的文件取回（如 derive 模型）
@@ -123,9 +123,13 @@ uv run arknightsavatar sync-cache --pull --restore
 # 只镜像不提交 / 自定义提交信息
 uv run arknightsavatar sync-cache --dry-run
 uv run arknightsavatar sync-cache --message "sync after 2.7.61"
+
+# 比较模式（默认：manifest 加速，见下）
+uv run arknightsavatar sync-cache --content-hash   # 全量 sha256 内容比较
+uv run arknightsavatar sync-cache --size-mtime     # 旧行为：size + mtime
 ```
 
-分类映射（可在 `data_repo.yaml` 的 `categories` 调整）：
+分类映射（可在 `data_repo.yaml` 的 `categories` 调整；`config.py` 内置同名默认表）：
 
 | 数据类别 | 本地路径 | 数据仓库路径 |
 | --- | --- | --- |
@@ -133,13 +137,64 @@ uv run arknightsavatar sync-cache --message "sync after 2.7.61"
 | 原始 avatar | `data/unpacked/avatars/` | `avatars/` |
 | 提取 avatar | `data/export/`、`data/export_webp/` | `export/`、`export_webp/` |
 | 统计列表 | `data/stats/`、`data/arknights_npc.json` | `stats/`、`arknights_npc.json` |
+| 增量更新数据文件 | `data/version.json`、`data/changelog.ndjson`、`data/schema/` | `version.json`、`changelog.ndjson`、`schema/` |
+
+比较模式：默认（auto）下，某分类两侧（本地 + 工作副本）都有 `manifest.json` 时，按清单的
+`{size, sha256}` 指纹比对（零哈希，内容级正确）；未被清单覆盖的文件（可视化目录、清单自身等）
+回退 `size + mtime`。`--content-hash` 对全部文件做全量 sha256（清单缺失时的正确性模式）；
+`--size-mtime` 完全恢复旧行为。镜像时 `manifest.json` 排在最后复制，中断不会出现"新清单配旧文件"。
 
 工作副本默认 `data_cache/`（已 gitignore）；url 为空时工具会提示先创建仓库并填写配置。
 全程调用 git CLI（clone / pull / add / diff / commit），无其它依赖。
 
+### manifest（增量更新数据文件）
+
+`arknightsavatar manifest` 生成开发者增量更新所需的全部数据文件（内容清单、顶层版本指针、
+跨版本变更清单、扁平统计），幂等：内容（除 `generated_at` 外）未变时不重写文件，
+sync-cache 因此不会产生空提交。发布流程：
+
+```bash
+# run/produce 产出之后：生成四分类 manifest + data/version.json
+uv run arknightsavatar manifest --version-out
+
+# 发布前对比上一版本（数据仓库工作副本中的旧 version.json 或单个旧清单），
+# 写 data/stats/changes.json 并追加 data/changelog.ndjson
+uv run arknightsavatar manifest --version-out --since data_cache/version.json --append-changelog
+
+# 附带逐角色扁平统计 data/stats/characters.csv（+.sha256）
+uv run arknightsavatar manifest --characters-csv
+
+# 只生成单个分类清单（stdout 输出：-o -）
+uv run arknightsavatar manifest --category export
+```
+
+产物与格式：
+
+- `data/{recognition,export,export_webp,stats}/manifest.json`：分类内容清单，逐文件
+  `{size, sha256}`，键字典序、相对路径 `/` 分隔；清单自身不进清单。`recognition` 默认
+  排除 `face_detect_vis/`、`diff_collage/`、`bases_sample/`，包含 `derive/`（`--exclude` 可增补）；
+  `stats` 默认排除 `run_stats.json`、`produce_stats.json`（每次运行必变且无消费者读取，
+  排除后 stats 指纹只在真实数据变化时更新，不产生空提交）。
+- `data/version.json`：顶层指针。`game_version` + `categories.*{path, sha256, files}`（path 为
+  数据仓库内相对路径），消费者先读它判断是否需要更新。
+- `data/stats/changes.json`：`--since` 跨版本对比（added/removed/modified，按 sha256 判定；
+  stats 分类不参与对比）。`--since` 接受旧 `version.json`（按 `categories.*.path` 定位清单）
+  或单分类旧 manifest（需配 `--category <name>`）。
+- `data/changelog.ndjson`：追加式变更日志，一行一次发布（断点续读按行数）；与末行相同时不重复追加。
+- `data/stats/characters.csv`：逐角色一行、字典序（列定义见 `data/schema/README.md`）。
+
+所有报告（classify/match/detect/detect-bases/extract/derive-model/run/produce）顶层统一注入版本头
+`{schema_version, pipeline_version, game_version, generated_at}`（只增键，向后兼容）；
+`game_version` 解析顺序：`data/raw/manifest.json` → `config.toml`/`ARKNIGHTSAVATAR_GAME_VERSION`
+→ `"unknown"`。格式 Schema 见 `data/schema/`（version / manifest / changes / report）。
+
+消费者增量拉取建议：读 `version.json` → 若 `game_version` 或分类指纹变化 → 按
+`changes.json`（或 changelog）拉取 added/modified 文件、删除 removed 文件；全量校验用
+各分类 `manifest.json` 的 sha256。
+
 ## 单工具
 
-12 个单工具保留（改名），既可直接运行也可经统一入口调用：
+13 个单工具保留（改名），既可直接运行也可经统一入口调用：
 
 ```bash
 # 从设备上已安装 APK 中，由设备端 unzip 解压并按需拉取头像
@@ -573,7 +628,16 @@ data/export_webp/<npc_id>/<sprite>.webp  # export-webp 产物
 
 # 统计列表（数据仓库承载）
 data/stats/*.json                        # 统计报告（extract_stats、no_box_characters、run/produce_stats 等）
+data/stats/characters.csv + .sha256      # manifest 工具产物：逐角色扁平统计（列定义见 data/schema/README.md）
+data/stats/changes.json                  # manifest --since 产物：跨版本变更清单
 data/arknights_npc.json                  # npc-json 产物：<npc_id> -> [[], [头像文件名], ["npc"]]
+
+# 增量更新数据文件（数据仓库承载）
+data/version.json                        # manifest --version-out 产物：顶层版本指针（game_version + 分类清单指纹）
+data/changelog.ndjson                    # manifest 产物：追加式跨版本变更日志（一行一次发布）
+data/schema/*.json + README.md           # version/manifest/changes/report 格式 Schema 与 CSV 列定义
+data/{recognition,export,export_webp,stats}/manifest.json
+                                         # manifest 产物：分类内容清单（{size, sha256}，清单自身不进清单）
 ```
 
 `meta.json` 保留 textures 尺寸、sprites 列表、`face_groups`（facePos/faceSize 配对），

@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from arknightsavatar import paths
+from arknightsavatar import paths, reporting
 
 try:
     import cv2
@@ -797,14 +797,9 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     payload = report.as_dict()
-    if args.output == "-":
-        json.dump(payload, sys.stdout, ensure_ascii=False, indent=2)
-        print()
-    else:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        with output.open("wt", encoding="utf8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
-        print(f"report written: {output}")
+    reporting.write_report(payload, args.output)
+    if args.output != "-":
+        print(f"report written: {args.output}")
 
     if args.image_dir is not None:
         image_dir = Path(args.image_dir)

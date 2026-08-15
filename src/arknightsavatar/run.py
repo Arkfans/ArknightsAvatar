@@ -15,12 +15,11 @@ from __future__ import annotations
 
 import argparse
 import importlib
-import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from arknightsavatar import paths
+from arknightsavatar import paths, reporting
 from arknightsavatar.config import CATEGORIES
 
 STEPS = ("fetch", "unpack", "classify", "match", "extract", "export-webp", "npc-json")
@@ -245,10 +244,8 @@ def run_steps(
 
 
 def write_stats(path: str | Path, payload: dict) -> None:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("wt", encoding="utf8") as file:
-        json.dump(payload, file, ensure_ascii=False, indent=2)
+    """Write a pipeline stats JSON with the shared version header (used by run and produce)."""
+    reporting.write_report(payload, path)
 
 
 def main(argv: list[str] | None = None) -> int:

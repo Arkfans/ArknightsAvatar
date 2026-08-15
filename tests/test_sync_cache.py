@@ -1,10 +1,36 @@
+import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
 import pytest
 
 from arknightsavatar import sync_cache
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _write_manifest(dir_path: Path, files: dict[str, tuple[int, str]]) -> None:
+    """Write a category manifest with the given rel -> (size, sha256)."""
+    manifest = dir_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "pipeline_version": "0.1.0",
+                "game_version": "unknown",
+                "generated_at": "2026-01-01T00:00:00+00:00",
+                "category": "recognition",
+                "files": {
+                    rel: {"size": size, "sha256": sha} for rel, (size, sha) in files.items()
+                },
+            }
+        ),
+        encoding="utf8",
+    )
 
 
 def _git_available() -> bool:
@@ -185,3 +211,84 @@ def test_sync_file_category(tmp_path, monkeypatch):
     )
     assert sync_cache.main(["--config", str(config)]) == 0
     assert (tmp_path / "data_cache" / "arknights_npc.json").is_file()
+
+
+def test_manifest_covered_unchanged_content_not_copied(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("v1", encoding="utf8")
+    _write_manifest(local_dir, {"a.json": (2, _sha256_bytes(b"v1"))})
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+    assert sync_cache.main(["--config", str(config)]) == 0
+    # 内容不变，仅 mtime 变化（本地与工作副本不同）：manifest 指纹相等 → 不复制
+    mtime = 1700000000  # seconds
+    os.utime(local_dir / "a.json", (mtime, mtime))
+    os.utime(tmp_path / "data_cache" / "recognition" / "a.json", (mtime + 1, mtime + 1))
+    assert sync_cache.main(["--config", str(config)]) == 0
+    assert "copied=0 removed=0" in capsys.readouterr().out
+
+
+def test_manifest_content_change_copied_after_regeneration(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("v1", encoding="utf8")
+    _write_manifest(local_dir, {"a.json": (2, _sha256_bytes(b"v1"))})
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+    assert sync_cache.main(["--config", str(config)]) == 0
+    # 内容变化并重新生成 manifest（真实流程：先 manifest 后 sync）→ 必复制
+    (local_dir / "a.json").write_text("v2", encoding="utf8")
+    _write_manifest(local_dir, {"a.json": (2, _sha256_bytes(b"v2"))})
+    assert sync_cache.main(["--config", str(config)]) == 0
+    # a.json（指纹变化）+ manifest.json（自身重写后 mtime 变化）→ 恰好 2 个
+    assert "copied=2" in capsys.readouterr().out
+    assert (tmp_path / "data_cache" / "recognition" / "a.json").read_text(encoding="utf8") == "v2"
+
+
+def test_content_hash_catches_change_with_stale_manifest(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("v1", encoding="utf8")
+    _write_manifest(local_dir, {"a.json": (2, _sha256_bytes(b"v1"))})
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+    assert sync_cache.main(["--config", str(config)]) == 0
+    # 同 size 内容变化但 manifest 未重生成：默认（auto）按旧指纹判定相同 → 不复制
+    (local_dir / "a.json").write_text("v2", encoding="utf8")
+    assert sync_cache.main(["--config", str(config)]) == 0
+    assert "copied=0" in capsys.readouterr().out
+    # --content-hash 全量哈希 → 必复制
+    assert sync_cache.main(["--config", str(config), "--content-hash"]) == 0
+    assert "copied=1" in capsys.readouterr().out
+    assert (tmp_path / "data_cache" / "recognition" / "a.json").read_text(encoding="utf8") == "v2"
+
+
+def test_size_mtime_mode_ignores_manifest(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("v1", encoding="utf8")
+    _write_manifest(local_dir, {"a.json": (2, _sha256_bytes(b"v1"))})
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+    assert sync_cache.main(["--config", str(config)]) == 0
+    # 本地 mtime 变化（内容不变）：--size-mtime 恢复旧行为 → 复制
+    os.utime(local_dir / "a.json", (1700000000, 1700000000))
+    assert sync_cache.main(["--config", str(config), "--size-mtime"]) == 0
+    assert "copied=1" in capsys.readouterr().out

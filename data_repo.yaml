@@ -10,3 +10,6 @@ categories:
   - {local: data/export_webp,      remote: export_webp}          # 提取 avatar（WebP）
   - {local: data/stats,            remote: stats}                # 统计列表
   - {local: data/arknights_npc.json, remote: arknights_npc.json} # NPC 头像索引
+  - {local: data/version.json,     remote: version.json}         # 顶层版本指针
+  - {local: data/changelog.ndjson, remote: changelog.ndjson}     # 追加式变更日志
+  - {local: data/schema,           remote: schema}               # 数据文件格式 Schema

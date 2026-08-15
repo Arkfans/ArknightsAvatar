@@ -1,7 +1,7 @@
 """Unified ``arknightsavatar`` entry point (subcommand dispatch).
 
 Routes one subcommand to its module: the five orchestration entries
-(run / pull / produce / derive-model / sync-cache) plus the twelve single
+(run / pull / produce / derive-model / sync-cache) plus the thirteen single
 tools. Each target module exposes ``main(argv) -> int``; the exit code is
 propagated.
 """
@@ -33,6 +33,7 @@ TOOLS: dict[str, tuple[str, str]] = {
     "collage": ("arknightsavatar.collage", "差分头像拼贴（调试）"),
     "export-webp": ("arknightsavatar.export_webp", "PNG 头像转 WebP（RGBA）"),
     "npc-json": ("arknightsavatar.npc_json", "生成旧项目格式的 NPC 头像索引 JSON"),
+    "manifest": ("arknightsavatar.manifest_tool", "生成增量更新数据文件（内容清单/version.json/变更清单/CSV）"),
     "pull-apk": ("arknightsavatar.pull_apk", "从设备拉取已安装游戏 APK 到本地"),
 }
 

@@ -12,14 +12,13 @@ functions for later pipeline integration (goal.md step 3, model recognition).
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from arknightsavatar import paths
+from arknightsavatar import paths, reporting
 from arknightsavatar.skip import DEFAULT_SKIP, SkipList
 
 try:
@@ -488,15 +487,9 @@ def main(argv: list[str] | None = None) -> int:
             f"errors: {stats['errors']}"
         )
 
-    if args.output == "-":
-        json.dump(payload, sys.stdout, ensure_ascii=False, indent=2)
-        print()
-    else:
-        output = Path(args.output)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        with output.open("wt", encoding="utf8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
-        print(f"report written: {output}")
+    reporting.write_report(payload, args.output)
+    if args.output != "-":
+        print(f"report written: {args.output}")
     return 0
 
 

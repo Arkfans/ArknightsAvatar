@@ -23,7 +23,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from arknightsavatar import paths
+from arknightsavatar import paths, reporting
 
 try:
     import numpy as np
@@ -303,9 +303,7 @@ def main(argv: list[str] | None = None) -> int:
         "r2": dict(zip(["cx", "cy", "s"], r2)),
         "coef": [list(map(lambda v: round(v, 6), row)) for row in coef],
     }
-    (out_dir / "model.json").write_text(
-        json.dumps(model, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    reporting.write_report(model, out_dir / "model.json")
 
     characters, stats = build_outputs(report, rows, coef, out_dir, min_conf)
     payload = {
@@ -316,12 +314,8 @@ def main(argv: list[str] | None = None) -> int:
         "stats": stats,
         "characters": characters,
     }
-    (out_dir / "derive_coords.json").write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    (out_dir / "stats.json").write_text(
-        json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    reporting.write_report(payload, out_dir / "derive_coords.json")
+    reporting.write_report(stats, out_dir / "stats.json")
 
     if not args.no_compare:
         write_compare_images(rows, centers, boxes, out_dir)

@@ -22,6 +22,8 @@ Options:
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import shutil
 import subprocess
 import sys
@@ -29,6 +31,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from arknightsavatar.config import DataRepoConfig, load_config
+
+# 比较模式：manifest 加速（默认） / 全量 sha256 / 旧 size+mtime
+COMPARE_AUTO = "auto"
+COMPARE_CONTENT = "content"
+COMPARE_SIZE_MTIME = "size_mtime"
 
 
 class SyncError(Exception):
@@ -84,19 +91,90 @@ def ensure_working_copy(repo: DataRepoConfig, root: Path, pull: bool) -> Path:
     return workdir
 
 
-def _same_file(source: Path, dest: Path) -> bool:
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_category_manifest(path: Path) -> dict[str, dict]:
+    """Rel (posix) -> {size, sha256} from a category manifest; {} when missing/broken."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf8"))
+    except (OSError, ValueError):
+        return {}
+    files = payload.get("files") if isinstance(payload, dict) else None
+    return files if isinstance(files, dict) else {}
+
+
+def _same_size_mtime(source: Path, dest: Path) -> bool:
     stat = dest.stat()
     src_stat = source.stat()
     return stat.st_size == src_stat.st_size and stat.st_mtime_ns == src_stat.st_mtime_ns
 
 
-def mirror_dir(source: Path, dest: Path, stats: dict) -> None:
-    """Incremental mirror: copy new/changed files, remove stale ones."""
+def _same_file(
+    source: Path,
+    dest: Path,
+    mode: str = COMPARE_AUTO,
+    src_record: dict | None = None,
+    dst_record: dict | None = None,
+) -> bool:
+    """Content-level file comparison.
+
+    - ``content``: full sha256 of both sides (correct without manifests);
+    - ``auto`` (default): when the file is covered by both the local and the
+      destination category manifest, compare ``{size, sha256}`` (no hashing);
+      otherwise fall back to ``size + mtime_ns`` (legacy behavior);
+    - ``size_mtime``: legacy behavior, ignores manifests.
+    """
+    if not dest.is_file():
+        return False
+    if mode == COMPARE_SIZE_MTIME:
+        return _same_size_mtime(source, dest)
+    if mode == COMPARE_CONTENT:
+        return _sha256(source) == _sha256(dest)
+    if src_record is not None and dst_record is not None:
+        return (
+            src_record.get("size") == dst_record.get("size")
+            and src_record.get("sha256") == dst_record.get("sha256")
+        )
+    return _same_size_mtime(source, dest)
+
+
+def mirror_dir(
+    source: Path,
+    dest: Path,
+    stats: dict,
+    mode: str = COMPARE_AUTO,
+    manifest: dict[str, dict] | None = None,
+) -> None:
+    """Incremental mirror: copy new/changed files, remove stale ones.
+
+    ``manifest`` (optional) is the local category manifest (``rel -> {size,
+    sha256}``); the destination manifest is loaded automatically when present.
+    Files covered by both manifests are compared by fingerprint without
+    hashing; everything else falls back per ``mode``. ``manifest.json`` is
+    copied last so an interrupted sync never leaves a newer manifest than the
+    files it describes.
+    """
     src_files = {p.relative_to(source): p for p in source.rglob("*") if p.is_file()}
     dest.mkdir(parents=True, exist_ok=True)
-    for rel, src_file in src_files.items():
+    dst_manifest = load_category_manifest(dest / "manifest.json") if manifest is not None else {}
+    for rel, src_file in sorted(
+        src_files.items(), key=lambda item: item[0].as_posix() == "manifest.json"
+    ):
         dst_file = dest / rel
-        if not dst_file.is_file() or not _same_file(src_file, dst_file):
+        same = _same_file(
+            src_file,
+            dst_file,
+            mode=mode,
+            src_record=manifest.get(rel.as_posix()) if manifest is not None else None,
+            dst_record=dst_manifest.get(rel.as_posix()),
+        )
+        if not same:
             dst_file.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src_file, dst_file)
             stats["copied"] += 1
@@ -112,24 +190,29 @@ def mirror_dir(source: Path, dest: Path, stats: dict) -> None:
                 pass
 
 
-def mirror_file(source: Path, dest: Path, stats: dict) -> None:
+def mirror_file(source: Path, dest: Path, stats: dict, mode: str = COMPARE_AUTO) -> None:
     if dest.is_dir():
         shutil.rmtree(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    if not dest.is_file() or not _same_file(source, dest):
+    if not _same_file(source, dest, mode=mode):
         shutil.copy2(source, dest)
         stats["copied"] += 1
 
 
-def mirror_category(local: str, remote: str, root: Path, workdir: Path, stats: dict) -> None:
+def mirror_category(
+    local: str, remote: str, root: Path, workdir: Path, stats: dict, mode: str = COMPARE_AUTO
+) -> None:
     source = Path(local)
     if not source.is_absolute():
         source = root / source
     dest = workdir / remote
     if source.is_dir():
-        mirror_dir(source, dest, stats)
+        manifest = (
+            load_category_manifest(source / "manifest.json") if mode != COMPARE_SIZE_MTIME else {}
+        )
+        mirror_dir(source, dest, stats, mode=mode, manifest=manifest)
     elif source.is_file():
-        mirror_file(source, dest, stats)
+        mirror_file(source, dest, stats, mode=mode)
     else:
         # 本地目录缺失时保留数据仓库中的现有内容（不删除）。
         stats["missing"] += 1
@@ -199,11 +282,37 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="commit message (default: 'sync <UTC timestamp>')",
     )
+    compare = parser.add_mutually_exclusive_group()
+    compare.add_argument(
+        "--manifest",
+        action="store_true",
+        help="compare by category manifest fingerprints ({size, sha256}, no hashing); "
+        "auto-detected by default",
+    )
+    compare.add_argument(
+        "--content-hash",
+        action="store_true",
+        help="full sha256 content comparison (correct even without manifests)",
+    )
+    compare.add_argument(
+        "--size-mtime",
+        action="store_true",
+        help="legacy size + mtime comparison (ignores manifests)",
+    )
     return parser
+
+
+def _compare_mode(args: argparse.Namespace) -> str:
+    if args.content_hash:
+        return COMPARE_CONTENT
+    if args.size_mtime:
+        return COMPARE_SIZE_MTIME
+    return COMPARE_AUTO
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    mode = _compare_mode(args)
     try:
         config = load_config(args.config)
         ensure_git_available()
@@ -215,7 +324,7 @@ def main(argv: list[str] | None = None) -> int:
             for category in config.data_repo.categories:
                 restore_category(category.local, category.remote, root, workdir, stats)
         for category in config.data_repo.categories:
-            mirror_category(category.local, category.remote, root, workdir, stats)
+            mirror_category(category.local, category.remote, root, workdir, stats, mode=mode)
 
         message = args.message or f"sync {_now()}"
         committed = commit_changes(workdir, message, dry_run=args.dry_run)

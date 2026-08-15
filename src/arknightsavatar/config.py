@@ -26,6 +26,9 @@ DEFAULT_DATA_REPO_CATEGORIES = [
     {"local": "data/export_webp", "remote": "export_webp"},
     {"local": "data/stats", "remote": "stats"},
     {"local": "data/arknights_npc.json", "remote": "arknights_npc.json"},
+    {"local": "data/version.json", "remote": "version.json"},
+    {"local": "data/changelog.ndjson", "remote": "changelog.ndjson"},
+    {"local": "data/schema", "remote": "schema"},
 ]
 
 

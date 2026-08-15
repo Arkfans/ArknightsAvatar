@@ -42,7 +42,7 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     tqdm = None  # type: ignore[assignment]
 
-from arknightsavatar import detect, detect_bases, match, paths
+from arknightsavatar import detect, detect_bases, match, paths, reporting
 from arknightsavatar.skip import DEFAULT_SKIP, SkipList
 
 DEFAULT_CLASSIFIED = paths.CLASSIFIED
@@ -1263,15 +1263,9 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     payload = report.as_dict()
-    if args.output == "-":
-        json.dump(payload, sys.stdout, ensure_ascii=False, indent=2)
-        print()
-    else:
-        output = Path(args.output)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        with output.open("wt", encoding="utf8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
-        print(f"report written: {output}")
+    reporting.write_report(payload, args.output)
+    if args.output != "-":
+        print(f"report written: {args.output}")
     return 0
 
 

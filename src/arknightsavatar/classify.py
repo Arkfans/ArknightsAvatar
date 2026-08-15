@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from arknightsavatar import paths
+from arknightsavatar import paths, reporting
 
 ID_PREFIXES = ("avg_", "char_", "avgnew_", "npc_")
 INDEX_SEPARATORS = ("#", "_", "$")
@@ -285,15 +285,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"base_files: {stats['base_files']}  diff_files: {stats['diff_files']}")
 
     payload = report.as_dict()
-    if args.output == "-":
-        json.dump(payload, sys.stdout, ensure_ascii=False, indent=2)
-        print()
-    else:
-        output = Path(args.output)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        with output.open("wt", encoding="utf8") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
-        print(f"report written: {output}")
+    reporting.write_report(payload, args.output)
+    if args.output != "-":
+        print(f"report written: {args.output}")
     return 0
 
 
