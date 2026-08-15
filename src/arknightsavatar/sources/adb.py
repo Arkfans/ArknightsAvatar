@@ -33,6 +33,78 @@ def _fmt_bytes(value: float) -> str:
     return f"{value:.0f} B"
 
 
+def write_device_listing(device, listing: str, names: Sequence[str]) -> None:
+    """Write names to a device list file, chunked to keep commands short."""
+    for start in range(0, len(names), _LIST_CHUNK):
+        chunk = " ".join(shlex.quote(name) for name in names[start : start + _LIST_CHUNK])
+        op = ">" if start == 0 else ">>"
+        device.shell(
+            f"printf '%s\\n' {chunk} {op} {shlex.quote(listing)}",
+            read_timeout_s=30,
+            timeout_s=120,
+        )
+
+
+def rm_device_files(device, *paths: str, recursive: bool = False) -> None:
+    """Best-effort removal of device scratch files; never raises."""
+    if not paths:
+        return
+    flags = "rm -rf" if recursive else "rm -f"
+    command = flags + " " + " ".join(shlex.quote(path) for path in paths)
+    try:
+        device.shell(command, read_timeout_s=30, timeout_s=60)
+    except Exception:  # noqa: S110, BLE001 - best-effort cleanup; never mask the real error
+        pass
+
+
+def tar_on_device(device, pack: str, directory: str, listing: str, *, compress: bool = False) -> None:
+    """Create a device-side archive; raise if tar failed."""
+    flags = "czf" if compress else "cf"
+    command = (
+        f"tar -{flags} {shlex.quote(pack)} -C {shlex.quote(directory)} "
+        f"-T {shlex.quote(listing)} ; echo EXIT:$?"
+    )
+    output = device.shell(command, read_timeout_s=600, timeout_s=3600)
+    match = _EXIT_RE.search(output.rstrip())
+    if match is None or match.group(1) != "0":
+        raise RuntimeError(f"device tar failed: {output.strip()[-300:] or 'no output'}")
+
+
+def extract_pack(
+    local_pack: Path,
+    items: Sequence[tuple[FileInfo, Path]],
+    *,
+    compress: bool = False,
+) -> list[tuple[FileInfo, Exception]]:
+    """Extract a pulled archive into the per-file dest paths.
+
+    Verifies every member exists and its size matches the size observed
+    at listing time (catches files changed while the pack was built).
+    """
+    failures: list[tuple[FileInfo, Exception]] = []
+    mode = "r:gz" if compress else "r:"
+    with tarfile.open(local_pack, mode) as archive:
+        members = {member.name: member for member in archive.getmembers() if member.isfile()}
+        for info, dest in items:
+            name = info.rel.split("/", 1)[1]
+            try:
+                member = members.get(name)
+                if member is None:
+                    raise FileNotFoundError(f"{name} missing from device archive")
+                if member.size != info.size:
+                    raise OSError(f"{name} size mismatch: {member.size} != {info.size}")
+                source = archive.extractfile(member)
+                if source is None:
+                    raise OSError(f"{name} not extractable from device archive")
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                with dest.open("wb") as target:
+                    shutil.copyfileobj(source, target)
+            except Exception as error:  # noqa: BLE001 - report and continue
+                dest.unlink(missing_ok=True)
+                failures.append((info, error))
+    return failures
+
+
 class _PullProgress:
     """Accumulates adb_shell pull chunks and redraws a single progress line.
 
@@ -260,66 +332,17 @@ class AdbSource(Source):
             local_pack.unlink(missing_ok=True)
 
     def _rm_device_files(self, *paths: str) -> None:
-        if not paths:
-            return
-        command = "rm -f " + " ".join(shlex.quote(path) for path in paths)
-        try:
-            self._device.shell(command, read_timeout_s=30, timeout_s=60)
-        except Exception:  # noqa: S110, BLE001 - best-effort cleanup; never mask the real error
-            pass
+        return rm_device_files(self._device, *paths)
 
     def _write_device_listing(self, listing: str, names: Sequence[str]) -> None:
-        """Write names to the device list file, chunked to keep commands short."""
-        for start in range(0, len(names), _LIST_CHUNK):
-            chunk = " ".join(shlex.quote(name) for name in names[start : start + _LIST_CHUNK])
-            op = ">" if start == 0 else ">>"
-            self._device.shell(
-                f"printf '%s\\n' {chunk} {op} {shlex.quote(listing)}",
-                read_timeout_s=30,
-                timeout_s=120,
-            )
+        return write_device_listing(self._device, listing, names)
 
     def _tar_on_device(self, pack: str, directory: str, listing: str) -> None:
-        """Create the device-side archive; raise if tar failed."""
-        flags = "czf" if self._compress else "cf"
-        command = (
-            f"tar -{flags} {shlex.quote(pack)} -C {shlex.quote(directory)} "
-            f"-T {shlex.quote(listing)} ; echo EXIT:$?"
-        )
-        output = self._device.shell(command, read_timeout_s=600, timeout_s=3600)
-        match = _EXIT_RE.search(output.rstrip())
-        if match is None or match.group(1) != "0":
-            raise RuntimeError(f"device tar failed: {output.strip()[-300:] or 'no output'}")
+        return tar_on_device(self._device, pack, directory, listing, compress=self._compress)
 
     def _extract_pack(
         self,
         local_pack: Path,
         items: Sequence[tuple[FileInfo, Path]],
     ) -> list[tuple[FileInfo, Exception]]:
-        """Extract the pulled archive into the per-file dest paths.
-
-        Verifies every member exists and its size matches the size observed
-        at listing time (catches files changed while the pack was built).
-        """
-        failures: list[tuple[FileInfo, Exception]] = []
-        mode = "r:gz" if self._compress else "r:"
-        with tarfile.open(local_pack, mode) as archive:
-            members = {member.name: member for member in archive.getmembers() if member.isfile()}
-            for info, dest in items:
-                name = info.rel.split("/", 1)[1]
-                try:
-                    member = members.get(name)
-                    if member is None:
-                        raise FileNotFoundError(f"{name} missing from device archive")
-                    if member.size != info.size:
-                        raise OSError(f"{name} size mismatch: {member.size} != {info.size}")
-                    source = archive.extractfile(member)
-                    if source is None:
-                        raise OSError(f"{name} not extractable from device archive")
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    with dest.open("wb") as target:
-                        shutil.copyfileobj(source, target)
-                except Exception as error:  # noqa: BLE001 - report and continue
-                    dest.unlink(missing_ok=True)
-                    failures.append((info, error))
-        return failures
+        return extract_pack(local_pack, items, compress=self._compress)

@@ -222,7 +222,7 @@ uv run arknightsavatar manifest --category export
 13 个单工具保留（改名），既可直接运行也可经统一入口调用：
 
 ```bash
-# 从设备上已安装 APK 中，由设备端 unzip 解压并按需拉取头像
+# 从设备上已安装 APK 中提取头像（默认设备端解压打包后单次拉取）
 uv run arknightsavatar-fetch --source apk --category avatars
 
 # 从本地 APK 解包目录取头像（回退来源）
@@ -276,8 +276,9 @@ uv run arknightsavatar-npc-json
 ## 从设备拉取已安装 APK（独立工具）
 
 `arknightsavatar-fetch --source apk` 通过 adb_shell 直连设备（本机无需安装 adb），
-从手机上已安装的 APK 用设备端 `unzip` 直接解压单个 AB 条目后拉回本地；不传输完整
-APK，也不在设备上落地解包目录，只拉取本地缺少或大小变化的 AB 文件。`--source local-apk`
+从手机上已安装的 APK 提取 AB 文件；默认批量：设备端把所需条目 `unzip -p` 解压到
+临时目录后 `tar` 打包，单次 sync 传输拉回本地再解包校验（缺成员/大小不符的条目自动
+回退逐条拉取），只传输本地缺少或大小变化的文件，不拉整包 APK。`--source local-apk`
 仍可读取本地 APK 解包目录。
 
 `arknightsavatar-pull-apk` 通过 adb_shell 直连设备（本机无需安装 adb），从手机上已

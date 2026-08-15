@@ -29,6 +29,7 @@ def make_source(
             host=config.adb.host,
             port=config.adb.port,
             package=package_from_location(config.adb.resolved_location()),
+            batch=batch,
         )
     if name == "local-apk":
         if not config.apk.dir:
@@ -137,7 +138,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--no-batch",
         action="store_true",
-        help="disable device-side packing; pull file by file (adb source)",
+        help="disable device-side packing; pull file by file (adb/apk source)",
     )
     parser.add_argument(
         "--compress",
