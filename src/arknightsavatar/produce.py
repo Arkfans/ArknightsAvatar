@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from arknightsavatar import paths
 from arknightsavatar.run import (
@@ -72,7 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--npc-json", dest="npc_json_out", default=paths.NPC_JSON)
     parser.add_argument(
         "--stats-out",
-        default=str(paths.STATS_DIR + "/produce_stats.json"),
+        default=str(Path(paths.STATS_DIR) / "produce_stats.json"),
         help="stats summary JSON (default: data/stats/produce_stats.json)",
     )
     return parser
