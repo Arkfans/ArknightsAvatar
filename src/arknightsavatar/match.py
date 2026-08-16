@@ -587,10 +587,14 @@ def match_base(
 
     best: tuple[float, tuple[int, int, int, int], str] | None = None
     offsets: dict[str, list[OffsetMatch]] | None = {} if detail else None
+    # 记录首个候选头像失败原因，全部不可读时附在 error 中便于排障（原仅吞 continue）。
+    first_error: Exception | None = None
     for avatar_name in avatar_paths:
         try:
             avatar_gray = _prepare_avatar(avatars_dir / avatar_name)
-        except Exception:  # noqa: BLE001, S112 - 单个头像不可读时跳过
+        except Exception as error:  # noqa: BLE001, S112 - 单个头像不可读时跳过
+            if first_error is None:
+                first_error = error
             continue
         threshold, box, candidate_offsets = _template_match_gray(
             base_gray,
@@ -611,6 +615,10 @@ def match_base(
             break
 
     if best is None:
+        if first_error is not None:
+            return BaseMatch(
+                error=f"no readable avatar: {type(first_error).__name__}: {first_error}"
+            )
         return BaseMatch(error="no readable avatar")
 
     threshold, box, avatar_name = best

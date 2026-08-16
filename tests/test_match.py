@@ -25,6 +25,7 @@ from arknightsavatar.match import (
     _read_rgba,
     _template_match_gray,
     main,
+    match_base,
     match_characters,
     needs_rematch,
     plan_rematch,
@@ -226,6 +227,27 @@ def test_cli_rejects_max_avatar_size_not_greater_than_min(
     )
     assert code == 1
     assert "--min-avatar-size" in capsys.readouterr().err
+
+
+def test_match_base_records_first_unreadable_avatar_reason(tmp_path: Path):
+    """P1-12: 候选头像全部不可读时，error 附带首个失败类型/原因便于排障。"""
+    avatar = _avatar_image(180, seed=1)
+    base_path = tmp_path / "base.png"
+    _write_image(base_path, _base_with_avatar(avatar, (300, 200)))
+    avatars_dir = tmp_path / "avatars"
+    # 三个候选头像：第一个不存在（FileNotFoundError），后两个是坏文件
+    bad1 = "ghost.png"  # 不存在
+    bad2_path = avatars_dir / "broken.png"
+    bad2_path.parent.mkdir(parents=True, exist_ok=True)
+    bad2_path.write_bytes(b"not a png")  # 损坏
+    bad3_path = avatars_dir / "empty.png"
+    bad3_path.write_bytes(b"")  # 空
+
+    result = match_base(base_path, [bad1, "broken.png", "empty.png"], avatars_dir)
+    assert result.error is not None
+    assert result.error.startswith("no readable avatar: ")
+    # 第一个候选（不存在）应为 FileNotFoundError；其类型名出现在 error 中
+    assert "FileNotFoundError" in result.error
 
 
 def test_match_report_negative_y_for_above_top_edge(tmp_path: Path):
