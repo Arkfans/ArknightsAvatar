@@ -150,3 +150,71 @@ def test_run_unpack_creates_output_dir_when_all_fail(tmp_path: Path):
     assert stats["characters"]["failed"] == 1
     assert (unpacked / "_manifest.json").exists()
     assert (unpacked / "_failed.json").exists()
+
+
+def test_run_unpack_progress_callback(tmp_path: Path):
+    raw = tmp_path / "raw"
+    characters = raw / "characters"
+    characters.mkdir(parents=True)
+    (characters / "avg_good_1.ab").write_bytes(b"good")
+    (characters / "avg_bad_1.ab").write_bytes(b"bad")
+    (characters / "avg_good_2.ab").write_bytes(b"good2")
+    unpacked = tmp_path / "unpacked"
+
+    calls: list[tuple[int, int, str]] = []
+    stats = run_unpack(
+        raw,
+        unpacked,
+        ["characters"],
+        parser_cls=SelectiveParse,
+        progress=lambda index, total, label: calls.append((index, total, label)),
+    )
+    # 成功与失败文件都推进进度，index 从 1 起、total 为文件总数
+    assert calls == [
+        (1, 3, "characters/avg_bad_1.ab"),
+        (2, 3, "characters/avg_good_1.ab"),
+        (3, 3, "characters/avg_good_2.ab"),
+    ]
+
+    # 第二趟：成功文件全部跳过、失败文件重试失败，进度仍照常推进
+    calls2: list[tuple[int, int, str]] = []
+    stats2 = run_unpack(
+        raw,
+        unpacked,
+        ["characters"],
+        parser_cls=SelectiveParse,
+        progress=lambda index, total, label: calls2.append((index, total, label)),
+    )
+    assert stats2["characters"]["skipped"] == 2
+    assert stats2["characters"]["failed"] == 1
+    assert calls2 == [
+        (1, 3, "characters/avg_bad_1.ab"),
+        (2, 3, "characters/avg_good_1.ab"),
+        (3, 3, "characters/avg_good_2.ab"),
+    ]
+
+
+def test_run_unpack_progress_total_across_categories(tmp_path: Path):
+    raw = tmp_path / "raw"
+    for category in ("characters", "avatars"):
+        category_dir = raw / category
+        category_dir.mkdir(parents=True)
+        (category_dir / f"{category}_1.ab").write_bytes(b"x")
+        (category_dir / f"{category}_2.ab").write_bytes(b"x")
+    unpacked = tmp_path / "unpacked"
+
+    calls: list[tuple[int, int, str]] = []
+    run_unpack(
+        raw,
+        unpacked,
+        ["characters", "avatars"],
+        parser_cls=FakeAvatarParse,
+        progress=lambda index, total, label: calls.append((index, total, label)),
+    )
+    # total 为各分类目录文件数之和，index 跨分类连续递增（按 categories 顺序）
+    assert calls == [
+        (1, 4, "characters/characters_1.ab"),
+        (2, 4, "characters/characters_2.ab"),
+        (3, 4, "avatars/avatars_1.ab"),
+        (4, 4, "avatars/avatars_2.ab"),
+    ]
