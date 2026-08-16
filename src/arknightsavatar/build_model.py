@@ -48,7 +48,14 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--config", help="Path to config file")
-    parser.add_argument("--source", choices=["apk", "local-apk", "adb"], default="adb")
+    parser.add_argument(
+        "--source",
+        choices=["apk", "local-apk", "adb"],
+        nargs="+",
+        default=["adb", "apk"],
+        help="resource source(s); default: adb + apk (live device Bundles wins, "
+        "installed APK fills gaps — together they are the complete dataset)",
+    )
     parser.add_argument("--category", choices=["characters", "avatars", "all"], default="all")
     parser.add_argument(
         "--from",

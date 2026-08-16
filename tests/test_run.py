@@ -54,10 +54,16 @@ def test_step_argv_fetch():
     assert run.step_argv("fetch", args) == ["--source", "adb", "--category", "all", "--raw-dir", "raw"]
 
 
+def test_step_argv_fetch_default_source_is_both():
+    args = _args()
+    argv = run.step_argv("fetch", args)
+    assert argv[:3] == ["--source", "adb", "apk"]
+
+
 def test_step_argv_fetch_with_config_and_force():
     args = _args(config="cfg.toml", force=True)
     argv = run.step_argv("fetch", args)
-    assert argv == ["--source", "adb", "--category", "all", "--raw-dir", "raw",
+    assert argv == ["--source", "adb", "apk", "--category", "all", "--raw-dir", "raw",
                     "--config", "cfg.toml", "--force"]
 
 

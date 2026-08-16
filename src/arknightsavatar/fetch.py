@@ -9,7 +9,7 @@ from arknightsavatar import paths
 
 from .config import CATEGORIES, Config, load_config
 from .manifest import FailureLog, FileRecord, Manifest
-from .sources import ApkSource, Source
+from .sources import ApkSource, MultiSource, Source
 from .sources.adb import AdbSource
 from .sources.apk_adb import ApkAdbSource
 from .sources.base import FileInfo
@@ -44,6 +44,27 @@ def make_source(
             compress=compress,
         )
     raise SystemExit(f"unknown source: {name}")
+
+
+def make_sources(
+    names: list[str],
+    config: Config,
+    *,
+    batch: bool = True,
+    compress: bool = False,
+) -> Source:
+    """Build the source for one or more ``--source`` names.
+
+    A single name returns that source directly; several names are merged
+    into a MultiSource where earlier names win on duplicate files (so the
+    default ``["adb", "apk"]`` prefers the live device Bundles and lets the
+    APK fill the gaps — the union is the complete dataset).
+    """
+    if len(names) == 1:
+        return make_source(names[0], config, batch=batch, compress=compress)
+    return MultiSource(
+        [make_source(name, config, batch=batch, compress=compress) for name in names]
+    )
 
 
 def run_fetch(
@@ -95,7 +116,7 @@ def run_fetch(
                 tmp.unlink(missing_ok=True)
                 failures.add(
                     info.rel,
-                    source=source.name,
+                    source=source.source_name(info.rel),
                     size=info.size,
                     error=f"{type(error).__name__}: {error}",
                 )
@@ -107,13 +128,16 @@ def run_fetch(
                         raise ValueError("file is 0 bytes")
                     digest = sha256_file(tmp)
                     os.replace(tmp, dest)
-                    manifest.set(info.rel, FileRecord(size=size, sha256=digest, source=source.name))
+                    manifest.set(
+                        info.rel,
+                        FileRecord(size=size, sha256=digest, source=source.source_name(info.rel)),
+                    )
                     stats[category]["fetched"] += 1
                 except Exception as error:  # noqa: BLE001 - record and continue
                     tmp.unlink(missing_ok=True)
                     failures.add(
                         info.rel,
-                        source=source.name,
+                        source=source.source_name(info.rel),
                         size=info.size,
                         error=f"{type(error).__name__}: {error}",
                     )
@@ -131,7 +155,14 @@ def run_fetch(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="arknightsavatar-fetch", description="Fetch AB resources into data/raw.")
     parser.add_argument("--config", help="Path to config file")
-    parser.add_argument("--source", choices=["apk", "local-apk", "adb"], default="adb")
+    parser.add_argument(
+        "--source",
+        choices=["apk", "local-apk", "adb"],
+        nargs="+",
+        default=["adb", "apk"],
+        help="resource source(s); default: adb + apk (live device Bundles wins, "
+        "installed APK fills gaps — together they are the complete dataset)",
+    )
     parser.add_argument("--category", choices=[*CATEGORIES, "all"], default="all")
     parser.add_argument("--raw-dir", default=paths.RAW_DIR, help="Output cache directory")
     parser.add_argument("--force", action="store_true", help="Re-fetch even if manifest says unchanged")
@@ -153,7 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         config = load_config(args.config)
-        source = make_source(
+        source = make_sources(
             args.source,
             config,
             batch=not args.no_batch,

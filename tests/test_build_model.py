@@ -35,6 +35,13 @@ def test_step_argv_shared_steps_delegate_to_run():
         assert build_model.step_argv(name, args) == run.step_argv(name, args)
 
 
+def test_default_source_is_adb_and_apk():
+    args = _args([])
+    assert args.source == ["adb", "apk"]
+    # a single explicit source still parses into a one-element list
+    assert _args(["--source", "apk"]).source == ["apk"]
+
+
 def test_step_argv_detect_bases_defaults():
     args = _args(_full_argv())
     argv = build_model.step_argv("detect-bases", args)

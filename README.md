@@ -56,7 +56,7 @@ uv run arknightsavatar detect --conf 0.3 # 子命令分发到单工具（argv �
 | 命令 | 职责 |
 | --- | --- |
 | `arknightsavatar run` | 全流程：fetch → unpack → classify → match → extract → export-webp → npc-json |
-| `arknightsavatar pull` | 设备侧获取：fetch（`--with-apk` 可选追加 pull-apk） |
+| `arknightsavatar pull` | 设备侧获取：fetch（默认 adb+apk 双源合并；`--with-apk` 可选追加 pull-apk） |
 | `arknightsavatar produce` | 离线生产：classify → match → extract → export-webp → npc-json（不触设备） |
 | `arknightsavatar build-model` | 从零构建推导模型：fetch → unpack → classify → match → detect-bases → derive-model（含资源拉取） |
 | `arknightsavatar derive-model` | 由 `data/recognition/face_detect_matched.json` 重新拟合 face/head → 裁切框推导模型 |
@@ -66,7 +66,7 @@ uv run arknightsavatar detect --conf 0.3 # 子命令分发到单工具（argv �
 ### run（全流程）
 
 ```bash
-# 全流程（默认 source=adb、category=all）
+# 全流程（默认 source=adb+apk、category=all）
 uv run arknightsavatar run
 
 # 只跑部分步骤 / 限定角色数量 / 指定设备
@@ -89,6 +89,12 @@ uv run arknightsavatar pull                     # 只 fetch
 uv run arknightsavatar pull --with-apk          # pull-apk + fetch
 uv run arknightsavatar pull --with-apk --package com.hypergryph.arknights.bilibili --out apk
 ```
+
+默认 `--source adb apk` 双源合并拉取：设备游戏 Bundles 目录（characters/L2D 立绘等下载资源）
+与设备已安装 APK（spritepack 头像等安装包资源）并集才是完整数据；同名文件以设备目录版本
+优先（游戏实际运行的数据），APK 补齐设备缺失的文件。adb 源建立在 apk 源之上：Bundles
+目录由游戏安装后**运行**生成（更新资源下载到其中），设备未安装/未运行游戏时两源都无数据，
+需先安装并运行游戏。`--source adb` / `--source apk` 仍可只取单个源。
 
 ### produce（离线生产）
 
@@ -259,8 +265,12 @@ uv run arknightsavatar-fetch --source local-apk --category avatars
 # （默认批量拉取：设备端 tar 打包 → 单次传输 → 本地解压，替代逐文件拉取）
 uv run arknightsavatar-fetch --source adb --category characters
 
-# 默认从 ADB 设备拉取 characters 与 avatars 两类资源
+# 默认从 ADB 设备 Bundles 与已安装 APK 双源合并拉取 characters 与 avatars 两类资源
+# （设备版本优先，APK 补齐缺失文件；两源并集才是完整数据）
 uv run arknightsavatar-fetch
+
+# 显式双源（与默认等价）
+uv run arknightsavatar-fetch --source adb apk
 
 # 逐文件拉取（禁用设备端打包，排查用）；进度行显示 [已拉取/需拉取总量]
 uv run arknightsavatar-fetch --no-batch
@@ -307,6 +317,12 @@ uv run arknightsavatar-npc-json
 临时目录后 `tar` 打包，单次 sync 传输拉回本地再解包校验（缺成员/大小不符的条目自动
 回退逐条拉取），只传输本地缺少或大小变化的文件，不拉整包 APK。`--source local-apk`
 仍可读取本地 APK 解包目录。
+
+默认 `--source adb apk` 双源合并：APK 源只含 `spritepack`（avatars），characters
+（L2D 立绘）只在设备下载目录 `files/Bundles`（adb 源），两源并集才是完整数据；同名
+文件以设备 Bundles 版本优先，APK 补齐设备缺失的文件。adb 源依赖游戏安装并运行：
+Bundles 目录由游戏启动后生成/下载，设备未安装游戏包时 `ApkAdbSource` 报
+"package not installed"，且 adb 源也无数据可取——两源均以游戏已安装为前提。
 
 `arknightsavatar-pull-apk` 通过 adb_shell 直连设备（本机无需安装 adb），从手机上已
 安装的游戏包拉取 APK 到本地。包名默认从 `config.toml` 配置的 game location

@@ -4,8 +4,10 @@ Orchestrates the two device-facing tools:
 
     fetch (pull-apk only when --with-apk is given)
 
-Both steps reuse the single tools' ``main(argv)``; the pipeline stops at the
-first failing step.
+Fetch defaults to the ``adb`` + ``apk`` sources together: the device's live
+Bundles directory (characters/L2D) and the installed APK (spritepack) — only
+both sources together are the complete dataset. Both steps reuse the single
+tools' ``main(argv)``; the pipeline stops at the first failing step.
 """
 
 from __future__ import annotations
@@ -26,7 +28,10 @@ PULL_STEP_MODULES: dict[str, str] = {
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="arknightsavatar-pull",
-        description="Acquire game resources from the device: fetch (pull-apk only with --with-apk).",
+        description=(
+            "Acquire game resources from the device: fetch "
+            "(pull-apk only with --with-apk; default sources: adb + apk)."
+        ),
     )
     parser.add_argument("--config", help="Path to config file")
     parser.add_argument(
@@ -36,7 +41,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--package", help="Android package name for pull-apk")
     parser.add_argument("--out", default="apk", help="pull-apk output directory (default: apk)")
-    parser.add_argument("--source", choices=["apk", "local-apk", "adb"], default="adb")
+    parser.add_argument(
+        "--source",
+        choices=["apk", "local-apk", "adb"],
+        nargs="+",
+        default=["adb", "apk"],
+        help="resource source(s); default: adb + apk (live device Bundles wins, "
+        "installed APK fills gaps — together they are the complete dataset)",
+    )
     parser.add_argument("--category", choices=[*CATEGORIES, "all"], default="all")
     parser.add_argument("--raw-dir", default=paths.RAW_DIR)
     parser.add_argument("--force", action="store_true", help="pass --force to fetch")
@@ -53,7 +65,7 @@ def _pull_apk_argv(args: argparse.Namespace) -> list[str]:
 
 
 def _fetch_argv(args: argparse.Namespace) -> list[str]:
-    argv = ["--source", args.source, "--category", args.category, "--raw-dir", args.raw_dir]
+    argv = ["--source", *args.source, "--category", args.category, "--raw-dir", args.raw_dir]
     if args.config:
         argv += ["--config", args.config]
     if args.force:

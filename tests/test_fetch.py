@@ -4,7 +4,7 @@ from arknightsavatar import fetch
 from arknightsavatar.config import AdbConfig, ApkConfig, Config
 from arknightsavatar.fetch import run_fetch
 from arknightsavatar.manifest import FailureLog, Manifest
-from arknightsavatar.sources import ApkSource
+from arknightsavatar.sources import ApkSource, MultiSource
 from arknightsavatar.util import sha256_file
 
 
@@ -100,3 +100,84 @@ def test_make_source_maps_apk_and_local_apk(monkeypatch, tmp_path: Path):
 
     assert isinstance(fetch.make_source("local-apk", config), ApkSource)
     assert isinstance(fetch.make_source("adb", config), FakeAdbSource)
+
+
+def test_make_sources_combines_multiple_in_order(monkeypatch, tmp_path: Path):
+    captured = {}
+
+    class FakeApkAdbSource:
+        name = "apk"
+
+        def __init__(self, **kwargs):
+            captured["apk"] = kwargs
+
+    class FakeAdbSource:
+        name = "adb"
+
+        def __init__(self, **kwargs):
+            captured["adb"] = kwargs
+
+    monkeypatch.setattr(fetch, "ApkAdbSource", FakeApkAdbSource)
+    monkeypatch.setattr(fetch, "AdbSource", FakeAdbSource)
+
+    config = Config(
+        adb=AdbConfig(
+            host="1.2.3.4",
+            port=5555,
+            location="/storage/emulated/0/Android/data/com.hypergryph.arknights/files/Bundles",
+        ),
+        apk=ApkConfig(dir=tmp_path),
+    )
+
+    source = fetch.make_sources(["adb", "apk"], config)
+    assert isinstance(source, MultiSource)
+    assert [type(item) for item in source.sources] == [FakeAdbSource, FakeApkAdbSource]
+    assert source.name == "adb+apk"
+
+
+def test_make_sources_single_name_returns_plain_source(monkeypatch, tmp_path: Path):
+    monkeypatch.setattr(fetch, "ApkAdbSource", lambda **kwargs: object())
+    monkeypatch.setattr(fetch, "AdbSource", lambda **kwargs: object())
+    config = Config(
+        adb=AdbConfig(location="/storage/emulated/0/Android/data/com.hypergryph.arknights/files/Bundles"),
+        apk=ApkConfig(dir=tmp_path),
+    )
+    assert not isinstance(fetch.make_sources(["local-apk"], config), MultiSource)
+
+
+def test_run_fetch_multi_source_union_and_first_wins(tmp_path: Path):
+    class DeviceSource(ApkSource):
+        name = "adb"
+
+    device_root = tmp_path / "device"
+    device_dir = device_root / "assets" / "AB" / "Android" / "avg" / "characters"
+    device_dir.mkdir(parents=True)
+    (device_dir / "both.ab").write_bytes(b"device-version")
+    (device_dir / "only_device.ab").write_bytes(b"d" * 50)
+
+    apk_root = tmp_path / "apk"
+    apk_dir = apk_root / "assets" / "AB" / "Android" / "avg" / "characters"
+    apk_dir.mkdir(parents=True)
+    (apk_dir / "both.ab").write_bytes(b"apk-version")
+    (apk_dir / "only_apk.ab").write_bytes(b"a" * 60)
+
+    source = MultiSource([DeviceSource(device_root), ApkSource(apk_root)])
+    raw = tmp_path / "raw"
+    stats = run_fetch(source, ["characters"], raw, game_version="v1")
+
+    assert stats["characters"]["listed"] == 3
+    assert stats["characters"]["fetched"] == 3
+    # duplicate rel: the earlier (device) source's version wins
+    assert (raw / "characters" / "both.ab").read_bytes() == b"device-version"
+    assert (raw / "characters" / "only_device.ab").read_bytes() == b"d" * 50
+    assert (raw / "characters" / "only_apk.ab").read_bytes() == b"a" * 60
+
+    manifest = Manifest.load(raw / "manifest.json", game_version="v1")
+    assert manifest.get("characters/both.ab").source == "adb"
+    assert manifest.get("characters/only_device.ab").source == "adb"
+    assert manifest.get("characters/only_apk.ab").source == "apk"
+
+    # second run is idempotent: everything skipped
+    stats = run_fetch(source, ["characters"], raw, game_version="v1")
+    assert stats["characters"]["fetched"] == 0
+    assert stats["characters"]["skipped"] == 3

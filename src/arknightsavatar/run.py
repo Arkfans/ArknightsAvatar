@@ -48,7 +48,14 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--config", help="Path to config file")
-    parser.add_argument("--source", choices=["apk", "local-apk", "adb"], default="adb")
+    parser.add_argument(
+        "--source",
+        choices=["apk", "local-apk", "adb"],
+        nargs="+",
+        default=["adb", "apk"],
+        help="resource source(s); default: adb + apk (live device Bundles wins, "
+        "installed APK fills gaps — together they are the complete dataset)",
+    )
     parser.add_argument("--category", choices=[*CATEGORIES, "all"], default="all")
     parser.add_argument(
         "--from",
@@ -108,7 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
 def step_argv(name: str, args: argparse.Namespace) -> list[str]:
     """Compose the argv list handed to the tool ``name``'s ``main()``."""
     if name == "fetch":
-        argv = ["--source", args.source, "--category", args.category, "--raw-dir", args.raw_dir]
+        argv = ["--source", *args.source, "--category", args.category, "--raw-dir", args.raw_dir]
         if args.config:
             argv += ["--config", args.config]
         if args.force:

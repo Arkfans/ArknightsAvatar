@@ -15,7 +15,7 @@ from arknightsavatar import __version__
 
 ORCHESTRATION: dict[str, tuple[str, str]] = {
     "run": ("arknightsavatar.run", "全流程编排：fetch → unpack → classify → match → extract → export-webp → npc-json"),
-    "pull": ("arknightsavatar.pull", "设备侧资源获取：fetch（--with-apk 可选追加 pull-apk）"),
+    "pull": ("arknightsavatar.pull", "设备侧资源获取：fetch（默认 adb+apk 双源合并；--with-apk 可选追加 pull-apk）"),
     "produce": ("arknightsavatar.produce", "离线生产：classify → match → extract → export-webp → npc-json"),
     "build-model": ("arknightsavatar.build_model", "从零构建推导模型：fetch → unpack → classify → match → detect-bases → derive-model（含设备/APK 资源拉取）"),
     "derive-model": ("arknightsavatar.derive_model", "由 face/head 识别报告重新拟合头像推导模型"),
@@ -24,7 +24,7 @@ ORCHESTRATION: dict[str, tuple[str, str]] = {
 }
 
 TOOLS: dict[str, tuple[str, str]] = {
-    "fetch": ("arknightsavatar.fetch", "拉取 AB 资源到 data/raw（增量 + sha256 manifest）"),
+    "fetch": ("arknightsavatar.fetch", "拉取 AB 资源到 data/raw（默认 adb+apk 双源合并；增量 + sha256 manifest）"),
     "unpack": ("arknightsavatar.unpack.unpacker", "把 AB 解包为全分辨率 RGBA PNG + meta.json"),
     "classify": ("arknightsavatar.classify", "立绘底图/差分分类，输出 characters_classified.json"),
     "sample-bases": ("arknightsavatar.sample_bases", "底图随机抽样（识别调试）"),

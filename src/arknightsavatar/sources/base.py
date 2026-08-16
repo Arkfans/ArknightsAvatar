@@ -48,3 +48,11 @@ class Source(ABC):
 
     def supports(self, category: str) -> bool:
         return True
+
+    def source_name(self, rel: str) -> str:
+        """Name of the source that provides ``rel`` (manifest provenance).
+
+        Composites (e.g. MultiSource) override this to report the real
+        delivering source per file instead of a combined name.
+        """
+        return self.name
