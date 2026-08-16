@@ -128,3 +128,32 @@ def test_iou_and_norm_box():
         0.3,
         0.5,
     ]
+
+
+def test_fit_model_zero_variance_returns_zero_r2():
+    """多行同目标 → ss_tot==0，r2 应降级为 0.0 而非除零崩溃。"""
+    rows = [("c", f"b{i}.png", _entry(index=0)) for i in range(3)]
+    X = derive_model.feature_matrix(rows)
+    Y = derive_model.target_center_size(rows)
+    coef, r2 = derive_model.fit_model(X, Y)
+    assert coef.shape == (9, 3)
+    assert r2 == [0.0, 0.0, 0.0]
+
+
+def test_fit_model_single_sample_returns_zero_r2():
+    """单样本同样 ss_tot==0；fit_model 不再抛 ZeroDivisionError。"""
+    rows = [("c", "b0.png", _entry(index=0))]
+    X = derive_model.feature_matrix(rows)
+    Y = derive_model.target_center_size(rows)
+    coef, r2 = derive_model.fit_model(X, Y)
+    assert r2 == [0.0, 0.0, 0.0]
+
+
+def test_main_single_sample_rejected(tmp_path, capsys):
+    source = tmp_path / "report.json"
+    _write_report(source, n=1)
+    code = derive_model.main(
+        ["--source", str(source), "--out-dir", str(tmp_path / "out")]
+    )
+    assert code == 1
+    assert "不足 2" in capsys.readouterr().err

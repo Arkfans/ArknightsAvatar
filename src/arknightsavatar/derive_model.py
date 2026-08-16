@@ -93,7 +93,8 @@ def fit_model(X, Y):
     for j, name in enumerate(["cx", "cy", "s"]):
         ss_tot = float(((Y[:, j] - Y[:, j].mean()) ** 2).sum())
         ss_res = float((resid[:, j] ** 2).sum())
-        r2.append(round(1 - ss_res / ss_tot, 6))
+        # 单样本或目标列零方差时 ss_tot == 0 → r2 未定义；约定取 0.0 而非除零崩溃
+        r2.append(round(1 - ss_res / ss_tot, 6) if ss_tot > 0.0 else 0.0)
     return coef, r2
 
 
@@ -288,6 +289,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"有效条目（face>{min_conf} & head>{min_conf}）: {len(rows)}")
     if not rows:
         print("error: 没有有效条目，无法拟合模型", file=sys.stderr)
+        return 1
+    if len(rows) < 2:
+        # 单样本无法拟合（ss_tot==0，模型无泛化意义）；零方差降级仅使结果不崩，
+        # 但单样本产出的模型不应被采纳，故直接拒绝。
+        print("error: 有效条目不足 2，无法拟合模型", file=sys.stderr)
         return 1
 
     X = feature_matrix(rows)
