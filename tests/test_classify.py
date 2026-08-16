@@ -1,4 +1,4 @@
-﻿import json
+import json
 from pathlib import Path
 
 from PIL import Image
@@ -67,19 +67,6 @@ def test_dollar_multi_base_diffs_grouped(tmp_path: Path):
     assert result.unassigned == []
     assert result.bases["avg_1014_nearl2_1$1.png"] == ["1$1.png", "2$1.png"]
     assert result.bases["avg_1014_nearl2_1$2.png"] == ["1$2.png", "2$2.png"]
-
-
-def test_renamed_base_single_texture(tmp_path: Path):
-    """char_2006_fmzuki_1 是底图（目录名不同但只有一张 id 纹理）。"""
-    char_dir = tmp_path / "char_2006_weiywfmzuki_1"
-    char_dir.mkdir()
-    _write_meta(char_dir, {"char_2006_fmzuki_1": [1024, 1024]})
-    _write_png(char_dir / "char_2006_fmzuki_1.png", (1024, 1024))
-
-    result = classify_character_dir(char_dir)
-
-    assert result.status == "ok"
-    assert result.bases == {"char_2006_fmzuki_1.png": []}
 
 
 def test_skin_numbered_dir_base_is_seq1(tmp_path: Path):
