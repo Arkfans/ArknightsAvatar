@@ -28,6 +28,11 @@ except ImportError:  # pragma: no cover - optional dependency
     cv2 = None  # type: ignore[assignment]
     np = None  # type: ignore[assignment]
 
+try:
+    from tqdm import tqdm
+except ImportError:  # pragma: no cover - optional dependency
+    tqdm = None  # type: ignore[assignment]
+
 BOX_SCALE_FACTOR = 1.1
 DEFAULT_CONF = 0.3
 DEFAULT_CHARACTERS_DIR = paths.UNPACKED_CHARACTERS_DIR
@@ -282,6 +287,27 @@ class DetectionReport:
         }
 
 
+def _target_dirs(
+    characters_dir: Path,
+    character: str | None = None,
+    limit: int = 0,
+    skip: SkipList | None = None,
+) -> list[Path]:
+    """按排序返回本次实际扫描的角色目录（character/skip/limit 过滤），
+    进度总数与处理数共用以保证一致。"""
+    skip = skip or SkipList()
+    dirs: list[Path] = []
+    for char_dir in sorted(p for p in characters_dir.iterdir() if p.is_dir()):
+        if character is not None and char_dir.name != character:
+            continue
+        if skip.is_character_skipped(char_dir.name):
+            continue
+        if limit and len(dirs) >= limit:
+            break
+        dirs.append(char_dir)
+    return dirs
+
+
 def detect_characters(
     characters_dir: str | Path,
     *,
@@ -290,10 +316,13 @@ def detect_characters(
     limit: int = 0,
     character: str | None = None,
     detector: Callable[[np.ndarray], list[dict]] | None = None,
-    progress: Callable[[int, str], None] | None = None,
+    progress: Callable[[int, int, str], None] | None = None,
     skip: SkipList | None = None,
 ) -> DetectionReport:
-    """扫描 characters 目录下每个角色的全部图片（底图 + 差分）并聚合统计。"""
+    """扫描 characters 目录下每个角色的全部图片（底图 + 差分）并聚合统计。
+
+    progress 回调签名 ``(index, total, name)``，index 从 1 开始，每处理一个角色调用一次。
+    """
     stats = {
         "total_characters": 0,
         "total_images": 0,
@@ -304,13 +333,9 @@ def detect_characters(
     characters: dict[str, CharacterDetection] = {}
     characters_dir = Path(characters_dir)
     skip = skip or SkipList()
-    for char_dir in sorted(p for p in characters_dir.iterdir() if p.is_dir()):
-        if character is not None and char_dir.name != character:
-            continue
-        if skip.is_character_skipped(char_dir.name):
-            continue
-        if limit and stats["total_characters"] >= limit:
-            break
+    dirs = _target_dirs(characters_dir, character=character, limit=limit, skip=skip)
+    total = len(dirs)
+    for char_dir in dirs:
         stats["total_characters"] += 1
 
         files = sorted(
@@ -331,7 +356,7 @@ def detect_characters(
                 stats["not_detected"] += 1
         characters[char_dir.name] = char_det
         if progress is not None:
-            progress(stats["total_characters"], char_dir.name)
+            progress(stats["total_characters"], total, char_dir.name)
 
     return DetectionReport(
         generated_at=_now(),
@@ -419,9 +444,21 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _on_progress(index: int, name: str) -> None:
-    if index % 20 == 0:
-        print(f"scanned {index}: {name}")
+def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
+    """返回 (progress, close)；优先 tqdm 进度条，缺失时回退为逐条文本。"""
+    if tqdm is not None:
+        bar = tqdm(total=total, unit="char", desc="face detect", dynamic_ncols=True)
+
+        def progress(index: int, total_count: int, label: str) -> None:
+            bar.set_postfix_str(label)
+            bar.update(1)
+
+        return progress, bar.close
+
+    def progress(index: int, total_count: int, label: str) -> None:
+        print(f"[{index}/{total_count}] {label}")
+
+    return progress, lambda: None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -470,15 +507,26 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
-        report = detect_characters(
+        skip = SkipList.load(args.skip)
+        targets = _target_dirs(
             characters_dir,
-            conf=args.conf,
-            device=device,
-            limit=args.limit,
             character=args.character,
-            skip=SkipList.load(args.skip),
-            progress=_on_progress,
+            limit=args.limit,
+            skip=skip,
         )
+        progress, close_progress = _make_progress(len(targets))
+        try:
+            report = detect_characters(
+                characters_dir,
+                conf=args.conf,
+                device=device,
+                limit=args.limit,
+                character=args.character,
+                skip=skip,
+                progress=progress,
+            )
+        finally:
+            close_progress()
         stats = report.stats
         payload = report.as_dict()
         print(

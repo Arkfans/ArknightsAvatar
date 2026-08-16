@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import shutil
 from pathlib import Path
@@ -337,3 +337,35 @@ def test_cli_invalid_conf(cli_env, capsys: pytest.CaptureFixture):
     code = detect.main(["--conf", "1.5"])
     assert code == 1
     assert "--conf" in capsys.readouterr().err
+
+
+def test_detect_characters_progress_reports_every_character(tmp_path: Path):
+    characters_dir = tmp_path / "characters"
+    _write_image(characters_dir / "avg_003_kalts_1" / "a.png")
+    _write_image(characters_dir / "avg_007_closre_1" / "b.png")
+
+    calls: list[tuple[int, int, str]] = []
+    detect.detect_characters(
+        characters_dir,
+        detector=_fake_detector((10, 20, 90, 100, 0.9)),
+        progress=lambda index, total, label: calls.append((index, total, label)),
+    )
+
+    # 逐角色回调，不按 20 节流；total 与实际处理数一致
+    assert calls == [(1, 2, "avg_003_kalts_1"), (2, 2, "avg_007_closre_1")]
+
+
+def test_detect_characters_progress_total_respects_limit(tmp_path: Path):
+    characters_dir = tmp_path / "characters"
+    _write_image(characters_dir / "avg_003_kalts_1" / "a.png")
+    _write_image(characters_dir / "avg_007_closre_1" / "b.png")
+
+    calls: list[tuple[int, int, str]] = []
+    detect.detect_characters(
+        characters_dir,
+        limit=1,
+        detector=_fake_detector((10, 20, 90, 100, 0.9)),
+        progress=lambda index, total, label: calls.append((index, total, label)),
+    )
+
+    assert calls == [(1, 1, "avg_003_kalts_1")]
