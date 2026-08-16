@@ -231,6 +231,16 @@ def check_detect_deps() -> bool:
     return True
 
 
+def _run_step(name: str, argv: list[str]) -> int:
+    """dispatch ``name`` to its tool module using build_model's STEP_MODULES.
+
+    ``run.run_step`` defaults to ``run.STEP_MODULES`` (which lacks
+    ``detect-bases`` / ``derive-model``); this wrapper injects build_model's
+    own table so those steps resolve correctly.
+    """
+    return run_module.run_step(name, argv, modules=STEP_MODULES)
+
+
 def run_steps(
     args: argparse.Namespace,
     run_step_func=None,
@@ -241,7 +251,7 @@ def run_steps(
     Stops at the first non-zero exit code. ``on_step(name, code)`` is invoked
     after every executed step (used for progress display and tests).
     """
-    runner = run_step_func if run_step_func is not None else run_module.run_step
+    runner = run_step_func if run_step_func is not None else _run_step
     start = BUILD_MODEL_STEPS.index(args.from_step)
     end = BUILD_MODEL_STEPS.index(args.until_step) + 1
     results: dict[str, int] = {}
