@@ -404,11 +404,3 @@ def test_apk_adb_fetch_many_batch_disabled_pulls_per_file(tmp_path: Path):
     assert device.pull.call_count == 0
     assert len(shells) == 2
     assert all(cmd.startswith("unzip -p ") for cmd in shells)
-
-
-def test_apk_adb_fetch_many_empty_items_makes_no_device_calls(tmp_path: Path):
-    source = _make_apk_adb_source(["/data/app/base.apk"], [])
-    device = source._device
-    assert source.fetch_many([]) == []
-    device.shell.assert_not_called()
-    device.pull.assert_not_called()

@@ -1,14 +1,12 @@
-﻿from arknightsavatar.pull_apk import load_rsa_keys, package_from_location, version_stem
+from arknightsavatar.pull_apk import load_rsa_keys, package_from_location, version_stem
 
 
 def test_package_from_location_official():
     location = "/storage/emulated/0/Android/data/com.hypergryph.arknights/files/Bundles"
     assert package_from_location(location) == "com.hypergryph.arknights"
-
-
-def test_package_from_location_bilibili():
-    location = "/storage/emulated/0/Android/data/com.hypergryph.arknights.bilibili/files/Bundles"
-    assert package_from_location(location) == "com.hypergryph.arknights.bilibili"
+    # same regex-match branch covers a suffixed (Bilibili) package name
+    bilibili = "/storage/emulated/0/Android/data/com.hypergryph.arknights.bilibili/files/Bundles"
+    assert package_from_location(bilibili) == "com.hypergryph.arknights.bilibili"
 
 
 def test_package_from_location_unrecognized_falls_back():

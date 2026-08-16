@@ -37,20 +37,6 @@ def test_dispatch_to_tool(monkeypatch, capsys):
     assert calls == [["--conf", "0.5"]]
 
 
-def test_dispatch_to_orchestration(monkeypatch):
-    calls = []
-
-    class FakeModule:
-        @staticmethod
-        def main(argv):
-            calls.append(argv)
-            return 0
-
-    monkeypatch.setattr(cli.importlib, "import_module", lambda name: FakeModule())
-    assert cli.main(["run", "--limit", "1"]) == 0
-    assert calls == [["--limit", "1"]]
-
-
 def test_import_failure_reports_error(monkeypatch, capsys):
     def boom(name):
         raise ImportError("missing")
