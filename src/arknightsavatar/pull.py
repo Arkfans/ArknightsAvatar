@@ -2,7 +2,7 @@
 
 Orchestrates the two device-facing tools:
 
-    pull-apk (optional, --no-pull to skip) -> fetch
+    fetch (pull-apk only when --with-apk is given)
 
 Both steps reuse the single tools' ``main(argv)``; the pipeline stops at the
 first failing step.
@@ -26,13 +26,13 @@ PULL_STEP_MODULES: dict[str, str] = {
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="arknightsavatar-pull",
-        description="Acquire game resources from the device: pull-apk (optional) then fetch.",
+        description="Acquire game resources from the device: fetch (pull-apk only with --with-apk).",
     )
     parser.add_argument("--config", help="Path to config file")
     parser.add_argument(
-        "--no-pull",
+        "--with-apk",
         action="store_true",
-        help="skip the pull-apk step (only fetch)",
+        help="also pull the installed APK from the device (pull-apk step; default: skip)",
     )
     parser.add_argument("--package", help="Android package name for pull-apk")
     parser.add_argument("--out", default="apk", help="pull-apk output directory (default: apk)")
@@ -69,7 +69,7 @@ def _run_step(name: str, argv: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     steps: list[tuple[str, list[str]]] = []
-    if not args.no_pull:
+    if args.with_apk:
         steps.append(("pull-apk", _pull_apk_argv(args)))
     steps.append(("fetch", _fetch_argv(args)))
 

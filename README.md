@@ -56,7 +56,7 @@ uv run arknightsavatar detect --conf 0.3 # 子命令分发到单工具（argv �
 | 命令 | 职责 |
 | --- | --- |
 | `arknightsavatar run` | 全流程：fetch → unpack → classify → match → extract → export-webp → npc-json |
-| `arknightsavatar pull` | 设备侧获取：pull-apk（可 `--no-pull` 跳过）→ fetch |
+| `arknightsavatar pull` | 设备侧获取：fetch（`--with-apk` 可选追加 pull-apk） |
 | `arknightsavatar produce` | 离线生产：classify → match → extract → export-webp → npc-json（不触设备） |
 | `arknightsavatar derive-model` | 由 `data/recognition/face_detect_matched.json` 重新拟合 face/head → 裁切框推导模型 |
 | `arknightsavatar sync-cache` | 把数据目录同步提交到 GitHub 数据仓库（本地 git 工作副本 + git CLI） |
@@ -84,9 +84,9 @@ uv run arknightsavatar run --force --source local-apk
 ### pull（设备侧获取）
 
 ```bash
-uv run arknightsavatar pull                     # pull-apk + fetch
-uv run arknightsavatar pull --no-pull           # 只 fetch
-uv run arknightsavatar pull --package com.hypergryph.arknights.bilibili --out apk
+uv run arknightsavatar pull                     # 只 fetch
+uv run arknightsavatar pull --with-apk          # pull-apk + fetch
+uv run arknightsavatar pull --with-apk --package com.hypergryph.arknights.bilibili --out apk
 ```
 
 ### produce（离线生产）
