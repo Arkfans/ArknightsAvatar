@@ -12,16 +12,15 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import ClassVar
 
-from arknightsavatar.device_caps import detect_device_caps
+from arknightsavatar.device_caps import _DEVICE_TMP, detect_device_caps
 
-from .base import FileInfo, Source
+from .base import CATEGORY_SUBPATHS, FileInfo, Source
 from .device import connect_device, load_rsa_keys
 
 _LS_LINE = re.compile(
     r"^[bcdlps-][rwxsStT-]{9}\s+\S+\s+\S+\s+\S+\s+(\d+)\s+(?:\S+\s+){2,3}(.+)$"
 )
 _UNIT = 1024.0
-_DEVICE_TMP = "/data/local/tmp"
 _LIST_CHUNK = 100  # file names per printf invocation (keeps shell commands short)
 _EXIT_RE = re.compile(r"EXIT:(\d+)\s*$")
 
@@ -115,7 +114,7 @@ def extract_pack(
     return failures
 
 
-class _PullProgress:
+class PullProgress:
     """Accumulates adb_shell pull chunks and redraws a single progress line.
 
     adb_shell calls the callback as ``callback(device_path, chunk_bytes,
@@ -193,10 +192,7 @@ class AdbSource(Source):
 
     name = "adb"
 
-    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = {
-        "characters": ("avg", "characters"),
-        "avatars": ("spritepack",),
-    }
+    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = CATEGORY_SUBPATHS
 
     def __init__(
         self,
@@ -248,7 +244,8 @@ class AdbSource(Source):
     def _ls(self, path: str) -> list[tuple[str, int]]:
         if path in self._ls_cache:
             return self._ls_cache[path]
-        output = self._device.shell(f"ls -l {path}")
+        # path 来自用户配置 location（可含空格/元字符），与 apk_adb 一致使用 shlex.quote
+        output = self._device.shell(f"ls -l {shlex.quote(path)}")
         entries: list[tuple[str, int]] = []
         for line in output.splitlines():
             match = _LS_LINE.match(line.strip())
@@ -272,10 +269,13 @@ class AdbSource(Source):
         position: tuple[int, int] | None = None,
     ) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
-        progress = _PullProgress(rel, enabled=self._show_progress, position=position)
+        progress = PullProgress(rel, enabled=self._show_progress, position=position)
         try:
             self._device.pull(
-                self.remote_path(rel), str(dest), progress_callback=progress
+                self.remote_path(rel),
+                str(dest),
+                progress_callback=progress,
+                read_timeout_s=60,  # 与批量路径拉齐，避免单文件 pull 长挂
             )
         finally:
             progress.finish()
@@ -356,7 +356,7 @@ class AdbSource(Source):
         try:
             self._write_device_listing(listing, names)
             self._tar_on_device(pack, directory, listing)
-            progress = _PullProgress(
+            progress = PullProgress(
                 f"{category} ({len(items)} files)", enabled=self._show_progress
             )
             try:

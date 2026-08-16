@@ -3,7 +3,7 @@ import tarfile
 from pathlib import Path
 from unittest.mock import Mock
 
-from arknightsavatar.sources.adb import AdbSource, _fmt_bytes, _PullProgress
+from arknightsavatar.sources.adb import AdbSource, _fmt_bytes, PullProgress
 from arknightsavatar.sources.base import FileInfo
 
 
@@ -62,7 +62,7 @@ def test_fmt_bytes():
 
 def test_pull_progress_reports_percentage_bytes_and_speed():
     stream = io.StringIO()
-    progress = _PullProgress("characters/a.ab", enabled=True, stream=stream)
+    progress = PullProgress("characters/a.ab", enabled=True, stream=stream)
 
     chunk = 64 * 1024
     total = chunk * 4
@@ -81,7 +81,7 @@ def test_pull_progress_reports_percentage_bytes_and_speed():
 
 def test_pull_progress_with_position_shows_file_counter():
     stream = io.StringIO()
-    progress = _PullProgress(
+    progress = PullProgress(
         "characters/a.ab", enabled=True, stream=stream, position=(2, 10)
     )
 
@@ -98,7 +98,7 @@ def test_pull_progress_with_position_shows_file_counter():
 
 def test_pull_progress_without_position_has_no_counter():
     stream = io.StringIO()
-    progress = _PullProgress("characters/a.ab", enabled=True, stream=stream)
+    progress = PullProgress("characters/a.ab", enabled=True, stream=stream)
     progress("characters/a.ab", 512, 512)
     progress.finish()
 
@@ -108,7 +108,7 @@ def test_pull_progress_without_position_has_no_counter():
 
 def test_pull_progress_without_total_shows_no_percent():
     stream = io.StringIO()
-    progress = _PullProgress("characters/a.ab", enabled=True, stream=stream)
+    progress = PullProgress("characters/a.ab", enabled=True, stream=stream)
     progress("characters/a.ab", 512, 0)
     progress.finish()
 
@@ -119,7 +119,7 @@ def test_pull_progress_without_total_shows_no_percent():
 
 def test_pull_progress_disabled_is_quiet():
     stream = io.StringIO()
-    progress = _PullProgress("characters/a.ab", enabled=False, stream=stream)
+    progress = PullProgress("characters/a.ab", enabled=False, stream=stream)
     progress("characters/a.ab", 100, 100)
     progress.finish()
     assert stream.getvalue() == ""
@@ -146,6 +146,48 @@ def test_fetch_to_passes_progress_callback(tmp_path: Path):
     assert dest.read_bytes() == data
     assert device.pull.call_count == 1
     assert device.pull.call_args.kwargs["progress_callback"] is not None
+
+
+def test_fetch_to_passes_read_timeout(tmp_path: Path):
+    """P1-8: 单文件 pull 也传 read_timeout_s=60，与批量路径拉齐。"""
+    source = AdbSource.__new__(AdbSource)
+    source.location = "/sdcard/game"
+    source._show_progress = False
+    device = Mock()
+
+    def fake_pull(device_path, local_path, progress_callback=None, **kwargs):
+        Path(local_path).write_bytes(b"ab")
+
+    device.pull.side_effect = fake_pull
+    source._device = device
+    source.fetch_to("characters/a.ab", tmp_path / "characters" / "a.ab")
+    assert device.pull.call_args.kwargs.get("read_timeout_s") == 60
+
+
+def test_ls_escapes_path(tmp_path: Path):
+    """P1-7: _ls 对含空格/元字符的 path 用 shlex.quote。"""
+    import shlex
+
+    source = _make_source()
+    source._ls_cache = {}  # _make_source 不初始化 ls 缓存，这里补上
+    device = Mock()
+    seen = []
+
+    def fake_shell(command, **kwargs):
+        seen.append(command)
+        return ""  # no matching ls lines → empty listing
+
+    device.shell.side_effect = fake_shell
+    source._device = device
+    source._ls("/sdcard/my dir/sp ace")
+    assert device.shell.call_count == 1
+    sent = seen[0]
+    # 必须仍以 ls -l 开头且路径被引号包裹（空格未被拆成多个 argv）
+    assert sent.startswith("ls -l ")
+    assert "'/sdcard/my dir/sp ace'" in sent
+    # 关键判定：用 shlex 拆分为恰好 3 个 argv，第三个还原为原始含空格路径
+    tokens = shlex.split(sent)
+    assert tokens == ["ls", "-l", "/sdcard/my dir/sp ace"]
 
 
 def test_fetch_many_packs_pulls_once_and_extracts(tmp_path: Path):

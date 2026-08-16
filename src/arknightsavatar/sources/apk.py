@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import ClassVar
 
 from ..util import sha256_file
-from .base import FileInfo, Source
+from .base import CATEGORY_SUBPATHS, FileInfo, Source
 
 
 class ApkSource(Source):
@@ -13,10 +13,7 @@ class ApkSource(Source):
 
     name = "apk"
 
-    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = {
-        "characters": ("avg", "characters"),
-        "avatars": ("spritepack",),
-    }
+    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = CATEGORY_SUBPATHS
 
     def __init__(self, root: str | Path):
         self.root = Path(root)

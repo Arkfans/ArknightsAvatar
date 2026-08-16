@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import shlex
 import sys
 from pathlib import Path
 
@@ -75,7 +76,7 @@ def connect_device(
 
 def installed_apk_paths(device, package: str) -> list[str]:
     """Run `pm path <package>` and return the device APK paths (base + splits)."""
-    output = device.shell(f"pm path {package}")
+    output = device.shell(f"pm path {shlex.quote(package)}")
     paths = []
     for line in output.splitlines():
         line = line.strip()
@@ -86,7 +87,12 @@ def installed_apk_paths(device, package: str) -> list[str]:
 
 def installed_version(device, package: str) -> dict[str, str]:
     """Return {'versionName': ..., 'versionCode': ...} parsed from dumpsys."""
-    output = device.shell(f"dumpsys package {package} | grep -E 'version(Name|Code)='")
+    # 双引号包裹 package 后再 shlex.quote，使整体成为一条安全的 shell 命令
+    # （package 来自 CLI --package / 配置，可能含空格或 shell 元字符）。
+    quoted_pkg = shlex.quote(package)
+    output = device.shell(
+        f"dumpsys package {quoted_pkg} | grep -E 'version(Name|Code)='"
+    )
     result: dict[str, str] = {}
     for line in output.splitlines():
         for key in ("versionName", "versionCode"):

@@ -12,6 +12,14 @@ class FileInfo:
     size: int
 
 
+# 本地/设备/解包 APK 三类源共用的「分类 -> 内部子路径」映射。
+# 历史上这三个源的 CATEGORY_SUBPATHS 分别各自定义、彼此漂移；集中一处后三者引用同一份。
+CATEGORY_SUBPATHS: dict[str, tuple[str, ...]] = {
+    "characters": ("avg", "characters"),
+    "avatars": ("spritepack",),
+}
+
+
 class Source(ABC):
     """A source of AB files. Files are addressed by rel path like
     'characters/avg_007_closre_1.ab'."""

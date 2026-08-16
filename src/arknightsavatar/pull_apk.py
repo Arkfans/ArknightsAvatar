@@ -3,11 +3,12 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shlex
 import sys
 from pathlib import Path
 
 from .config import load_config
-from .sources.adb import _PullProgress
+from .sources.adb import PullProgress
 from .sources.device import (
     connect_device,
     installed_apk_paths,
@@ -33,7 +34,7 @@ def pull_apk(device, remote_path: str, dest: Path, *, progress: bool = True) -> 
     `shell cat` when direct file reads are denied.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
-    bar = _PullProgress(dest.name, enabled=progress)
+    bar = PullProgress(dest.name, enabled=progress)
     try:
         try:
             device.pull(remote_path, str(dest), progress_callback=bar)
@@ -42,7 +43,12 @@ def pull_apk(device, remote_path: str, dest: Path, *, progress: bool = True) -> 
                 f"\nsync pull failed ({type(error).__name__}: {error}); falling back to shell cat",
                 file=sys.stderr,
             )
-            dest.write_bytes(device.shell(f"cat {remote_path}", decode=False))
+            # remote_path 来自设备 pm path（可含空格/元字符），转义防注入；
+            # adb_shell 会把 shell 输出整包读入内存（APK 较大时有内存峰值，
+            # 受 adb_shell API 限制，此处只做转义，不解决内存峰值）。
+            dest.write_bytes(
+                device.shell(f"cat {shlex.quote(remote_path)}", decode=False)
+            )
     finally:
         bar.finish()
 

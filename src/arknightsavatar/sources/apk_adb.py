@@ -13,13 +13,13 @@ from arknightsavatar.device_caps import detect_device_caps
 
 from .adb import (
     _DEVICE_TMP,
-    _PullProgress,
+    PullProgress,
     extract_pack,
     rm_device_files,
     tar_on_device,
     write_device_listing,
 )
-from .base import FileInfo, Source
+from .base import CATEGORY_SUBPATHS, FileInfo, Source
 from .device import connect_device, installed_apk_paths, load_rsa_keys
 
 _UNZIP_L_LINE = re.compile(r"^\s*(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+(.+)$")
@@ -30,10 +30,7 @@ class ApkAdbSource(Source):
 
     name = "apk"
 
-    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = {
-        "characters": ("avg", "characters"),
-        "avatars": ("spritepack",),
-    }
+    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = CATEGORY_SUBPATHS
 
     AB_ROOT = "assets/AB/Android"
 
@@ -228,7 +225,7 @@ class ApkAdbSource(Source):
                 self._unzip_entries_on_device(apk, entries_list, tmpdir)
 
             tar_on_device(self._device, pack, tmpdir, names_list)
-            progress = _PullProgress(
+            progress = PullProgress(
                 f"{category} ({len(items)} files)", enabled=self._show_progress
             )
             try:

@@ -37,3 +37,29 @@ def test_load_rsa_keys_reuses_existing_key(tmp_path):
     before = key.read_bytes()
     load_rsa_keys(str(key))
     assert key.read_bytes() == before
+
+
+def test_pull_apk_cat_fallback_quotes_hostile_remote_path(tmp_path):
+    """P2: sync pull 失败回退到 shell cat 时，含空格/元字符的 remote_path 被 shlex.quote 转义。"""
+    import shlex
+    from unittest.mock import Mock
+
+    from arknightsavatar.pull_apk import pull_apk
+
+    device = Mock()
+    hostile = "/data/app/My Arknights $PKG/base.apk"
+
+    def fake_pull(remote, dest, progress_callback=None, **kwargs):
+        raise RuntimeError("permission denied")  # 触发 cat 回退分支
+
+    device.pull.side_effect = fake_pull
+    dest = tmp_path / "out.apk"
+    device.shell.return_value = b"apk-bytes"
+
+    pull_apk(device, hostile, dest, progress=False)
+    sent = device.shell.call_args.args[0]
+    tokens = shlex.split(sent)
+    assert tokens[0] == "cat"
+    # 关键：含空格/$ 的路径被还原为单个 argv（未被注入/拆分）
+    assert tokens[1] == hostile
+    assert dest.read_bytes() == b"apk-bytes"
