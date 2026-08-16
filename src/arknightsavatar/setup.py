@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Self
 
 from arknightsavatar import sync_cache
-from arknightsavatar.config import DataRepoCategory, load_config
+from arknightsavatar.config import ConfigError, DataRepoCategory, load_config
 
 # ANSI control sequences (only used when the terminal supports VT processing).
 _CURSOR_HIDE = "\x1b[?25l"
@@ -323,7 +323,7 @@ def run_download(config_path: str | None, selected_remotes: list[str] | None) ->
         if stats["restored"] == 0:
             print("提示: 数据仓库中暂无文件可下载，或本地文件已齐全。")
         return 0
-    except (sync_cache.SyncError, SetupError) as error:
+    except (sync_cache.SyncError, SetupError, ConfigError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 
@@ -382,10 +382,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
     if args.full:
         if args.category:
-            build_parser().error("--category 不能与 --full 同时使用")
+            parser.error("--category 不能与 --full 同时使用")
         return run_full_sync(args.config)
     if args.download or args.category is not None:
         return run_download(args.config, args.category)

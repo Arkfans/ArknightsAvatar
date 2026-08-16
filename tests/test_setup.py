@@ -393,6 +393,37 @@ def test_menu_b_runs_download(tmp_path, monkeypatch, capsys):
     assert "restored=0" in capsys.readouterr().out
 
 
+def test_download_invalid_adb_port_returns_error(tmp_path, monkeypatch, capsys):
+    """P1-9 端到端：非法 ARKNIGHTSAVATAR_ADB_PORT 经 setup download 暴露为 error + exit 1
+    （配置 env 覆盖是 README 推荐用法；原 setup 未捕获会以裸 traceback 崩溃）。"""
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    _write_config(
+        tmp_path,
+        str(remote),
+        [{"local": "data/recognition", "remote": "recognition"}],
+    )
+    monkeypatch.setenv("ARKNIGHTSAVATAR_ADB_PORT", "not-a-port")
+    assert (
+        setup.main(
+            [
+                "--download",
+                "--category",
+                "recognition",
+                "--config",
+                str(tmp_path / "config.toml"),
+            ]
+        )
+        == 1
+    )
+    err = capsys.readouterr().err
+    assert "error:" in err
+    assert "ADB_PORT" in err
+    # 不带未修饰 traceback
+    assert "Traceback (most recent call last)" not in err
+
+
 # ---------- 注册 ----------
 
 
