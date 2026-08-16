@@ -24,6 +24,7 @@ import os
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Self
 
 from arknightsavatar import sync_cache
 from arknightsavatar.config import DataRepoCategory, load_config
@@ -91,7 +92,7 @@ class KeyReader:
         self._fd: int | None = None
         self._old_attr = None
 
-    def __enter__(self) -> "KeyReader":
+    def __enter__(self) -> Self:
         if os.name == "nt":
             _enable_ansi_windows()
             return self
@@ -112,7 +113,7 @@ class KeyReader:
                 import termios  # POSIX only
 
                 termios.tcsetattr(self._fd, termios.TCSADRAIN, self._old_attr)
-            except Exception:  # noqa: BLE001 - best-effort restore
+            except Exception:  # noqa: BLE001, S110 - best-effort restore
                 pass
 
     def read(self) -> str:
@@ -126,7 +127,9 @@ class KeyReader:
         first = msvcrt.getwch()
         if first in ("\x00", "\xe0"):  # 扩展键前缀（方向键等）
             second = msvcrt.getwch()
-            return {"H": "up", "P": "down", "K": "left", "M": "right"}.get(second, "unknown")
+            return {"H": "up", "P": "down", "K": "left", "M": "right"}.get(
+                second, "unknown"
+            )
         return _normalize(first)
 
     def _read_posix(self) -> str:
@@ -137,7 +140,9 @@ class KeyReader:
             rest = ""
             if select.select([self._stream], [], [], 0.2)[0]:
                 rest = self._stream.read(2)
-            return {"[A": "up", "[B": "down", "[C": "right", "[D": "left"}.get(rest, "esc")
+            return {"[A": "up", "[B": "down", "[C": "right", "[D": "left"}.get(
+                rest, "esc"
+            )
         return _normalize(first)
 
 
@@ -267,7 +272,9 @@ def _match_remotes(
     unknown = [name for name in names if name not in by_remote]
     if unknown:
         valid = "、".join(by_remote) or "（无）"
-        raise SetupError(f"未知分类: {'、'.join(unknown)}；data_repo.yaml 可用分类: {valid}")
+        raise SetupError(
+            f"未知分类: {'、'.join(unknown)}；data_repo.yaml 可用分类: {valid}"
+        )
     return [by_remote[name] for name in names]
 
 
@@ -307,7 +314,9 @@ def run_download(config_path: str | None, selected_remotes: list[str] | None) ->
         stats = {"restored": 0}
         for category in chosen:
             print(f"正在下载 {_category_name(category)} …")
-            sync_cache.restore_category(category.local, category.remote, root, workdir, stats)
+            sync_cache.restore_category(
+                category.local, category.remote, root, workdir, stats
+            )
 
         print(f"工作副本: {workdir}")
         print(f"restored={stats['restored']}（仅补缺失，不覆盖已有文件）")

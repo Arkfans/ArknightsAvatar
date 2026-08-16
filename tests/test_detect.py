@@ -33,7 +33,7 @@ def _fake_detector(*boxes: tuple[float, ...]):
 
     def detector(bgr: np.ndarray) -> list[dict]:
         return [
-            {"bbox": [int(round(v)) for v in box[:4]], "confidence": float(box[4])}
+            {"bbox": [round(v) for v in box[:4]], "confidence": float(box[4])}
             for box in boxes
         ]
 
@@ -71,7 +71,12 @@ def test_clip_bbox():
 
 
 def test_bbox_to_face_pos():
-    assert detect._bbox_to_face_pos(10, 20, 90, 100) == {"x": 10, "y": 20, "w": 81, "h": 81}
+    assert detect._bbox_to_face_pos(10, 20, 90, 100) == {
+        "x": 10,
+        "y": 20,
+        "w": 81,
+        "h": 81,
+    }
     assert detect._bbox_to_face_pos(0, 0, 2, 2) == {"x": 0, "y": 0, "w": 3, "h": 3}
     assert detect._bbox_to_face_pos(3, 4, 9, 12) == {"x": 3, "y": 4, "w": 7, "h": 9}
 
@@ -171,7 +176,9 @@ def test_detect_characters_report_and_stats(tmp_path: Path):
     payload = report.as_dict()
     assert payload["characters_dir"] == str(characters_dir)
     assert (
-        payload["characters"]["avg_003_kalts_1"]["images"]["avg_003_kalts_1$1.png"]["confidence"]
+        payload["characters"]["avg_003_kalts_1"]["images"]["avg_003_kalts_1$1.png"][
+            "confidence"
+        ]
         == 0.9
     )
 
@@ -246,13 +253,17 @@ def test_cli_missing_ml_deps(monkeypatch, capsys: pytest.CaptureFixture):
     assert "torch and anime-face-detector" in capsys.readouterr().err
 
 
-def test_cli_characters_dir_missing(cli_env, capsys: pytest.CaptureFixture, tmp_path: Path):
+def test_cli_characters_dir_missing(
+    cli_env, capsys: pytest.CaptureFixture, tmp_path: Path
+):
     code = detect.main(["--characters-dir", str(tmp_path / "missing")])
     assert code == 1
     assert "not found" in capsys.readouterr().err
 
 
-def test_cli_character_not_found(cli_env, capsys: pytest.CaptureFixture, tmp_path: Path):
+def test_cli_character_not_found(
+    cli_env, capsys: pytest.CaptureFixture, tmp_path: Path
+):
     characters_dir = tmp_path / "characters"
     characters_dir.mkdir()
     code = detect.main(
@@ -270,9 +281,12 @@ def test_cli_character_filter(cli_env, tmp_path: Path):
 
     code = detect.main(
         [
-            "--characters-dir", str(characters_dir),
-            "--character", "avg_007_closre_1",
-            "--output", str(output),
+            "--characters-dir",
+            str(characters_dir),
+            "--character",
+            "avg_007_closre_1",
+            "--output",
+            str(output),
         ]
     )
 
@@ -290,7 +304,14 @@ def test_cli_limit(cli_env, tmp_path: Path):
     output = tmp_path / "report.json"
 
     code = detect.main(
-        ["--characters-dir", str(characters_dir), "--limit", "1", "--output", str(output)]
+        [
+            "--characters-dir",
+            str(characters_dir),
+            "--limit",
+            "1",
+            "--output",
+            str(output),
+        ]
     )
 
     assert code == 0
@@ -323,9 +344,19 @@ def test_cli_single_image_mode(cli_env, tmp_path: Path):
 
     assert code == 0
     payload = json.loads(output.read_text(encoding="utf8"))
-    assert payload["stats"] == {"images": 1, "detected": 1, "not_detected": 0, "errors": 0}
+    assert payload["stats"] == {
+        "images": 1,
+        "detected": 1,
+        "not_detected": 0,
+        "errors": 0,
+    }
     assert str(image) in payload["images"]
-    assert payload["images"][str(image)]["face_pos"] == {"x": 10, "y": 20, "w": 81, "h": 81}
+    assert payload["images"][str(image)]["face_pos"] == {
+        "x": 10,
+        "y": 20,
+        "w": 81,
+        "h": 81,
+    }
 
 
 def test_cli_invalid_device(cli_env):

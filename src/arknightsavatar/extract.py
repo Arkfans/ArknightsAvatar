@@ -21,7 +21,7 @@ import re
 import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -92,7 +92,7 @@ STATS_KEYS = [
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def _read_json(path: Path, default: Any = None) -> Any:
@@ -112,7 +112,7 @@ def _valid_box(box: Any) -> bool:
 
 
 def _int_box(box: Sequence[float]) -> list[int]:
-    return [int(round(float(v))) for v in box]
+    return [round(float(v)) for v in box]
 
 
 def _crop_box(image: Image.Image, box: Sequence[int]) -> Image.Image:
@@ -152,7 +152,9 @@ def load_derive_model(path: str | Path) -> dict:
     """Load the face/head -> avatar box derivation model (data/recognition/derive)."""
     model = _read_json(Path(path))
     if not isinstance(model, dict) or not isinstance(model.get("coef"), list):
-        raise ValueError(f"invalid derive model: {path}")
+        raise ValueError(  # noqa: TRY004 - 保持既有 API 约定的 ValueError 语义
+            f"invalid derive model: {path}"
+        )
     coef = model["coef"]
     if len(coef) != 9 or any(len(row) != 3 for row in coef):
         raise ValueError(f"invalid derive model coefficients: {path}")
@@ -166,7 +168,16 @@ def derive_box(model: dict, face_pos: dict, head_pos: dict) -> list[int]:
     (converted from top-left + size) plus widths/heights, then
     ``[cx, cy, s] = W @ features`` and ``box = [cx-s/2, cy-s/2, cx+s/2, cy+s/2]``.
     """
-    feature_order = model.get("feature_order") or ["fx", "fy", "fw", "fh", "hx", "hy", "hw", "hh"]
+    feature_order = model.get("feature_order") or [
+        "fx",
+        "fy",
+        "fw",
+        "fh",
+        "hx",
+        "hy",
+        "hw",
+        "hh",
+    ]
     coef = np.asarray(model["coef"], dtype=float)
     features = {
         "fx": face_pos["x"] + face_pos["w"] / 2.0,
@@ -181,10 +192,10 @@ def derive_box(model: dict, face_pos: dict, head_pos: dict) -> list[int]:
     vec = np.asarray([features[key] for key in feature_order] + [1.0], dtype=float)
     cx, cy, side = vec @ coef
     return [
-        int(round(cx - side / 2.0)),
-        int(round(cy - side / 2.0)),
-        int(round(cx + side / 2.0)),
-        int(round(cy + side / 2.0)),
+        round(cx - side / 2.0),
+        round(cy - side / 2.0),
+        round(cx + side / 2.0),
+        round(cy + side / 2.0),
     ]
 
 
@@ -309,12 +320,16 @@ def _diff_fingerprint(
     digest.update(_image_fingerprint(composed).encode("ascii"))
     digest.update(str(DIFF_FINGERPRINT_VERSION).encode("ascii"))
     digest.update(repr((special_mask_iou, face_conf, head_conf)).encode("ascii"))
-    digest.update(json.dumps(derive_model, sort_keys=True, ensure_ascii=False).encode("utf8"))
-    digest.update(f"{base_box}|{base_method}|{base_confidence}".encode("utf8"))
+    digest.update(
+        json.dumps(derive_model, sort_keys=True, ensure_ascii=False).encode("utf8")
+    )
+    digest.update(f"{base_box}|{base_method}|{base_confidence}".encode())
     return digest.hexdigest()
 
 
-def extract_avatar(image: Image.Image, box: Sequence[float], size: int = EXPORT_SIZE) -> Image.Image:
+def extract_avatar(
+    image: Image.Image, box: Sequence[float], size: int = EXPORT_SIZE
+) -> Image.Image:
     """Crop ``box`` (may extend past image edges; padded transparent) and resize."""
     x1, y1, x2, y2 = _int_box(box)
     width = x2 - x1
@@ -445,7 +460,8 @@ def detect_face_head_path(
     *,
     device: str | None = None,
     face_detector: Callable[[np.ndarray], list[dict]] | None = None,
-    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
+    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
+    | None = None,
 ) -> tuple[dict, bool]:
     """Detect face + head on an image file, reusing/updating the cache."""
     entry = cache.get(key)
@@ -467,7 +483,8 @@ def detect_face_head_image(
     stem: str,
     device: str | None = None,
     face_detector: Callable[[np.ndarray], list[dict]] | None = None,
-    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
+    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
+    | None = None,
 ) -> tuple[dict, bool]:
     """Detect face + head on an in-memory image via a temp PNG file."""
     entry = cache.get(key)
@@ -530,7 +547,8 @@ def resolve_base_box(
     head_conf: float = HEAD_CONF,
     device: str | None = None,
     face_detector: Callable[[np.ndarray], list[dict]] | None = None,
-    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
+    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
+    | None = None,
 ) -> tuple[list[int] | None, str | None, float | None, bool | None]:
     """Resolve a base's avatar box; ``(None, None, None, cache_hit)`` when no tier succeeds."""
     manual_entry = manual.get(f"{name}/{base_name}")
@@ -568,7 +586,9 @@ def resolve_base_box(
         face_detector=face_detector,
         head_detector=head_detector,
     )
-    derived = _derive_from_entry(entry, derive_model, face_conf=face_conf, head_conf=head_conf)
+    derived = _derive_from_entry(
+        entry, derive_model, face_conf=face_conf, head_conf=head_conf
+    )
     if derived is None:
         return None, None, None, cache_hit
     box, confidence = derived
@@ -646,7 +666,9 @@ class ExtractionReport:
             "output_dir": self.output_dir,
             "thresholds": self.thresholds,
             "stats": self.stats,
-            "characters": {name: item.as_dict() for name, item in self.characters.items()},
+            "characters": {
+                name: item.as_dict() for name, item in self.characters.items()
+            },
         }
 
 
@@ -662,7 +684,8 @@ def _dedup_bases(
     comparable = [
         name
         for name, avatar in base_avatars.items()
-        if avatar is not None and char_ext.bases[name].status not in ("dropped", "no_box", "failed")
+        if avatar is not None
+        and char_ext.bases[name].status not in ("dropped", "no_box", "failed")
     ]
     if len(comparable) < 2:
         return
@@ -737,7 +760,8 @@ def process_character(
     dedup_sim: float = DEDUP_SIM,
     device: str | None = None,
     face_detector: Callable[[np.ndarray], list[dict]] | None = None,
-    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
+    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
+    | None = None,
     stats: dict[str, int] | None = None,
 ) -> CharacterExtraction:
     """Extract one character's base/diff avatars and aggregate stats."""
@@ -747,7 +771,9 @@ def process_character(
     char_dir = characters_dir / name
     out_dir = output_dir / name
     meta = _read_json(char_dir / "meta.json", {}) or {}
-    face_groups = meta.get("face_groups") if isinstance(meta.get("face_groups"), list) else []
+    face_groups = (
+        meta.get("face_groups") if isinstance(meta.get("face_groups"), list) else []
+    )
     alpha_img = None
     alpha_path = char_dir / "alpha.png"
     if alpha_path.is_file():
@@ -763,7 +789,9 @@ def process_character(
         stem = Path(base_name).stem
         out_path = out_dir / f"{stem}.png"
         if out_path.is_file() and not force:
-            char_ext.bases[base_name] = ItemExtraction(status="skipped", avatar_file=str(out_path))
+            char_ext.bases[base_name] = ItemExtraction(
+                status="skipped", avatar_file=str(out_path)
+            )
             try:
                 base_avatars[base_name] = Image.open(out_path).convert("RGBA")
             except Exception:  # noqa: BLE001 - unreadable cached avatar cannot join dedup
@@ -834,8 +862,12 @@ def process_character(
             base_result.avatar_file = str(out_path)
 
     for base_name, base_entry in bases.items():
-        diff_names = base_entry.get("diff") or [] if isinstance(base_entry, dict) else []
-        diff_names = [diff_name for diff_name in diff_names if not _is_alpha_diff(diff_name)]
+        diff_names = (
+            base_entry.get("diff") or [] if isinstance(base_entry, dict) else []
+        )
+        diff_names = [
+            diff_name for diff_name in diff_names if not _is_alpha_diff(diff_name)
+        ]
         if char_ext.bases[base_name].status == "dropped":
             for diff_name in diff_names:
                 stats["diff_files"] += 1
@@ -847,7 +879,9 @@ def process_character(
             stem = Path(diff_name).stem
             out_path = out_dir / f"{stem}.png"
             if out_path.is_file() and not force:
-                char_ext.diffs[diff_name] = ItemExtraction(status="skipped", avatar_file=str(out_path))
+                char_ext.diffs[diff_name] = ItemExtraction(
+                    status="skipped", avatar_file=str(out_path)
+                )
                 continue
             if base_result.box is None:
                 char_ext.diffs[diff_name] = ItemExtraction(status="no_box")
@@ -903,7 +937,8 @@ def process_character(
                             status="no_box",
                             special=special,
                             detect_cache_hit=cache_hit,
-                            error=cached.get("error") or "face/head confidence below thresholds",
+                            error=cached.get("error")
+                            or "face/head confidence below thresholds",
                         )
                         continue
                     box = _int_box(box)
@@ -922,9 +957,14 @@ def process_character(
                             head_detector=head_detector,
                         )
                         if cache_hit is not None:
-                            stats["detect_cache_hits" if cache_hit else "detect_cache_new"] += 1
+                            stats[
+                                "detect_cache_hits" if cache_hit else "detect_cache_new"
+                            ] += 1
                         derived = _derive_from_entry(
-                            entry, derive_model, face_conf=face_conf, head_conf=head_conf
+                            entry,
+                            derive_model,
+                            face_conf=face_conf,
+                            head_conf=head_conf,
                         )
                         if derived is None:
                             extract_cache.put_diff(
@@ -1027,7 +1067,8 @@ def extract_characters(
     limit: int = 0,
     character: str | None = None,
     face_detector: Callable[[np.ndarray], list[dict]] | None = None,
-    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
+    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
+    | None = None,
     progress: Callable[[int, int, str], None] | None = None,
     skip: SkipList | None = None,
 ) -> ExtractionReport:
@@ -1106,20 +1147,60 @@ def build_parser() -> argparse.ArgumentParser:
         prog="arknightsavatar-extract",
         description="Extract 180x180 avatars for character bases and diffs (incremental).",
     )
-    parser.add_argument("--classified", default=DEFAULT_CLASSIFIED, help="characters classification report")
-    parser.add_argument("--characters-dir", default=DEFAULT_CHARACTERS_DIR, help="unpacked characters directory")
-    parser.add_argument("--match", default=DEFAULT_MATCH, help="avatar match report (optional)")
-    parser.add_argument("--avatars-dir", default=DEFAULT_AVATARS_DIR, help="unpacked avatars directory")
-    parser.add_argument("--manual", default=DEFAULT_MANUAL, help="manual override JSON (optional)")
-    parser.add_argument("--derive-model", default=DEFAULT_DERIVE_MODEL, help="face/head derive model JSON")
-    parser.add_argument("--face-head-cache", default=DEFAULT_FACE_HEAD_CACHE, help="face/head detection cache JSON")
-    parser.add_argument("--cache", default=DEFAULT_EXTRACT_CACHE, help="base similarity / diff match cache JSON")
-    parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="avatar output directory")
-    parser.add_argument("--output", default=DEFAULT_OUTPUT, help="report path, or '-' for stdout")
-    parser.add_argument("--limit", type=int, default=0, help="only process the first N characters")
-    parser.add_argument("--character", default=None, help="only process the specified character name")
-    parser.add_argument("--force", action="store_true", help="re-extract even when output PNGs exist")
-    parser.add_argument("--force-match", action="store_true", help="re-run avatar matching instead of using the report")
+    parser.add_argument(
+        "--classified",
+        default=DEFAULT_CLASSIFIED,
+        help="characters classification report",
+    )
+    parser.add_argument(
+        "--characters-dir",
+        default=DEFAULT_CHARACTERS_DIR,
+        help="unpacked characters directory",
+    )
+    parser.add_argument(
+        "--match", default=DEFAULT_MATCH, help="avatar match report (optional)"
+    )
+    parser.add_argument(
+        "--avatars-dir", default=DEFAULT_AVATARS_DIR, help="unpacked avatars directory"
+    )
+    parser.add_argument(
+        "--manual", default=DEFAULT_MANUAL, help="manual override JSON (optional)"
+    )
+    parser.add_argument(
+        "--derive-model",
+        default=DEFAULT_DERIVE_MODEL,
+        help="face/head derive model JSON",
+    )
+    parser.add_argument(
+        "--face-head-cache",
+        default=DEFAULT_FACE_HEAD_CACHE,
+        help="face/head detection cache JSON",
+    )
+    parser.add_argument(
+        "--cache",
+        default=DEFAULT_EXTRACT_CACHE,
+        help="base similarity / diff match cache JSON",
+    )
+    parser.add_argument(
+        "--output-dir", default=DEFAULT_OUTPUT_DIR, help="avatar output directory"
+    )
+    parser.add_argument(
+        "--output", default=DEFAULT_OUTPUT, help="report path, or '-' for stdout"
+    )
+    parser.add_argument(
+        "--limit", type=int, default=0, help="only process the first N characters"
+    )
+    parser.add_argument(
+        "--character", default=None, help="only process the specified character name"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="re-extract even when output PNGs exist"
+    )
+    parser.add_argument(
+        "--force-match",
+        action="store_true",
+        help="re-run avatar matching instead of using the report",
+    )
     parser.add_argument("--match-threshold", type=float, default=MATCH_THRESHOLD)
     parser.add_argument("--face-conf", type=float, default=FACE_CONF)
     parser.add_argument("--head-conf", type=float, default=HEAD_CONF)
@@ -1134,9 +1215,13 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
+def _make_progress(
+    total: int,
+) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
     if tqdm is not None:
-        bar = tqdm(total=total, unit="character", desc="extract avatar", dynamic_ncols=True)
+        bar = tqdm(
+            total=total, unit="character", desc="extract avatar", dynamic_ncols=True
+        )
 
         def progress(index: int, total_count: int, label: str) -> None:
             bar.set_postfix_str(label)
@@ -1167,9 +1252,14 @@ def main(argv: list[str] | None = None) -> int:
         if not 0.0 < value <= 1.0:
             print(f"error: {flag} must be in (0, 1] (got {value})", file=sys.stderr)
             return 1
-    for flag, value in (("--special-mask-iou", args.special_mask_iou), ("--dedup-sim", args.dedup_sim)):
+    for flag, value in (
+        ("--special-mask-iou", args.special_mask_iou),
+        ("--dedup-sim", args.dedup_sim),
+    ):
         if not 0.0 <= value <= 1.0:
-            print(f"error: {flag} must be between 0 and 1 (got {value})", file=sys.stderr)
+            print(
+                f"error: {flag} must be between 0 and 1 (got {value})", file=sys.stderr
+            )
             return 1
     if args.limit < 0:
         print(f"error: --limit must be >= 0 (got {args.limit})", file=sys.stderr)
@@ -1180,11 +1270,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: classified report not found: {classified_path}", file=sys.stderr)
         return 1
     classified = _read_json(classified_path)
-    if not isinstance(classified, dict) or not isinstance(classified.get("characters"), dict):
+    if not isinstance(classified, dict) or not isinstance(
+        classified.get("characters"), dict
+    ):
         print(f"error: invalid classified report: {classified_path}", file=sys.stderr)
         return 1
     if args.character is not None and args.character not in classified["characters"]:
-        print(f"error: character not found in {classified_path}: {args.character}", file=sys.stderr)
+        print(
+            f"error: character not found in {classified_path}: {args.character}",
+            file=sys.stderr,
+        )
         return 1
 
     skip_list = SkipList.load(args.skip)

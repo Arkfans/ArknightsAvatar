@@ -26,7 +26,9 @@ class Source(ABC):
     def fetch_to(self, rel: str, dest: Path) -> None:
         """Copy/pull the file to dest (dest is a complete file path)."""
 
-    def fetch_many(self, items: Sequence[tuple[FileInfo, Path]]) -> list[tuple[FileInfo, Exception]]:
+    def fetch_many(
+        self, items: Sequence[tuple[FileInfo, Path]]
+    ) -> list[tuple[FileInfo, Exception]]:
         """Fetch several files in one call; dest paths are complete file paths.
 
         Sources may override this to batch the transfer (e.g. pack files on

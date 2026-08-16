@@ -37,15 +37,22 @@ def _avatar_image(size: int = 180, seed: int = 0) -> Image.Image:
     return image
 
 
-def _base_with_avatar(avatar: Image.Image, at=(300, 200), size=(1024, 1024)) -> Image.Image:
+def _base_with_avatar(
+    avatar: Image.Image, at=(300, 200), size=(1024, 1024)
+) -> Image.Image:
     base = Image.new("RGBA", size, (0, 0, 0, 255))
     base.paste(avatar, at, avatar)
     return base
 
 
-def _block_image(size: int = 180, color=(0, 0, 255, 255), margin: int = 20) -> Image.Image:
+def _block_image(
+    size: int = 180, color=(0, 0, 255, 255), margin: int = 20
+) -> Image.Image:
     image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    image.paste(Image.new("RGBA", (size - 2 * margin, size - 2 * margin), color), (margin, margin))
+    image.paste(
+        Image.new("RGBA", (size - 2 * margin, size - 2 * margin), color),
+        (margin, margin),
+    )
     return image
 
 
@@ -133,7 +140,9 @@ def _standard_character(workdir: Path, *, diff_size=(64, 64)) -> tuple[Path, dic
     _write_png(char_dir / "base.png", _base_with_avatar(avatar))
     diff = Image.new("RGBA", diff_size, (255, 0, 0, 255))
     _write_png(char_dir / "d1.png", diff)
-    _write_meta(char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}])
+    _write_meta(
+        char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}]
+    )
     classified = _classified(
         characters_dir,
         {"avg_001_a_1": _char_entry({"base.png": {"diff": ["d1.png"]}})},
@@ -177,7 +186,9 @@ def _run(
 
 def test_derive_box_uses_center_features():
     model = _model()
-    box = extract.derive_box(model, {"x": 100, "y": 50, "w": 40, "h": 40}, {"x": 0, "y": 0, "w": 0, "h": 0})
+    box = extract.derive_box(
+        model, {"x": 100, "y": 50, "w": 40, "h": 40}, {"x": 0, "y": 0, "w": 0, "h": 0}
+    )
     assert box == [100, 50, 140, 90]
 
 
@@ -240,8 +251,18 @@ def test_compose_diff_prefers_alpha_png():
     alpha = alpha_mask.convert("RGBA")
     group = {"facePos": {"x": 10, "y": 20}, "faceSize": {"x": 64, "y": 64}}
     composed = extract.compose_diff(base, diff, group, alpha_img=alpha)
-    assert composed.getpixel((10, 20)) == (0, 0, 255, 0)  # alpha.png 0 overrides base alpha
-    assert composed.getpixel((50, 20)) == (255, 0, 0, 255)  # alpha.png 255 -> diff RGB + alpha
+    assert composed.getpixel((10, 20)) == (
+        0,
+        0,
+        255,
+        0,
+    )  # alpha.png 0 overrides base alpha
+    assert composed.getpixel((50, 20)) == (
+        255,
+        0,
+        0,
+        255,
+    )  # alpha.png 255 -> diff RGB + alpha
     assert composed.getpixel((90, 90)) == (0, 0, 255, 255)  # outside face unchanged
 
 
@@ -627,8 +648,12 @@ def test_alpha_png_diff_ignored(workdir: Path):
     char_dir = characters_dir / "avg_001_a_1"
     _write_png(char_dir / "base.png", Image.new("RGBA", (100, 100), (0, 0, 255, 255)))
     _write_png(char_dir / "d1.png", Image.new("RGBA", (64, 64), (255, 0, 0, 255)))
-    _write_png(char_dir / "alpha.png", Image.new("RGBA", (64, 64), (255, 255, 255, 255)))
-    _write_meta(char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}])
+    _write_png(
+        char_dir / "alpha.png", Image.new("RGBA", (64, 64), (255, 255, 255, 255))
+    )
+    _write_meta(
+        char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}]
+    )
     classified = _classified(
         characters_dir,
         {"avg_001_a_1": _char_entry({"base.png": {"diff": ["d1.png", "alpha.png"]}})},
@@ -660,8 +685,12 @@ def test_alpha_png_ignored_for_dropped_base(workdir: Path):
     for base_name in ("base1.png", "base2.png"):
         _write_png(char_dir / base_name, _base_with_avatar(avatar))
     _write_png(char_dir / "d1.png", Image.new("RGBA", (64, 64), (255, 0, 0, 255)))
-    _write_png(char_dir / "alpha.png", Image.new("RGBA", (64, 64), (255, 255, 255, 255)))
-    _write_meta(char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}])
+    _write_png(
+        char_dir / "alpha.png", Image.new("RGBA", (64, 64), (255, 255, 255, 255))
+    )
+    _write_meta(
+        char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}]
+    )
     classified = _classified(
         characters_dir,
         {
@@ -739,7 +768,9 @@ def test_diff_match_cache_reused(workdir: Path):
     assert report.stats["diff_match_cache_new"] == 1
     assert calls["face"] == 1
 
-    cache_payload = json.loads((workdir / "extract_cache.json").read_text(encoding="utf8"))
+    cache_payload = json.loads(
+        (workdir / "extract_cache.json").read_text(encoding="utf8")
+    )
     entry = cache_payload["diff_matches"]["avg_001_a_1/d1.png"]
     assert entry["special"] is True
     assert entry["iou"] < 0.95
@@ -798,7 +829,9 @@ def test_diff_match_cache_invalidated_on_threshold_change(workdir: Path):
     assert diff2.box == [0, 0, 50, 50]
     assert report2.stats["diff_match_cache_hits"] == 0
     assert report2.stats["diff_match_cache_new"] == 1
-    cache_payload = json.loads((workdir / "extract_cache.json").read_text(encoding="utf8"))
+    cache_payload = json.loads(
+        (workdir / "extract_cache.json").read_text(encoding="utf8")
+    )
     entry = cache_payload["diff_matches"]["avg_001_a_1/d1.png"]
     assert entry["special"] is False
     assert entry["box"] == [0, 0, 50, 50]
@@ -848,7 +881,9 @@ def test_diff_match_cache_records_normal_diff(workdir: Path):
     )
     diff = report.characters["avg_001_a_1"].diffs["d1.png"]
     assert diff.status == "ok"
-    cache_payload = json.loads((workdir / "extract_cache.json").read_text(encoding="utf8"))
+    cache_payload = json.loads(
+        (workdir / "extract_cache.json").read_text(encoding="utf8")
+    )
     entry = cache_payload["diff_matches"]["avg_001_a_1/d1.png"]
     assert entry["special"] is False
     assert isinstance(entry["iou"], float)
@@ -864,7 +899,9 @@ def test_dedup_drops_similar_base_and_diffs(workdir: Path):
         _write_png(char_dir / base_name, _base_with_avatar(avatar))
     _write_png(char_dir / "d1.png", Image.new("RGBA", (64, 64), (255, 0, 0, 255)))
     _write_png(char_dir / "d2.png", Image.new("RGBA", (64, 64), (0, 255, 0, 255)))
-    _write_meta(char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}])
+    _write_meta(
+        char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}]
+    )
     classified = _classified(
         characters_dir,
         {
@@ -909,11 +946,17 @@ def test_dedup_keeps_distinct_bases(workdir: Path):
     characters_dir = workdir / "characters"
     char_dir = characters_dir / "avg_001_a_1"
     _write_png(char_dir / "base1.png", _base_with_avatar(_avatar_image(180, seed=1)))
-    _write_png(char_dir / "base2.png", _base_with_avatar(_block_image(180), at=(600, 400)))
+    _write_png(
+        char_dir / "base2.png", _base_with_avatar(_block_image(180), at=(600, 400))
+    )
     _write_meta(char_dir)
     classified = _classified(
         characters_dir,
-        {"avg_001_a_1": _char_entry({"base1.png": {"diff": []}, "base2.png": {"diff": []}})},
+        {
+            "avg_001_a_1": _char_entry(
+                {"base1.png": {"diff": []}, "base2.png": {"diff": []}}
+            )
+        },
     )
     match_report = _match_report(
         characters_dir,
@@ -948,7 +991,11 @@ def _two_base_character(workdir: Path) -> tuple[Path, dict, dict]:
     _write_meta(char_dir)
     classified = _classified(
         characters_dir,
-        {"avg_001_a_1": _char_entry({"base1.png": {"diff": []}, "base2.png": {"diff": []}})},
+        {
+            "avg_001_a_1": _char_entry(
+                {"base1.png": {"diff": []}, "base2.png": {"diff": []}}
+            )
+        },
     )
     match_report = _match_report(
         characters_dir,
@@ -986,7 +1033,9 @@ def test_similarity_cache_reused(workdir: Path, monkeypatch: pytest.MonkeyPatch)
     assert report.stats["similarity_cache_hits"] == 0
     assert calls["n"] == 1
 
-    cache_payload = json.loads((workdir / "extract_cache.json").read_text(encoding="utf8"))
+    cache_payload = json.loads(
+        (workdir / "extract_cache.json").read_text(encoding="utf8")
+    )
     key = "avg_001_a_1/base1.png__base2.png"
     entry = cache_payload["similarities"][key]
     assert entry["similarity"] > 0.98
@@ -1005,7 +1054,9 @@ def test_similarity_cache_reused(workdir: Path, monkeypatch: pytest.MonkeyPatch)
     assert calls["n"] == 1
 
 
-def test_similarity_cache_invalidated_on_box_change(workdir: Path, monkeypatch: pytest.MonkeyPatch):
+def test_similarity_cache_invalidated_on_box_change(
+    workdir: Path, monkeypatch: pytest.MonkeyPatch
+):
     characters_dir, classified, match_report = _two_base_character(workdir)
     calls = {"n": 0}
     original = extract.avatar_similarity
@@ -1047,7 +1098,9 @@ def test_similarity_cache_invalidated_on_box_change(workdir: Path, monkeypatch: 
     assert report2.stats["similarity_cache_hits"] == 0
     assert report2.stats["similarity_cache_new"] == 1
     assert calls["n"] == 2
-    cache_payload = json.loads((workdir / "extract_cache.json").read_text(encoding="utf8"))
+    cache_payload = json.loads(
+        (workdir / "extract_cache.json").read_text(encoding="utf8")
+    )
     entry = cache_payload["similarities"]["avg_001_a_1/base1.png__base2.png"]
     assert entry["boxB"] == [350, 220, 530, 400]
 
@@ -1132,7 +1185,9 @@ def cli_env(monkeypatch):
 def _write_cli_inputs(workdir: Path) -> tuple[Path, Path, Path, Path]:
     characters_dir, classified = _standard_character(workdir)
     classified_path = workdir / "classified.json"
-    classified_path.write_text(json.dumps(classified, ensure_ascii=False), encoding="utf8")
+    classified_path.write_text(
+        json.dumps(classified, ensure_ascii=False), encoding="utf8"
+    )
     match_path = workdir / "match.json"
     match_path.write_text(
         json.dumps(
@@ -1156,17 +1211,28 @@ def test_cli_end_to_end(cli_env, workdir: Path, capsys: pytest.CaptureFixture):
     cache_path = workdir / "extract_cache.json"
     code = extract.main(
         [
-            "--classified", str(classified_path),
-            "--characters-dir", str(workdir / "characters"),
-            "--output-dir", str(workdir / "export"),
-            "--match", str(match_path),
-            "--avatars-dir", str(workdir / "avatars"),
-            "--derive-model", str(model_path),
-            "--manual", str(manual_path),
-            "--face-head-cache", str(workdir / "cache.json"),
-            "--cache", str(cache_path),
-            "--output", str(report_path),
-            "--character", "avg_001_a_1",
+            "--classified",
+            str(classified_path),
+            "--characters-dir",
+            str(workdir / "characters"),
+            "--output-dir",
+            str(workdir / "export"),
+            "--match",
+            str(match_path),
+            "--avatars-dir",
+            str(workdir / "avatars"),
+            "--derive-model",
+            str(model_path),
+            "--manual",
+            str(manual_path),
+            "--face-head-cache",
+            str(workdir / "cache.json"),
+            "--cache",
+            str(cache_path),
+            "--output",
+            str(report_path),
+            "--character",
+            "avg_001_a_1",
         ]
     )
     assert code == 0
@@ -1188,20 +1254,29 @@ def test_cli_output_stdout_dash(cli_env, workdir: Path, capsys: pytest.CaptureFi
     classified_path, match_path, model_path, manual_path = _write_cli_inputs(workdir)
     code = extract.main(
         [
-            "--classified", str(classified_path),
-            "--characters-dir", str(workdir / "characters"),
-            "--output-dir", str(workdir / "export"),
-            "--match", str(match_path),
-            "--derive-model", str(model_path),
-            "--manual", str(manual_path),
-            "--cache", str(workdir / "extract_cache.json"),
-            "--output", "-",
-            "--character", "avg_001_a_1",
+            "--classified",
+            str(classified_path),
+            "--characters-dir",
+            str(workdir / "characters"),
+            "--output-dir",
+            str(workdir / "export"),
+            "--match",
+            str(match_path),
+            "--derive-model",
+            str(model_path),
+            "--manual",
+            str(manual_path),
+            "--cache",
+            str(workdir / "extract_cache.json"),
+            "--output",
+            "-",
+            "--character",
+            "avg_001_a_1",
         ]
     )
     assert code == 0
     out = capsys.readouterr().out
-    payload = json.loads(out[out.index("{"): out.rfind("}") + 1])
+    payload = json.loads(out[out.index("{") : out.rfind("}") + 1])
     assert payload["stats"]["base_ok"] == 1
 
 
@@ -1212,12 +1287,15 @@ def test_cli_missing_classified(cli_env, capsys: pytest.CaptureFixture, workdir:
 
 
 def test_cli_character_not_found(cli_env, capsys: pytest.CaptureFixture, workdir: Path):
-    classified_path, match_path, model_path, manual_path = _write_cli_inputs(workdir)
+    classified_path, _, model_path, _ = _write_cli_inputs(workdir)
     code = extract.main(
         [
-            "--classified", str(classified_path),
-            "--derive-model", str(model_path),
-            "--character", "avg_999_unknown_1",
+            "--classified",
+            str(classified_path),
+            "--derive-model",
+            str(model_path),
+            "--character",
+            "avg_999_unknown_1",
         ]
     )
     assert code == 1
@@ -1225,12 +1303,15 @@ def test_cli_character_not_found(cli_env, capsys: pytest.CaptureFixture, workdir
 
 
 def test_cli_invalid_threshold(cli_env, capsys: pytest.CaptureFixture, workdir: Path):
-    classified_path, match_path, model_path, manual_path = _write_cli_inputs(workdir)
+    classified_path, _, model_path, _ = _write_cli_inputs(workdir)
     code = extract.main(
         [
-            "--classified", str(classified_path),
-            "--derive-model", str(model_path),
-            "--match-threshold", "1.5",
+            "--classified",
+            str(classified_path),
+            "--derive-model",
+            str(model_path),
+            "--match-threshold",
+            "1.5",
         ]
     )
     assert code == 1

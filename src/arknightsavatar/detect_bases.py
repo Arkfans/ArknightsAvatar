@@ -30,7 +30,7 @@ import json
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -68,7 +68,7 @@ DEFAULT_HEAD_CONF = 0.4
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def filter_bases(
@@ -83,7 +83,9 @@ def filter_bases(
     条目缺少 threshold 或匹配失败（条目为 error dict）时跳过。
     characters_dir 缺省时取报告内的 ``characters_dir`` 字段。
     """
-    characters_dir = Path(characters_dir or match_report.get("characters_dir", DEFAULT_CHARACTERS_DIR))
+    characters_dir = Path(
+        characters_dir or match_report.get("characters_dir", DEFAULT_CHARACTERS_DIR)
+    )
     skip = skip or SkipList()
     selected: list[tuple[str, str, dict, Path]] = []
     for name, item in (match_report.get("characters") or {}).items():
@@ -93,7 +95,10 @@ def filter_bases(
             if skip.is_sprite_skipped(name, base_name):
                 continue
             entry_threshold = entry.get("threshold")
-            if not isinstance(entry_threshold, (int, float)) or entry_threshold <= threshold:
+            if (
+                not isinstance(entry_threshold, (int, float))
+                or entry_threshold <= threshold
+            ):
                 continue
             selected.append((name, base_name, entry, characters_dir / name / base_name))
     return selected
@@ -140,7 +145,8 @@ def detect_head_top1(
     image_path: str | Path,
     *,
     conf: float = DEFAULT_HEAD_CONF,
-    detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
+    detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
+    | None = None,
 ) -> dict:
     """用 ``imgutils.detect.detect_heads`` 对单张图片做 top-1 头部检测。
 
@@ -167,13 +173,13 @@ def detect_head_top1(
         return result
 
     bbox, _, score = max(detections, key=lambda d: d[2])
-    x0, y0, x1, y1 = (int(round(v)) for v in bbox)
+    x0, y0, x1, y1 = (round(v) for v in bbox)
     result["head_detected"] = True
     result["head_pos"] = {
-        "x": int(round(x0)),
-        "y": int(round(y0)),
-        "w": int(round(x1 - x0 + 1)),
-        "h": int(round(y1 - y0 + 1)),
+        "x": x0,
+        "y": y0,
+        "w": x1 - x0 + 1,
+        "h": y1 - y0 + 1,
     }
     result["head_confidence"] = float(score)
     return result
@@ -244,7 +250,9 @@ class MatchedDetectReport:
             "characters_dir": self.characters_dir,
             "threshold": self.threshold,
             "stats": self.stats,
-            "characters": {name: item.as_dict() for name, item in self.characters.items()},
+            "characters": {
+                name: item.as_dict() for name, item in self.characters.items()
+            },
         }
 
 
@@ -260,7 +268,8 @@ def detect_matched_bases(
     limit: int = 0,
     character: str | None = None,
     detector: Callable[[np.ndarray], list[dict]] | None = None,
-    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]] | None = None,
+    head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
+    | None = None,
     progress: Callable[[int, int, str], None] | None = None,
     skip: SkipList | None = None,
 ) -> MatchedDetectReport:
@@ -271,7 +280,13 @@ def detect_matched_bases(
     imgutils 头部检测替身，默认分别使用懒加载的真实模型。
     """
     characters_dir = Path(characters_dir)
-    stats = {"filtered": 0, "detected": 0, "not_detected": 0, "errors": 0, "heads_detected": 0}
+    stats = {
+        "filtered": 0,
+        "detected": 0,
+        "not_detected": 0,
+        "errors": 0,
+        "heads_detected": 0,
+    }
     characters: dict[str, CharacterFaceDetection] = {}
 
     selected = filter_bases(
@@ -289,7 +304,9 @@ def detect_matched_bases(
     for index, (name, base_name, entry, image_path) in enumerate(selected, 1):
         if name not in characters:
             characters[name] = CharacterFaceDetection(name=name)
-        raw = detect.detect_top1(image_path, device=device, conf=conf, detector=detector)
+        raw = detect.detect_top1(
+            image_path, device=device, conf=conf, detector=detector
+        )
         if raw["error"] is None:
             head = detect_head_top1(image_path, conf=head_conf, detector=head_detector)
         else:
@@ -367,7 +384,13 @@ def _subset_match_report(
 
 def _aggregate_stats(characters: dict[str, CharacterFaceDetection]) -> dict[str, int]:
     """对合并后的报告条目重新聚合 stats（与逐张检测时的计数口径一致）。"""
-    stats = {"filtered": 0, "detected": 0, "not_detected": 0, "errors": 0, "heads_detected": 0}
+    stats = {
+        "filtered": 0,
+        "detected": 0,
+        "not_detected": 0,
+        "errors": 0,
+        "heads_detected": 0,
+    }
     for char in characters.values():
         for det in char.bases.values():
             stats["filtered"] += 1
@@ -445,12 +468,23 @@ def _face_bbox(face_pos: dict[str, int]) -> tuple[int, int, int, int]:
     return x0, y0, x0 + w - 1, y0 + h - 1
 
 
-def _put_label(canvas: np.ndarray, text: str, x: int, y: int, color: tuple[int, int, int, int]) -> None:
+def _put_label(
+    canvas: np.ndarray, text: str, x: int, y: int, color: tuple[int, int, int, int]
+) -> None:
     """在画布上写字，坐标裁剪到图片内且预留文字高度。"""
     height, width = canvas.shape[:2]
     x = max(4, min(x, max(4, width - 1)))
     y = max(18, min(y, max(18, height - 4)))
-    cv2.putText(canvas, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, FONT_SCALE, color, TEXT_THICKNESS, cv2.LINE_AA)
+    cv2.putText(
+        canvas,
+        text,
+        (x, y),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        FONT_SCALE,
+        color,
+        TEXT_THICKNESS,
+        cv2.LINE_AA,
+    )
 
 
 def draw_annotation(
@@ -467,11 +501,13 @@ def draw_annotation(
     canvas = _read_bgra(Path(base_path))
 
     if match_box and len(match_box) == 4:
-        x1, y1, x2, y2 = (int(round(v)) for v in match_box)
+        x1, y1, x2, y2 = (round(v) for v in match_box)
         cv2.rectangle(canvas, (x1, y1), (x2, y2), MATCH_BOX_COLOR, BOX_THICKNESS)
         if match_threshold is not None:
             label_y = y1 - 8 if y1 - 8 >= 20 else y1 + 24
-            _put_label(canvas, f"match {match_threshold:.4f}", x1, label_y, MATCH_BOX_COLOR)
+            _put_label(
+                canvas, f"match {match_threshold:.4f}", x1, label_y, MATCH_BOX_COLOR
+            )
 
     if face_pos is not None:
         x1, y1, x2, y2 = _face_bbox(face_pos)
@@ -485,7 +521,9 @@ def draw_annotation(
         cv2.rectangle(canvas, (x1, y1), (x2, y2), HEAD_BOX_COLOR, BOX_THICKNESS)
         if head_confidence is not None:
             label_y = y1 - 8 if y1 - 8 >= 20 else y1 + 24
-            _put_label(canvas, f"head {head_confidence:.4f}", x1, label_y, HEAD_BOX_COLOR)
+            _put_label(
+                canvas, f"head {head_confidence:.4f}", x1, label_y, HEAD_BOX_COLOR
+            )
 
     if face_pos is None and head_pos is None:
         _put_label(canvas, "no face / no head", 8, 20, YOLO_BOX_COLOR)
@@ -532,7 +570,10 @@ def render_annotations(
                 det.vis_image = str(out_path)
                 count += 1
             except Exception as error:  # noqa: BLE001 - 单张失败不中断
-                print(f"warning: cannot render {name}/{base_name}: {error}", file=sys.stderr)
+                print(
+                    f"warning: cannot render {name}/{base_name}: {error}",
+                    file=sys.stderr,
+                )
     return count
 
 
@@ -688,13 +729,21 @@ def main(argv: list[str] | None = None) -> int:
 
     args = build_parser().parse_args(argv)
     if not 0.0 <= args.conf <= 1.0:
-        print(f"error: --conf must be between 0 and 1 (got {args.conf})", file=sys.stderr)
+        print(
+            f"error: --conf must be between 0 and 1 (got {args.conf})", file=sys.stderr
+        )
         return 1
     if not 0.0 <= args.head_conf <= 1.0:
-        print(f"error: --head-conf must be between 0 and 1 (got {args.head_conf})", file=sys.stderr)
+        print(
+            f"error: --head-conf must be between 0 and 1 (got {args.head_conf})",
+            file=sys.stderr,
+        )
         return 1
     if not 0.0 < args.threshold <= 1.0:
-        print(f"error: --threshold must be in (0, 1] (got {args.threshold})", file=sys.stderr)
+        print(
+            f"error: --threshold must be in (0, 1] (got {args.threshold})",
+            file=sys.stderr,
+        )
         return 1
     if args.limit < 0:
         print(f"error: --limit must be >= 0 (got {args.limit})", file=sys.stderr)
@@ -712,10 +761,16 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     characters_dir = Path(
-        args.characters_dir or match_report.get("characters_dir", DEFAULT_CHARACTERS_DIR)
+        args.characters_dir
+        or match_report.get("characters_dir", DEFAULT_CHARACTERS_DIR)
     )
-    if args.character is not None and args.character not in (match_report.get("characters") or {}):
-        print(f"error: character not found in {match_path}: {args.character}", file=sys.stderr)
+    if args.character is not None and args.character not in (
+        match_report.get("characters") or {}
+    ):
+        print(
+            f"error: character not found in {match_path}: {args.character}",
+            file=sys.stderr,
+        )
         return 1
 
     skip_list = SkipList.load(args.skip)
@@ -764,7 +819,9 @@ def main(argv: list[str] | None = None) -> int:
                     f"detect-bases: reusing {len(covered)} cached detection(s); "
                     f"detecting {len(missing)} new base(s)",
                 )
-            subset = _subset_match_report(match_report, missing) if missing else match_report
+            subset = (
+                _subset_match_report(match_report, missing) if missing else match_report
+            )
             new_report = detect_matched_bases(
                 subset,
                 characters_dir,

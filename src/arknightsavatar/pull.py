@@ -40,7 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="also pull the installed APK from the device (pull-apk step; default: skip)",
     )
     parser.add_argument("--package", help="Android package name for pull-apk")
-    parser.add_argument("--out", default="apk", help="pull-apk output directory (default: apk)")
+    parser.add_argument(
+        "--out", default="apk", help="pull-apk output directory (default: apk)"
+    )
     parser.add_argument(
         "--source",
         choices=["apk", "local-apk", "adb"],
@@ -65,7 +67,14 @@ def _pull_apk_argv(args: argparse.Namespace) -> list[str]:
 
 
 def _fetch_argv(args: argparse.Namespace) -> list[str]:
-    argv = ["--source", *args.source, "--category", args.category, "--raw-dir", args.raw_dir]
+    argv = [
+        "--source",
+        *args.source,
+        "--category",
+        args.category,
+        "--raw-dir",
+        args.raw_dir,
+    ]
     if args.config:
         argv += ["--config", args.config]
     if args.force:

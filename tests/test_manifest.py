@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 
 from arknightsavatar.manifest import FailureLog, FileRecord, Manifest
 
@@ -11,7 +11,9 @@ def test_manifest_roundtrip(tmp_path: Path):
 
     loaded = Manifest.load(path, game_version="other")
     assert loaded.game_version == "arknights-hg-2761"
-    assert loaded.get("characters/a.ab") == FileRecord(size=3, sha256="abc", source="adb")
+    assert loaded.get("characters/a.ab") == FileRecord(
+        size=3, sha256="abc", source="adb"
+    )
     assert loaded.get("missing.ab") is None
 
 

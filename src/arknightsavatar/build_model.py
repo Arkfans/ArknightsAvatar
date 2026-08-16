@@ -28,7 +28,14 @@ from pathlib import Path
 from arknightsavatar import detect, detect_bases, paths
 from arknightsavatar import run as run_module
 
-BUILD_MODEL_STEPS = ("fetch", "unpack", "classify", "match", "detect-bases", "derive-model")
+BUILD_MODEL_STEPS = (
+    "fetch",
+    "unpack",
+    "classify",
+    "match",
+    "detect-bases",
+    "derive-model",
+)
 
 STEP_MODULES: dict[str, str] = {
     "fetch": "arknightsavatar.fetch",
@@ -58,7 +65,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="resource source(s); default: adb + apk (live device Bundles wins, "
         "installed APK fills gaps — together they are the complete dataset)",
     )
-    parser.add_argument("--category", choices=["characters", "avatars", "all"], default="all")
+    parser.add_argument(
+        "--category", choices=["characters", "avatars", "all"], default="all"
+    )
     parser.add_argument(
         "--from",
         dest="from_step",
@@ -153,7 +162,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--avatars-dir", default=paths.UNPACKED_AVATARS_DIR)
     parser.add_argument("--classified", default=paths.CLASSIFIED)
     parser.add_argument("--match", dest="match_report", default=paths.AVATAR_MATCH)
-    parser.add_argument("--face-detect", dest="face_detect", default=paths.FACE_DETECT_MATCHED)
+    parser.add_argument(
+        "--face-detect", dest="face_detect", default=paths.FACE_DETECT_MATCHED
+    )
     parser.add_argument("--derive-dir", default=paths.DERIVE_DIR)
     parser.add_argument(
         "--stats-out",
@@ -276,7 +287,7 @@ def _format_elapsed(seconds: float) -> str:
     """把秒数格式化为人类可读的耗时（如 ``1m 5s``）。"""
     if seconds < 60:
         return f"{seconds:.1f}s" if seconds < 10 else f"{round(seconds)}s"
-    minutes, secs = divmod(int(round(seconds)), 60)
+    minutes, secs = divmod(round(seconds), 60)
     if minutes < 60:
         return f"{minutes}m {secs}s"
     hours, minutes = divmod(minutes, 60)
@@ -285,12 +296,17 @@ def _format_elapsed(seconds: float) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if BUILD_MODEL_STEPS.index(args.from_step) > BUILD_MODEL_STEPS.index(args.until_step):
+    if BUILD_MODEL_STEPS.index(args.from_step) > BUILD_MODEL_STEPS.index(
+        args.until_step
+    ):
         print("error: --from must not be after --until", file=sys.stderr)
         return 1
 
     selected = BUILD_MODEL_STEPS[
-        BUILD_MODEL_STEPS.index(args.from_step) : BUILD_MODEL_STEPS.index(args.until_step) + 1
+        BUILD_MODEL_STEPS.index(args.from_step) : BUILD_MODEL_STEPS.index(
+            args.until_step
+        )
+        + 1
     ]
     if "detect-bases" in selected and not check_detect_deps():
         return 1
@@ -300,14 +316,18 @@ def main(argv: list[str] | None = None) -> int:
     results = run_steps(args)
     elapsed = time.monotonic() - t0
     expected = BUILD_MODEL_STEPS[
-        BUILD_MODEL_STEPS.index(args.from_step) : BUILD_MODEL_STEPS.index(args.until_step) + 1
+        BUILD_MODEL_STEPS.index(args.from_step) : BUILD_MODEL_STEPS.index(
+            args.until_step
+        )
+        + 1
     ]
     payload = {
         "generated_at": run_module._now(),
         "started_at": started,
         "elapsed_secs": round(elapsed, 2),
         "steps": results,
-        "ok": len(results) == len(expected) and all(code == 0 for code in results.values()),
+        "ok": len(results) == len(expected)
+        and all(code == 0 for code in results.values()),
     }
     run_module.write_stats(args.stats_out, payload)
     print(f"build-model stats written: {args.stats_out}")
@@ -325,7 +345,9 @@ def main(argv: list[str] | None = None) -> int:
         model_path = Path(args.derive_dir) / "model.json"
         if model_path.is_file():
             try:
-                samples = json.loads(model_path.read_text(encoding="utf8")).get("fit_samples")
+                samples = json.loads(model_path.read_text(encoding="utf8")).get(
+                    "fit_samples"
+                )
                 if samples is not None:
                     print(f"  model:         {model_path} ({samples} fit samples)")
             except (OSError, ValueError):
@@ -333,7 +355,10 @@ def main(argv: list[str] | None = None) -> int:
 
     failed = [name for name, code in results.items() if code != 0]
     if failed:
-        print(f"error: build-model failed at step(s): {', '.join(failed)}", file=sys.stderr)
+        print(
+            f"error: build-model failed at step(s): {', '.join(failed)}",
+            file=sys.stderr,
+        )
         return 1
     print("build-model complete")
     return 0

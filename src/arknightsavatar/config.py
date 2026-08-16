@@ -24,11 +24,23 @@ DEFAULT_DATA_REPO_CATEGORIES = [
     {"local": "data/recognition", "remote": "recognition", "desc": "识别数据"},
     {"local": "data/unpacked/avatars", "remote": "avatars", "desc": "原始 avatar"},
     {"local": "data/export", "remote": "export", "desc": "提取 avatar"},
-    {"local": "data/export_webp", "remote": "export_webp", "desc": "提取 avatar（WebP）"},
+    {
+        "local": "data/export_webp",
+        "remote": "export_webp",
+        "desc": "提取 avatar（WebP）",
+    },
     {"local": "data/stats", "remote": "stats", "desc": "统计列表"},
-    {"local": "data/arknights_npc.json", "remote": "arknights_npc.json", "desc": "NPC 头像索引"},
+    {
+        "local": "data/arknights_npc.json",
+        "remote": "arknights_npc.json",
+        "desc": "NPC 头像索引",
+    },
     {"local": "data/version.json", "remote": "version.json", "desc": "顶层版本指针"},
-    {"local": "data/changelog.ndjson", "remote": "changelog.ndjson", "desc": "追加式变更日志"},
+    {
+        "local": "data/changelog.ndjson",
+        "remote": "changelog.ndjson",
+        "desc": "追加式变更日志",
+    },
     {"local": "data/schema", "remote": "schema", "desc": "数据文件格式 Schema"},
 ]
 
@@ -41,7 +53,9 @@ class AdbConfig:
     location: str = ""
 
     def resolved_location(self) -> str:
-        return self.location or GAME_LOCATIONS.get(self.server, GAME_LOCATIONS["official"])
+        return self.location or GAME_LOCATIONS.get(
+            self.server, GAME_LOCATIONS["official"]
+        )
 
 
 @dataclass
@@ -69,7 +83,9 @@ class DataRepoConfig:
     url: str = ""
     branch: str = "main"
     categories: list[DataRepoCategory] = field(
-        default_factory=lambda: [DataRepoCategory(**item) for item in DEFAULT_DATA_REPO_CATEGORIES]
+        default_factory=lambda: [
+            DataRepoCategory(**item) for item in DEFAULT_DATA_REPO_CATEGORIES
+        ]
     )
 
 
@@ -116,7 +132,8 @@ def _parse_data_repo(data: dict) -> DataRepoConfig:
         path=str(data.get("path") or "data_cache"),
         url=str(data.get("url") or ""),
         branch=str(data.get("branch") or "main"),
-        categories=categories or [DataRepoCategory(**item) for item in DEFAULT_DATA_REPO_CATEGORIES],
+        categories=categories
+        or [DataRepoCategory(**item) for item in DEFAULT_DATA_REPO_CATEGORIES],
     )
 
 
@@ -139,7 +156,9 @@ def load_config(
             data = tomllib.load(f)
 
     data_repo_path = Path(
-        data_repo_path or _env("DATA_REPO_CONFIG") or path.parent / DEFAULT_DATA_REPO_CONFIG_FILE
+        data_repo_path
+        or _env("DATA_REPO_CONFIG")
+        or path.parent / DEFAULT_DATA_REPO_CONFIG_FILE
     )
     data_repo_data: dict = {}
     if data_repo_path.exists():
@@ -159,8 +178,12 @@ def load_config(
     )
 
     apk = ApkConfig(
-        file=Path(_env("APK_FILE")) if _env("APK_FILE") else (Path(apk_data["file"]) if apk_data.get("file") else None),
-        dir=Path(_env("APK_DIR")) if _env("APK_DIR") else (Path(apk_data["dir"]) if apk_data.get("dir") else None),
+        file=Path(_env("APK_FILE"))
+        if _env("APK_FILE")
+        else (Path(apk_data["file"]) if apk_data.get("file") else None),
+        dir=Path(_env("APK_DIR"))
+        if _env("APK_DIR")
+        else (Path(apk_data["dir"]) if apk_data.get("dir") else None),
     )
 
     data_repo = _parse_data_repo(data_repo_data)
@@ -168,5 +191,10 @@ def load_config(
     data_repo.url = _env("DATA_REPO_URL") or data_repo.url
     data_repo.branch = _env("DATA_REPO_BRANCH") or data_repo.branch
 
-    game_version = _env("GAME_VERSION") or data.get("game_version") or infer_game_version(apk) or "unknown"
+    game_version = (
+        _env("GAME_VERSION")
+        or data.get("game_version")
+        or infer_game_version(apk)
+        or "unknown"
+    )
     return Config(adb=adb, apk=apk, data_repo=data_repo, game_version=game_version)

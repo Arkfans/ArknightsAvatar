@@ -1,10 +1,10 @@
-﻿import json
+import json
 from pathlib import Path
 
 from PIL import Image
 
-from arknightsavatar.util import sha256_file
 from arknightsavatar.unpack.unpacker import run_unpack, unpack_one
+from arknightsavatar.util import sha256_file
 
 
 class FakeParse:
@@ -57,7 +57,14 @@ def test_unpack_characters(tmp_path: Path):
     ab_path.write_bytes(b"x")
     unpacked = tmp_path / "unpacked"
 
-    stats = unpack_one(ab_path, unpacked, "characters", "characters/avg_007_closre_1.ab", "sha1", parser_cls=FakeParse)
+    stats = unpack_one(
+        ab_path,
+        unpacked,
+        "characters",
+        "characters/avg_007_closre_1.ab",
+        "sha1",
+        parser_cls=FakeParse,
+    )
     assert stats == {"textures": 1, "sprites": 1, "face_groups": 1}
 
     item_dir = unpacked / "characters" / "avg_007_closre_1"
@@ -66,7 +73,9 @@ def test_unpack_characters(tmp_path: Path):
     assert meta["source"] == {"rel": "characters/avg_007_closre_1.ab", "sha256": "sha1"}
     assert meta["textures"] == {"2$1": [10, 10]}
     assert meta["sprites"] == ["2$1"]
-    assert meta["face_groups"] == [{"facePos": {"x": 1, "y": 2}, "faceSize": {"x": 3, "y": 4}}]
+    assert meta["face_groups"] == [
+        {"facePos": {"x": 1, "y": 2}, "faceSize": {"x": 3, "y": 4}}
+    ]
 
 
 def test_unpack_avatars_flat(tmp_path: Path):
@@ -74,13 +83,24 @@ def test_unpack_avatars_flat(tmp_path: Path):
     ab_path.write_bytes(b"x")
     unpacked = tmp_path / "unpacked"
 
-    unpack_one(ab_path, unpacked, "avatars", "avatars/ui_char_avatar_0.ab", "sha2", parser_cls=FakeAvatarParse)
+    unpack_one(
+        ab_path,
+        unpacked,
+        "avatars",
+        "avatars/ui_char_avatar_0.ab",
+        "sha2",
+        parser_cls=FakeAvatarParse,
+    )
 
     assert (unpacked / "avatars" / "char_002_amiya.png").exists()
     # 半身像（非正方形，如 char_portrait 180x360）应被过滤
     assert not (unpacked / "avatars" / "char_4237_jcinta_2.png").exists()
     assert not (unpacked / "avatars" / "trap_451_xbflare.png").exists()
-    meta = json.loads((unpacked / "avatars" / "_meta" / "ui_char_avatar_0.json").read_text(encoding="utf8"))
+    meta = json.loads(
+        (unpacked / "avatars" / "_meta" / "ui_char_avatar_0.json").read_text(
+            encoding="utf8"
+        )
+    )
     assert meta["source"]["sha256"] == "sha2"
 
 
@@ -94,7 +114,9 @@ def test_run_unpack_avatars_prunes_non_char(tmp_path: Path):
     out_avatars.mkdir(parents=True)
     (out_avatars / "stale_icon.png").write_bytes(b"stale")
     (out_avatars / "char_002_amiya.png").write_bytes(b"existing")
-    Image.new("RGBA", (8, 16), (255, 0, 0, 255)).save(out_avatars / "char_stale_portrait.png")
+    Image.new("RGBA", (8, 16), (255, 0, 0, 255)).save(
+        out_avatars / "char_stale_portrait.png"
+    )
 
     stats = run_unpack(raw, unpacked, ["avatars"], parser_cls=FakeAvatarParse)
     assert stats["avatars"]["unpacked"] == 1
@@ -162,7 +184,7 @@ def test_run_unpack_progress_callback(tmp_path: Path):
     unpacked = tmp_path / "unpacked"
 
     calls: list[tuple[int, int, str]] = []
-    stats = run_unpack(
+    run_unpack(
         raw,
         unpacked,
         ["characters"],

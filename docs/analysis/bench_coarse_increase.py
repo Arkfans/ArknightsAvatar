@@ -1,4 +1,4 @@
-﻿"""Benchmark COARSE_INCREASE 1..5 on arknightsavatar-match --limit 50.
+"""Benchmark COARSE_INCREASE 1..5 on arknightsavatar-match --limit 50.
 
 Each value runs the match pipeline once (deterministic workload), records wall
 time, and counts template-match evaluations (sum of --detail offsets). Reports
@@ -38,7 +38,9 @@ def run_one_direct(coarse_increase: int, limit: int, out_dir: Path) -> dict:
     )
     elapsed = time.perf_counter() - start
     payload = report.as_dict()
-    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf8")
+    out_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf8"
+    )
     evaluations = sum(
         len(records)
         for char in payload["characters"].values()
@@ -73,6 +75,7 @@ def run_one(coarse_increase: int, limit: int, out_dir: Path) -> dict:
         ],
         capture_output=True,
         text=True,
+        check=False,  # 调用方检查 returncode
     )
     elapsed = time.perf_counter() - start
     if result.returncode != 0:
@@ -132,7 +135,9 @@ def main() -> int:
                 results.append(run_one(value, args.limit, args.out_dir))
     else:
         with ThreadPoolExecutor(max_workers=len(args.values)) as pool:
-            results = list(pool.map(lambda v: run_one(v, args.limit, args.out_dir), args.values))
+            results = list(
+                pool.map(lambda v: run_one(v, args.limit, args.out_dir), args.values)
+            )
 
     rows = []
     for row in results:
@@ -152,7 +157,10 @@ def main() -> int:
     summary = args.out_dir / "summary.json"
     summary.write_text(
         json.dumps(
-            {"command": f"uv run arknightsavatar-match --limit {args.limit}", "runs": rows},
+            {
+                "command": f"uv run arknightsavatar-match --limit {args.limit}",
+                "runs": rows,
+            },
             ensure_ascii=False,
             indent=2,
         ),

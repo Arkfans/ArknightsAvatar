@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import ClassVar
 
 from ..util import sha256_file
 from .base import FileInfo, Source
@@ -12,7 +13,7 @@ class ApkSource(Source):
 
     name = "apk"
 
-    CATEGORY_SUBPATHS = {
+    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = {
         "characters": ("avg", "characters"),
         "avatars": ("spritepack",),
     }

@@ -49,9 +49,9 @@ class SkipList:
             if not separator or not sprite.strip():
                 self._characters[_key(character)] = reason
             else:
-                self._sprites.setdefault(_key(character), {})[
-                    _sprite_key(sprite)
-                ] = reason
+                self._sprites.setdefault(_key(character), {})[_sprite_key(sprite)] = (
+                    reason
+                )
 
     @classmethod
     def load(cls, path: str | Path | None = None) -> SkipList:
@@ -115,7 +115,8 @@ class SkipList:
                 new_entry["diff"] = [
                     diff
                     for diff in diffs
-                    if isinstance(diff, str) and not self.is_sprite_skipped(character, diff)
+                    if isinstance(diff, str)
+                    and not self.is_sprite_skipped(character, diff)
                 ]
             new_bases[base_name] = new_entry
 

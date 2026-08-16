@@ -43,7 +43,9 @@ def test_load_game_version_falls_back_to_unknown(tmp_path: Path):
     assert reporting.load_game_version(tmp_path / "missing.json") == "unknown"
 
 
-def test_load_game_version_env_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_load_game_version_env_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     monkeypatch.setenv("ARKNIGHTSAVATAR_GAME_VERSION", "env-version")
     assert reporting.load_game_version(tmp_path / "missing.json") == "env-version"
 
@@ -89,9 +91,16 @@ def test_write_report_stdout_dash(capsys: pytest.CaptureFixture):
 
 def test_write_report_idempotent_keeps_old_timestamp_and_mtime(tmp_path: Path):
     out = tmp_path / "manifest.json"
-    assert reporting.write_report({"files": {"a": 1}, "generated_at": "t1"}, out, idempotent=True)
+    assert reporting.write_report(
+        {"files": {"a": 1}, "generated_at": "t1"}, out, idempotent=True
+    )
     mtime_ns = out.stat().st_mtime_ns
-    assert reporting.write_report({"files": {"a": 1}, "generated_at": "t2"}, out, idempotent=True) is False
+    assert (
+        reporting.write_report(
+            {"files": {"a": 1}, "generated_at": "t2"}, out, idempotent=True
+        )
+        is False
+    )
     payload = json.loads(out.read_text(encoding="utf8"))
     assert payload["generated_at"] == "t1"  # 保留旧时间戳
     assert out.stat().st_mtime_ns == mtime_ns  # 文件未被重写

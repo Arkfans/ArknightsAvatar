@@ -13,10 +13,10 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     tqdm = None  # type: ignore[assignment]
 
+from .. import paths
 from ..config import CATEGORIES, load_config
 from ..manifest import FailureLog, Manifest
 from ..util import sha256_file
-from .. import paths
 from .ab import AbParse
 
 
@@ -57,7 +57,7 @@ def unpack_one(
                 sprite = parsed.sprites[sprite_name]
                 try:
                     image = sprite.image
-                except Exception:  # noqa: BLE001 - skip sprites without extractable image
+                except Exception:  # noqa: BLE001, S112 - skip sprites without extractable image
                     continue
             if image.width != image.height:
                 # 过滤半身像：char_portrait（180x360）、skin portrait（292x552）等
@@ -72,7 +72,11 @@ def unpack_one(
             image.save(item_dir / f"{name}.png")
         _write_meta(item_dir / "meta.json", meta)
 
-    return {"textures": len(merged), "sprites": len(parsed.sprites), "face_groups": len(parsed.face_groups)}
+    return {
+        "textures": len(merged),
+        "sprites": len(parsed.sprites),
+        "face_groups": len(parsed.face_groups),
+    }
 
 
 def _meta_exists(unpacked_dir: Path, category: str, ab_path: Path) -> bool:
@@ -97,7 +101,9 @@ def _prune_avatars(unpacked_dir: Path) -> int:
         return 0
     removed = 0
     for png in avatars_dir.glob("*.png"):
-        if png.is_file() and (not png.name.lower().startswith("char_") or not _is_square_png(png)):
+        if png.is_file() and (
+            not png.name.lower().startswith("char_") or not _is_square_png(png)
+        ):
             png.unlink()
             removed += 1
     return removed
@@ -125,7 +131,10 @@ def run_unpack(
         with progress_path.open("rt", encoding="utf8") as f:
             done = json.load(f)
     failures = FailureLog.load(unpacked_dir / "_failed.json")
-    stats = {category: {"listed": 0, "unpacked": 0, "skipped": 0, "failed": 0} for category in categories}
+    stats = {
+        category: {"listed": 0, "unpacked": 0, "skipped": 0, "failed": 0}
+        for category in categories
+    }
     dirty = 0
 
     # 先枚举全部 AB 文件以得到总进度；缺失的分类目录不计入总数
@@ -148,11 +157,22 @@ def run_unpack(
             source_sha = record.sha256 if record else sha256_file(ab_path)
             if progress is not None:
                 progress(index, total, rel)
-            if not force and done.get(rel) == source_sha and _meta_exists(unpacked_dir, category, ab_path):
+            if (
+                not force
+                and done.get(rel) == source_sha
+                and _meta_exists(unpacked_dir, category, ab_path)
+            ):
                 stats[category]["skipped"] += 1
                 continue
             try:
-                unpack_one(ab_path, unpacked_dir, category, rel, source_sha, parser_cls=parser_cls)
+                unpack_one(
+                    ab_path,
+                    unpacked_dir,
+                    category,
+                    rel,
+                    source_sha,
+                    parser_cls=parser_cls,
+                )
                 done[rel] = source_sha
                 stats[category]["unpacked"] += 1
             except Exception as error:  # noqa: BLE001 - record and continue
@@ -177,7 +197,9 @@ def run_unpack(
     return stats
 
 
-def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
+def _make_progress(
+    total: int,
+) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
     """Return (progress, close); prefer a tqdm bar, fall back to per-file text."""
     if tqdm is not None:
         bar = tqdm(total=total, unit="ab", desc="unpack ab", dynamic_ncols=True)
@@ -195,12 +217,21 @@ def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callabl
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="arknightsavatar-unpack", description="Unpack AB resources into PNG + metadata.")
+    parser = argparse.ArgumentParser(
+        prog="arknightsavatar-unpack",
+        description="Unpack AB resources into PNG + metadata.",
+    )
     parser.add_argument("--config", help="Path to config file")
-    parser.add_argument("--raw-dir", default=paths.RAW_DIR, help="Input AB cache directory")
-    parser.add_argument("--unpacked-dir", default=paths.UNPACKED_DIR, help="Output directory")
+    parser.add_argument(
+        "--raw-dir", default=paths.RAW_DIR, help="Input AB cache directory"
+    )
+    parser.add_argument(
+        "--unpacked-dir", default=paths.UNPACKED_DIR, help="Output directory"
+    )
     parser.add_argument("--category", choices=[*CATEGORIES, "all"], default="all")
-    parser.add_argument("--force", action="store_true", help="Re-unpack even if manifest says done")
+    parser.add_argument(
+        "--force", action="store_true", help="Re-unpack even if manifest says done"
+    )
     return parser
 
 
@@ -218,7 +249,13 @@ def main(argv: list[str] | None = None) -> int:
                 total += len(sorted(category_dir.glob("*.ab")))
         progress, close_progress = _make_progress(total)
         try:
-            stats = run_unpack(raw_dir, Path(args.unpacked_dir), categories, force=args.force, progress=progress)
+            stats = run_unpack(
+                raw_dir,
+                Path(args.unpacked_dir),
+                categories,
+                force=args.force,
+                progress=progress,
+            )
         finally:
             close_progress()
     except Exception as error:  # noqa: BLE001 - CLI boundary

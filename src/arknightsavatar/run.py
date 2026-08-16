@@ -115,7 +115,14 @@ def build_parser() -> argparse.ArgumentParser:
 def step_argv(name: str, args: argparse.Namespace) -> list[str]:
     """Compose the argv list handed to the tool ``name``'s ``main()``."""
     if name == "fetch":
-        argv = ["--source", *args.source, "--category", args.category, "--raw-dir", args.raw_dir]
+        argv = [
+            "--source",
+            *args.source,
+            "--category",
+            args.category,
+            "--raw-dir",
+            args.raw_dir,
+        ]
         if args.config:
             argv += ["--config", args.config]
         if args.force:
@@ -261,9 +268,9 @@ def main(argv: list[str] | None = None) -> int:
         print("error: --from must not be after --until", file=sys.stderr)
         return 1
 
-    if "extract" in STEPS[STEPS.index(args.from_step) : STEPS.index(args.until_step) + 1] and not check_derive_model(
-        args.derive_model
-    ):
+    if "extract" in STEPS[
+        STEPS.index(args.from_step) : STEPS.index(args.until_step) + 1
+    ] and not check_derive_model(args.derive_model):
         return 1
 
     started = _now()
@@ -273,14 +280,17 @@ def main(argv: list[str] | None = None) -> int:
         "generated_at": _now(),
         "started_at": started,
         "steps": results,
-        "ok": len(results) == len(expected) and all(code == 0 for code in results.values()),
+        "ok": len(results) == len(expected)
+        and all(code == 0 for code in results.values()),
     }
     write_stats(args.stats_out, payload)
     print(f"pipeline stats written: {args.stats_out}")
 
     failed = [name for name, code in results.items() if code != 0]
     if failed:
-        print(f"error: pipeline failed at step(s): {', '.join(failed)}", file=sys.stderr)
+        print(
+            f"error: pipeline failed at step(s): {', '.join(failed)}", file=sys.stderr
+        )
         return 1
     print("pipeline complete")
     return 0

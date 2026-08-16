@@ -53,7 +53,11 @@ CATEGORIES: dict[str, dict] = {
         "remote": "stats",
         # run/produce/build-model 每次运行都会重写这些记录文件（内容必变），
         # 排除后 stats 指纹只在真实数据变化时更新，避免空提交。
-        "default_excludes": ("run_stats.json", "produce_stats.json", "build_model_stats.json"),
+        "default_excludes": (
+            "run_stats.json",
+            "produce_stats.json",
+            "build_model_stats.json",
+        ),
     },
 }
 
@@ -152,7 +156,10 @@ def generate_manifest(
     info = CATEGORIES[name]
     root = Path(info["dir"])
     if not root.is_dir():
-        print(f"warning: category dir missing, manifest skipped: {info['dir']}", file=sys.stderr)
+        print(
+            f"warning: category dir missing, manifest skipped: {info['dir']}",
+            file=sys.stderr,
+        )
         return None
     old = load_manifest(info["manifest"])
     old_files = manifest_files(old) if old is not None else {}
@@ -166,10 +173,15 @@ def generate_manifest(
     }
     out = output if output is not None else info["manifest"]
     reporting.write_report(payload, out, game_version=game_version, idempotent=True)
-    game_version = game_version if game_version is not None else reporting.load_game_version()
+    game_version = (
+        game_version if game_version is not None else reporting.load_game_version()
+    )
     if out != "-":
         print(f"manifest written: {out} ({len(files)} files)")
-    return {"files": files, "header": {"game_version": game_version, "generated_at": generated_at}}
+    return {
+        "files": files,
+        "header": {"game_version": game_version, "generated_at": generated_at},
+    }
 
 
 def compare_manifests(old: dict[str, dict], new: dict[str, dict]) -> dict:
@@ -177,7 +189,9 @@ def compare_manifests(old: dict[str, dict], new: dict[str, dict]) -> dict:
     added = sorted(set(new) - set(old))
     removed = sorted(set(old) - set(new))
     modified = sorted(
-        key for key in set(old) & set(new) if old[key].get("sha256") != new[key].get("sha256")
+        key
+        for key in set(old) & set(new)
+        if old[key].get("sha256") != new[key].get("sha256")
     )
     unchanged = len(set(old) & set(new)) - len(modified)
     return {
@@ -205,12 +219,18 @@ def load_old_manifests(since: str, category_names: list[str]) -> dict[str, dict 
         for name in category_names:
             entry = payload["categories"].get(name)
             if not isinstance(entry, dict) or not entry.get("path"):
-                print(f"warning: no {name} manifest path in {since}, skipped", file=sys.stderr)
+                print(
+                    f"warning: no {name} manifest path in {since}, skipped",
+                    file=sys.stderr,
+                )
                 continue
             old_path = since_path.parent / entry["path"]
             manifest = load_manifest(old_path)
             if manifest is None:
-                print(f"warning: old {name} manifest not found: {old_path}", file=sys.stderr)
+                print(
+                    f"warning: old {name} manifest not found: {old_path}",
+                    file=sys.stderr,
+                )
                 continue
             old[name] = manifest
         return old
@@ -255,7 +275,9 @@ def write_changes(
         },
         "categories": diffs,
     }
-    reporting.write_report(payload, changes_out, game_version=game_version, idempotent=True)
+    reporting.write_report(
+        payload, changes_out, game_version=game_version, idempotent=True
+    )
     print(f"changes written: {changes_out}")
     return diffs
 
@@ -302,7 +324,9 @@ def build_characters_csv(
     extract = load_manifest(extract_report) or {}
     class_payload = load_manifest(classified) or {}
     extract_chars = extract.get("characters") if isinstance(extract, dict) else None
-    class_chars = class_payload.get("characters") if isinstance(class_payload, dict) else None
+    class_chars = (
+        class_payload.get("characters") if isinstance(class_payload, dict) else None
+    )
     extract_chars = extract_chars if isinstance(extract_chars, dict) else {}
     class_chars = class_chars if isinstance(class_chars, dict) else {}
     names = sorted(set(extract_chars) | set(class_chars))
@@ -319,7 +343,9 @@ def build_characters_csv(
         diff_counts = _status_counts(diffs)
         base_method = _method_counts(bases)
         diff_special = sum(1 for item in diffs.values() if item.get("special"))
-        has_avatar = any(item.get("avatar_file") for item in {**bases, **diffs}.values())
+        has_avatar = any(
+            item.get("avatar_file") for item in {**bases, **diffs}.values()
+        )
         row = [
             name,
             len(bases),
@@ -466,7 +492,10 @@ def main(argv: list[str] | None = None) -> int:
         else:
             names = [args.category]
         if args.output is not None and len(names) != 1:
-            print("error: --output is only valid with a single --category", file=sys.stderr)
+            print(
+                "error: --output is only valid with a single --category",
+                file=sys.stderr,
+            )
             return 1
 
         game_version = reporting.load_game_version()
@@ -505,7 +534,11 @@ def main(argv: list[str] | None = None) -> int:
                             "game_version": game_version,
                             "from_version": _from_version(args.since),
                             "counts": {
-                                name: {k: v for k, v in diff["counts"].items() if k != "unchanged"}
+                                name: {
+                                    k: v
+                                    for k, v in diff["counts"].items()
+                                    if k != "unchanged"
+                                }
                                 for name, diff in diffs.items()
                             },
                         },
@@ -523,7 +556,10 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.version_out is not None:
             write_version_json(
-                generated, game_version, args.version_out, no_categories=args.no_categories
+                generated,
+                game_version,
+                args.version_out,
+                no_categories=args.no_categories,
             )
     except (OSError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)

@@ -1,4 +1,4 @@
-﻿from PIL import Image
+from PIL import Image
 
 from arknightsavatar.unpack.ab import extract_face_groups, merge_rgba
 
@@ -44,4 +44,6 @@ def test_extract_face_groups_from_typetree():
 
 def test_extract_face_groups_ignores_unpaired():
     tree = {"a": {"facePos": {"x": 1, "y": 2}}, "b": {"faceSize": {"x": 3, "y": 4}}}
-    assert extract_face_groups(tree) == [{"facePos": {"x": 1, "y": 2}, "faceSize": {"x": 3, "y": 4}}]
+    assert extract_face_groups(tree) == [
+        {"facePos": {"x": 1, "y": 2}, "faceSize": {"x": 3, "y": 4}}
+    ]

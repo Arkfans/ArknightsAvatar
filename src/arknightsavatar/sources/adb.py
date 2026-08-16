@@ -12,11 +12,14 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import ClassVar
 
-from .base import FileInfo, Source
-from .device import connect_device, load_rsa_keys
 from arknightsavatar.device_caps import detect_device_caps
 
-_LS_LINE = re.compile(r"^[bcdlps-][rwxsStT-]{9}\s+\S+\s+\S+\s+\S+\s+(\d+)\s+(?:\S+\s+){2,3}(.+)$")
+from .base import FileInfo, Source
+from .device import connect_device, load_rsa_keys
+
+_LS_LINE = re.compile(
+    r"^[bcdlps-][rwxsStT-]{9}\s+\S+\s+\S+\s+\S+\s+(\d+)\s+(?:\S+\s+){2,3}(.+)$"
+)
 _UNIT = 1024.0
 _DEVICE_TMP = "/data/local/tmp"
 _LIST_CHUNK = 100  # file names per printf invocation (keeps shell commands short)
@@ -25,10 +28,10 @@ _EXIT_RE = re.compile(r"EXIT:(\d+)\s*$")
 
 def _fmt_bytes(value: float) -> str:
     """Format a byte count or byte rate compactly."""
-    if value >= _UNIT ** 3:
-        return f"{value / _UNIT ** 3:.2f} GiB"
-    if value >= _UNIT ** 2:
-        return f"{value / _UNIT ** 2:.1f} MiB"
+    if value >= _UNIT**3:
+        return f"{value / _UNIT**3:.2f} GiB"
+    if value >= _UNIT**2:
+        return f"{value / _UNIT**2:.1f} MiB"
     if value >= _UNIT:
         return f"{value / _UNIT:.1f} KiB"
     return f"{value:.0f} B"
@@ -37,7 +40,9 @@ def _fmt_bytes(value: float) -> str:
 def write_device_listing(device, listing: str, names: Sequence[str]) -> None:
     """Write names to a device list file, chunked to keep commands short."""
     for start in range(0, len(names), _LIST_CHUNK):
-        chunk = " ".join(shlex.quote(name) for name in names[start : start + _LIST_CHUNK])
+        chunk = " ".join(
+            shlex.quote(name) for name in names[start : start + _LIST_CHUNK]
+        )
         op = ">" if start == 0 else ">>"
         device.shell(
             f"printf '%s\\n' {chunk} {op} {shlex.quote(listing)}",
@@ -58,7 +63,9 @@ def rm_device_files(device, *paths: str, recursive: bool = False) -> None:
         pass
 
 
-def tar_on_device(device, pack: str, directory: str, listing: str, *, compress: bool = False) -> None:
+def tar_on_device(
+    device, pack: str, directory: str, listing: str, *, compress: bool = False
+) -> None:
     """Create a device-side archive; raise if tar failed."""
     flags = "czf" if compress else "cf"
     command = (
@@ -85,7 +92,9 @@ def extract_pack(
     failures: list[tuple[FileInfo, Exception]] = []
     mode = "r:gz" if compress else "r:"
     with tarfile.open(local_pack, mode) as archive:
-        members = {member.name: member for member in archive.getmembers() if member.isfile()}
+        members = {
+            member.name: member for member in archive.getmembers() if member.isfile()
+        }
         for info, dest in items:
             name = info.rel.split("/", 1)[1]
             try:
@@ -265,11 +274,15 @@ class AdbSource(Source):
         dest.parent.mkdir(parents=True, exist_ok=True)
         progress = _PullProgress(rel, enabled=self._show_progress, position=position)
         try:
-            self._device.pull(self.remote_path(rel), str(dest), progress_callback=progress)
+            self._device.pull(
+                self.remote_path(rel), str(dest), progress_callback=progress
+            )
         finally:
             progress.finish()
 
-    def fetch_many(self, items: Sequence[tuple[FileInfo, Path]]) -> list[tuple[FileInfo, Exception]]:
+    def fetch_many(
+        self, items: Sequence[tuple[FileInfo, Path]]
+    ) -> list[tuple[FileInfo, Exception]]:
         """Fetch several files at once by packing them on the device.
 
         Each category becomes one tar archive on the device; the archive is
@@ -292,7 +305,9 @@ class AdbSource(Source):
                 failed_rels = {info.rel for info, _ in pack_failures}
                 if not failed_rels:
                     continue
-                fallback = [(info, dest) for info, dest in cat_items if info.rel in failed_rels]
+                fallback = [
+                    (info, dest) for info, dest in cat_items if info.rel in failed_rels
+                ]
                 self._fetch_one_by_one(fallback, failures)
                 continue
 
@@ -312,7 +327,9 @@ class AdbSource(Source):
         total = len(items)
         for index, (info, dest) in enumerate(items):
             try:
-                self.fetch_to(info.rel, dest, position=(index, total) if total > 1 else None)
+                self.fetch_to(
+                    info.rel, dest, position=(index, total) if total > 1 else None
+                )
             except Exception as error:  # noqa: BLE001 - report and continue
                 failures.append((info, error))
 
@@ -331,15 +348,21 @@ class AdbSource(Source):
         unique = f"{category}_{os.getpid()}"
         pack = f"{_DEVICE_TMP}/arknights_ab_{unique}.tar"
         listing = f"{_DEVICE_TMP}/arknights_ab_{unique}.list"
-        local_fd, local_pack = tempfile.mkstemp(suffix=".tar", prefix=f"arknights_ab_{category}_")
+        local_fd, local_pack = tempfile.mkstemp(
+            suffix=".tar", prefix=f"arknights_ab_{category}_"
+        )
         os.close(local_fd)
         local_pack = Path(local_pack)
         try:
             self._write_device_listing(listing, names)
             self._tar_on_device(pack, directory, listing)
-            progress = _PullProgress(f"{category} ({len(items)} files)", enabled=self._show_progress)
+            progress = _PullProgress(
+                f"{category} ({len(items)} files)", enabled=self._show_progress
+            )
             try:
-                self._device.pull(pack, str(local_pack), progress_callback=progress, read_timeout_s=60)
+                self._device.pull(
+                    pack, str(local_pack), progress_callback=progress, read_timeout_s=60
+                )
             finally:
                 progress.finish()
             return self._extract_pack(local_pack, items)
@@ -354,7 +377,9 @@ class AdbSource(Source):
         return write_device_listing(self._device, listing, names)
 
     def _tar_on_device(self, pack: str, directory: str, listing: str) -> None:
-        return tar_on_device(self._device, pack, directory, listing, compress=self._compress)
+        return tar_on_device(
+            self._device, pack, directory, listing, compress=self._compress
+        )
 
     def _extract_pack(
         self,

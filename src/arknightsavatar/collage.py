@@ -124,7 +124,9 @@ def load_skipped(extract_report_path: Path) -> dict[str, set[str]]:
     return skipped
 
 
-def load_tiles(char_dir: Path, diff_names: Sequence[str]) -> list[tuple[str, Image.Image | None]]:
+def load_tiles(
+    char_dir: Path, diff_names: Sequence[str]
+) -> list[tuple[str, Image.Image | None]]:
     """Load each diff avatar; unreadable/missing files become ``None`` placeholders."""
     tiles: list[tuple[str, Image.Image | None]] = []
     for diff_name in diff_names:
@@ -218,7 +220,9 @@ def process_character(
         return CharacterCollage(name=name, skipped="no_diff")
     char_dir = export_dir / name
     if not char_dir.is_dir():
-        return CharacterCollage(name=name, diff_count=len(diff_names), skipped="no_export")
+        return CharacterCollage(
+            name=name, diff_count=len(diff_names), skipped="no_export"
+        )
     skipped = skipped or set()
     loaded = load_tiles(char_dir, diff_names)
 
@@ -281,7 +285,9 @@ def process_characters(
     classified = skip.filter_classified(classified)
     characters = classified.get("characters")
     if not isinstance(characters, dict):
-        raise ValueError("invalid classified report: missing 'characters'")
+        raise ValueError(  # noqa: TRY004 - 保持既有 API 约定的 ValueError 语义
+            "invalid classified report: missing 'characters'"
+        )
     names = sorted(characters)
     if character is not None:
         names = [character] if character in characters else []
@@ -401,7 +407,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: classified report not found: {classified_path}", file=sys.stderr)
         return 1
     classified = _read_json(classified_path)
-    if not isinstance(classified, dict) or not isinstance(classified.get("characters"), dict):
+    if not isinstance(classified, dict) or not isinstance(
+        classified.get("characters"), dict
+    ):
         print(f"error: invalid classified report: {classified_path}", file=sys.stderr)
         return 1
     if args.character is not None and args.character not in classified["characters"]:
@@ -417,7 +425,9 @@ def main(argv: list[str] | None = None) -> int:
     if extract_report_path.is_file():
         skipped = load_skipped(extract_report_path)
     elif args.extract_report != DEFAULT_EXTRACT_REPORT:
-        print(f"error: extract report not found: {extract_report_path}", file=sys.stderr)
+        print(
+            f"error: extract report not found: {extract_report_path}", file=sys.stderr
+        )
         return 1
 
     font = None

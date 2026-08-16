@@ -51,7 +51,14 @@ def _args(**overrides):
 
 def test_step_argv_fetch():
     args = _args(source="adb", category="all", config=None, force=False)
-    assert run.step_argv("fetch", args) == ["--source", "adb", "--category", "all", "--raw-dir", "raw"]
+    assert run.step_argv("fetch", args) == [
+        "--source",
+        "adb",
+        "--category",
+        "all",
+        "--raw-dir",
+        "raw",
+    ]
 
 
 def test_step_argv_fetch_default_source_is_both():
@@ -63,8 +70,18 @@ def test_step_argv_fetch_default_source_is_both():
 def test_step_argv_fetch_with_config_and_force():
     args = _args(config="cfg.toml", force=True)
     argv = run.step_argv("fetch", args)
-    assert argv == ["--source", "adb", "apk", "--category", "all", "--raw-dir", "raw",
-                    "--config", "cfg.toml", "--force"]
+    assert argv == [
+        "--source",
+        "adb",
+        "apk",
+        "--category",
+        "all",
+        "--raw-dir",
+        "raw",
+        "--config",
+        "cfg.toml",
+        "--force",
+    ]
 
 
 def test_step_argv_extract():
@@ -78,18 +95,29 @@ def test_step_argv_extract():
 def test_step_argv_npc_json():
     args = _args()
     argv = run.step_argv("npc-json", args)
-    assert argv == ["--export-dir", "export", "-o", "arknights_npc.json",
-                    "--classified", "recognition/characters_classified.json"]
+    assert argv == [
+        "--export-dir",
+        "export",
+        "-o",
+        "arknights_npc.json",
+        "--classified",
+        "recognition/characters_classified.json",
+    ]
 
 
 def test_step_argv_match():
     args = _args()
     assert run.step_argv("match", args) == [
-        "--classified", "recognition/characters_classified.json",
-        "--characters-dir", "unpacked/characters",
-        "--avatars-dir", "unpacked/avatars",
-        "--output", "recognition/avatar_match.json",
-        "--limit", "0",
+        "--classified",
+        "recognition/characters_classified.json",
+        "--characters-dir",
+        "unpacked/characters",
+        "--avatars-dir",
+        "unpacked/avatars",
+        "--output",
+        "recognition/avatar_match.json",
+        "--limit",
+        "0",
     ]
 
 
@@ -126,8 +154,14 @@ def test_run_steps_from_until(monkeypatch):
 
 
 def test_main_requires_derive_model_for_extract(tmp_path, monkeypatch, capsys):
-    args = ["--from", "extract", "--derive-model", str(tmp_path / "missing.json"),
-            "--stats-out", str(tmp_path / "stats.json")]
+    args = [
+        "--from",
+        "extract",
+        "--derive-model",
+        str(tmp_path / "missing.json"),
+        "--stats-out",
+        str(tmp_path / "stats.json"),
+    ]
     assert run.main(args) == 1
     assert "derive model not found" in capsys.readouterr().err
 
@@ -139,11 +173,16 @@ def test_main_writes_stats_and_fails_on_step(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(run, "run_step", fake_run_step)
     (tmp_path / "model.json").write_text("{}", encoding="utf8")
     stats_out = tmp_path / "stats.json"
-    code = run.main([
-        "--from", "classify",
-        "--derive-model", str(tmp_path / "model.json"),
-        "--stats-out", str(stats_out),
-    ])
+    code = run.main(
+        [
+            "--from",
+            "classify",
+            "--derive-model",
+            str(tmp_path / "model.json"),
+            "--stats-out",
+            str(stats_out),
+        ]
+    )
     assert code == 1
     payload = json.loads(stats_out.read_text(encoding="utf8"))
     assert payload["steps"]["npc-json"] == 1
@@ -154,12 +193,18 @@ def test_main_success_writes_stats(tmp_path, monkeypatch):
     monkeypatch.setattr(run, "run_step", lambda name, argv, modules=None: 0)
     (tmp_path / "model.json").write_text("{}", encoding="utf8")
     stats_out = tmp_path / "stats.json"
-    code = run.main([
-        "--from", "classify",
-        "--until", "classify",
-        "--derive-model", str(tmp_path / "model.json"),
-        "--stats-out", str(stats_out),
-    ])
+    code = run.main(
+        [
+            "--from",
+            "classify",
+            "--until",
+            "classify",
+            "--derive-model",
+            str(tmp_path / "model.json"),
+            "--stats-out",
+            str(stats_out),
+        ]
+    )
     assert code == 0
     payload = json.loads(stats_out.read_text(encoding="utf8"))
     assert payload["steps"] == {"classify": 0}
@@ -167,8 +212,16 @@ def test_main_success_writes_stats(tmp_path, monkeypatch):
 
 
 def test_from_after_until_is_error(tmp_path, monkeypatch, capsys):
-    code = run.main(["--from", "npc-json", "--until", "fetch",
-                     "--stats-out", str(tmp_path / "stats.json")])
+    code = run.main(
+        [
+            "--from",
+            "npc-json",
+            "--until",
+            "fetch",
+            "--stats-out",
+            str(tmp_path / "stats.json"),
+        ]
+    )
     assert code == 1
     assert "--from must not be after --until" in capsys.readouterr().err
 

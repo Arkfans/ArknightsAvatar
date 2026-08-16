@@ -22,7 +22,7 @@ import argparse
 import csv
 import json
 import random
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -59,7 +59,7 @@ def load_font(size: int = 30):
         if cand.exists():
             try:
                 return ImageFont.truetype(str(cand), size)
-            except Exception:
+            except Exception:  # noqa: BLE001, S110 - 字体缺失时回退默认字体
                 pass
     return ImageFont.load_default()
 
@@ -91,8 +91,11 @@ def draw_dashed_rect(draw, box, color, width, dash=14, gap=10, phase=0):
             if seg_end > t:
                 dx = (bx - ax) / length if length else 0.0
                 dy = (by - ay) / length if length else 0.0
-                draw.line([ax + t * dx, ay + t * dy, ax + seg_end * dx, ay + seg_end * dy],
-                          fill=color, width=width)
+                draw.line(
+                    [ax + t * dx, ay + t * dy, ax + seg_end * dx, ay + seg_end * dy],
+                    fill=color,
+                    width=width,
+                )
             t += step
 
 
@@ -147,22 +150,27 @@ def build_rows(match: dict, d07: dict, d08: dict, n: int, seed: int) -> list[dic
         b = match["characters"][cname]["bases"][bname]
         r07 = d07_map[(cname, bname)]
         r08 = d08_map[(cname, bname)]
-        rows.append({
-            "character": cname,
-            "base": bname,
-            "image": r07["image"],
-            "image_size": r07["image_size"],
-            "avatar": r07["avatar"],
-            "match_threshold": r07["match_threshold"],
-            "match_box": b["box"],
-            "face_pos": [r07["face_pos"]["x"], r07["face_pos"]["y"],
-                         r07["face_pos"]["x"] + r07["face_pos"]["w"],
-                         r07["face_pos"]["y"] + r07["face_pos"]["h"]],
-            "box07": r07["derived_box"],
-            "box08": r08["derived_box"],
-            "iou07": r07["iou"],
-            "iou08": r08["iou"],
-        })
+        rows.append(
+            {
+                "character": cname,
+                "base": bname,
+                "image": r07["image"],
+                "image_size": r07["image_size"],
+                "avatar": r07["avatar"],
+                "match_threshold": r07["match_threshold"],
+                "match_box": b["box"],
+                "face_pos": [
+                    r07["face_pos"]["x"],
+                    r07["face_pos"]["y"],
+                    r07["face_pos"]["x"] + r07["face_pos"]["w"],
+                    r07["face_pos"]["y"] + r07["face_pos"]["h"],
+                ],
+                "box07": r07["derived_box"],
+                "box08": r08["derived_box"],
+                "iou07": r07["iou"],
+                "iou08": r08["iou"],
+            }
+        )
     return rows
 
 
@@ -179,7 +187,7 @@ def write_outputs(rows: list[dict], out_dir: Path, n: int, seed: int) -> None:
         draw_image(row, vis_dir / name, font)
 
     sample = {
-        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "source": str(MATCH_JSON),
         "derive_07": str(D07_JSON),
         "derive_08": str(D08_JSON),
@@ -201,8 +209,14 @@ def write_outputs(rows: list[dict], out_dir: Path, n: int, seed: int) -> None:
     stats = {
         "n": len(rows),
         "seed": seed,
-        "iou07": {"mean": round(sum(i07) / len(i07), 4), "median": round(sorted(i07)[len(i07) // 2], 4)},
-        "iou08": {"mean": round(sum(i08) / len(i08), 4), "median": round(sorted(i08)[len(i08) // 2], 4)},
+        "iou07": {
+            "mean": round(sum(i07) / len(i07), 4),
+            "median": round(sorted(i07)[len(i07) // 2], 4),
+        },
+        "iou08": {
+            "mean": round(sum(i08) / len(i08), 4),
+            "median": round(sorted(i08)[len(i08) // 2], 4),
+        },
     }
     (out_dir / "stats.json").write_text(
         json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -213,12 +227,27 @@ def write_outputs(rows: list[dict], out_dir: Path, n: int, seed: int) -> None:
 
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--match", default=str(MATCH_JSON), help="_avatar_match.json 路径")
-    parser.add_argument("--d07", default=str(D07_JSON), help="avatar_derive(07) derive_coords.json")
-    parser.add_argument("--d08", default=str(D08_JSON), help="avatar_derive_08 derive_coords.json")
-    parser.add_argument("--out-dir", default=str(DEFAULT_OUT), help="输出目录（默认脚本所在目录）")
-    parser.add_argument("--n", type=int, default=DEFAULT_N, help=f"抽样数量（默认 {DEFAULT_N}）")
-    parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help=f"随机种子（默认 {DEFAULT_SEED}）")
+    parser.add_argument(
+        "--match", default=str(MATCH_JSON), help="_avatar_match.json 路径"
+    )
+    parser.add_argument(
+        "--d07", default=str(D07_JSON), help="avatar_derive(07) derive_coords.json"
+    )
+    parser.add_argument(
+        "--d08", default=str(D08_JSON), help="avatar_derive_08 derive_coords.json"
+    )
+    parser.add_argument(
+        "--out-dir", default=str(DEFAULT_OUT), help="输出目录（默认脚本所在目录）"
+    )
+    parser.add_argument(
+        "--n", type=int, default=DEFAULT_N, help=f"抽样数量（默认 {DEFAULT_N}）"
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=DEFAULT_SEED,
+        help=f"随机种子（默认 {DEFAULT_SEED}）",
+    )
     args = parser.parse_args(argv)
 
     out_dir = Path(args.out_dir).resolve()

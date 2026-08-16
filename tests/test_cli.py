@@ -1,5 +1,4 @@
-from arknightsavatar import cli
-from arknightsavatar import __version__
+from arknightsavatar import __version__, cli
 
 
 def test_help_exits_zero(capsys):

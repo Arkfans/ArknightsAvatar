@@ -39,7 +39,9 @@ class FakeSource(Source):
 
 
 def test_multi_source_merges_and_first_source_wins():
-    adb = FakeSource("adb", {"characters": {"a.ab": 10, "b.ab": 20}, "avatars": {"dup.ab": 30}})
+    adb = FakeSource(
+        "adb", {"characters": {"a.ab": 10, "b.ab": 20}, "avatars": {"dup.ab": 30}}
+    )
     apk = FakeSource("apk", {"characters": {"c.ab": 40}, "avatars": {"dup.ab": 999}})
     multi = MultiSource([adb, apk])
 

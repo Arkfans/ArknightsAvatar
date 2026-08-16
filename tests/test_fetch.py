@@ -35,7 +35,9 @@ def test_fetch_apk_end_to_end(tmp_path: Path):
     assert "characters/empty.ab" in failures.failures
     manifest = Manifest.load(raw / "manifest.json", game_version="v1")
     assert manifest.game_version == "v1"
-    assert manifest.get("characters/a.ab").sha256 == sha256_file(tmp_path / "apk" / "assets" / "AB" / "Android" / "avg" / "characters" / "a.ab")
+    assert manifest.get("characters/a.ab").sha256 == sha256_file(
+        tmp_path / "apk" / "assets" / "AB" / "Android" / "avg" / "characters" / "a.ab"
+    )
     assert manifest.get("characters/empty.ab") is None
 
 
@@ -54,7 +56,9 @@ def test_fetch_replaces_changed_file(tmp_path: Path):
     raw = tmp_path / "raw"
     run_fetch(source, ["characters"], raw)
 
-    (tmp_path / "apk" / "assets" / "AB" / "Android" / "avg" / "characters" / "a.ab").write_bytes(b"b" * 100)
+    (
+        tmp_path / "apk" / "assets" / "AB" / "Android" / "avg" / "characters" / "a.ab"
+    ).write_bytes(b"b" * 100)
     stats = run_fetch(source, ["characters"], raw)
     assert stats["characters"]["fetched"] == 1
     assert stats["characters"]["skipped"] == 0
@@ -139,7 +143,9 @@ def test_make_sources_single_name_returns_plain_source(monkeypatch, tmp_path: Pa
     monkeypatch.setattr(fetch, "ApkAdbSource", lambda **kwargs: object())
     monkeypatch.setattr(fetch, "AdbSource", lambda **kwargs: object())
     config = Config(
-        adb=AdbConfig(location="/storage/emulated/0/Android/data/com.hypergryph.arknights/files/Bundles"),
+        adb=AdbConfig(
+            location="/storage/emulated/0/Android/data/com.hypergryph.arknights/files/Bundles"
+        ),
         apk=ApkConfig(dir=tmp_path),
     )
     assert not isinstance(fetch.make_sources(["local-apk"], config), MultiSource)

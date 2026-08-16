@@ -20,7 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from arknightsavatar import paths, reporting
@@ -37,7 +37,7 @@ FEATURES = ["fx", "fy", "fw", "fh", "hx", "hy", "hw", "hh"]
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def load_valid_rows(source: Path, min_conf: float = DEFAULT_MIN_CONF):
@@ -128,7 +128,9 @@ def norm_box(box, size):
     ]
 
 
-def build_outputs(report, rows, coef, out_dir: Path, min_conf: float = DEFAULT_MIN_CONF):
+def build_outputs(
+    report, rows, coef, out_dir: Path, min_conf: float = DEFAULT_MIN_CONF
+):
     X = feature_matrix(rows)
     centers, boxes = predict_boxes(coef, X)
     ious = [iou(b["box"], boxes[i]) for i, (_, _, b) in enumerate(rows)]
@@ -137,7 +139,7 @@ def build_outputs(report, rows, coef, out_dir: Path, min_conf: float = DEFAULT_M
     for i, (cname, bname, b) in enumerate(rows):
         match_box = b["box"]
         db = [round(v, 2) for v in boxes[i]]
-        db_int = [int(round(v)) for v in boxes[i]]
+        db_int = [round(v) for v in boxes[i]]
         cx, cy, s = (
             round(centers[i, 0], 2),
             round(centers[i, 1], 2),
@@ -215,7 +217,7 @@ def write_compare_images(rows, centers, boxes, out_dir: Path, n: int = 24):
         cname, bname, b = rows[i]
         try:
             img = Image.open(b["image"]).convert("RGB")
-        except Exception:  # noqa: BLE001 - 跳过无法读取的图片
+        except Exception:  # noqa: BLE001, S112 - 跳过无法读取的图片
             continue
         dr = ImageDraw.Draw(img)
         dr.rectangle(b["box"], outline=(0, 200, 0), width=4)
@@ -255,7 +257,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_MIN_CONF,
         help=f"face/head confidence lower bound, strictly greater (default: {DEFAULT_MIN_CONF})",
     )
-    parser.add_argument("--no-compare", action="store_true", help="skip sampled compare images")
+    parser.add_argument(
+        "--no-compare", action="store_true", help="skip sampled compare images"
+    )
     return parser
 
 
@@ -302,7 +306,7 @@ def main(argv: list[str] | None = None) -> int:
             "[cx, cy, s] = coef @ [fx, fy, fw, fh, hx, hy, hw, hh, 1]"
         ),
         "r2": dict(zip(["cx", "cy", "s"], r2)),
-        "coef": [list(map(lambda v: round(v, 6), row)) for row in coef],
+        "coef": [[round(v, 6) for v in row] for row in coef],
     }
     reporting.write_report(model, out_dir / "model.json")
 

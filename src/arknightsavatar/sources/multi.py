@@ -49,7 +49,9 @@ class MultiSource(Source):
         self._ensure_listed(rel)
         self._owner[rel].fetch_to(rel, dest)
 
-    def fetch_many(self, items: Sequence[tuple[FileInfo, Path]]) -> list[tuple[FileInfo, Exception]]:
+    def fetch_many(
+        self, items: Sequence[tuple[FileInfo, Path]]
+    ) -> list[tuple[FileInfo, Exception]]:
         """Group items by their owning source and delegate to each source.
 
         Each source keeps its own batch path (device tar packing for adb,

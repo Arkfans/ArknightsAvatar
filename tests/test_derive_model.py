@@ -4,7 +4,12 @@ from pathlib import Path
 from arknightsavatar import derive_model
 
 
-def _entry(index: int = 0, face=(100, 50, 40, 40), head=(80, 20, 80, 90), box=(60, 30, 260, 230)):
+def _entry(
+    index: int = 0,
+    face=(100, 50, 40, 40),
+    head=(80, 20, 80, 90),
+    box=(60, 30, 260, 230),
+):
     x1, y1, x2, y2 = box
     # 让各条目裁切框中心与边长都有差异，避免拟合时方差为 0
     shift = index * 6
@@ -66,7 +71,9 @@ def test_main_writes_model_and_stats(tmp_path, capsys):
     source = tmp_path / "report.json"
     _write_report(source, n=6)
     out_dir = tmp_path / "derive"
-    code = derive_model.main(["--source", str(source), "--out-dir", str(out_dir), "--no-compare"])
+    code = derive_model.main(
+        ["--source", str(source), "--out-dir", str(out_dir), "--no-compare"]
+    )
     assert code == 0
     model = json.loads((out_dir / "model.json").read_text(encoding="utf8"))
     assert model["fit_samples"] == 6
@@ -81,7 +88,9 @@ def test_main_writes_model_and_stats(tmp_path, capsys):
 
 
 def test_main_missing_source(tmp_path, capsys):
-    code = derive_model.main(["--source", str(tmp_path / "nope.json"), "--out-dir", str(tmp_path / "out")])
+    code = derive_model.main(
+        ["--source", str(tmp_path / "nope.json"), "--out-dir", str(tmp_path / "out")]
+    )
     assert code == 1
     assert "not found" in capsys.readouterr().err
 
@@ -92,7 +101,9 @@ def test_main_relative_source_resolved_against_cwd(tmp_path, monkeypatch, capsys
     _write_report(source, n=3)
     out_dir = tmp_path / "derive"
     monkeypatch.chdir(tmp_path)
-    code = derive_model.main(["--source", "report.json", "--out-dir", str(out_dir), "--no-compare"])
+    code = derive_model.main(
+        ["--source", "report.json", "--out-dir", str(out_dir), "--no-compare"]
+    )
     assert code == 0
     assert (out_dir / "model.json").is_file()
     assert (out_dir / "stats.json").is_file()
@@ -101,7 +112,9 @@ def test_main_relative_source_resolved_against_cwd(tmp_path, monkeypatch, capsys
 def test_main_no_valid_rows(tmp_path, capsys):
     source = tmp_path / "report.json"
     source.write_text(json.dumps({"characters": {}}), encoding="utf8")
-    code = derive_model.main(["--source", str(source), "--out-dir", str(tmp_path / "out")])
+    code = derive_model.main(
+        ["--source", str(source), "--out-dir", str(tmp_path / "out")]
+    )
     assert code == 1
     assert "没有有效条目" in capsys.readouterr().err
 
@@ -109,4 +122,9 @@ def test_main_no_valid_rows(tmp_path, capsys):
 def test_iou_and_norm_box():
     assert derive_model.iou([0, 0, 10, 10], [0, 0, 10, 10]) == 1.0
     assert derive_model.iou([0, 0, 10, 10], [20, 20, 30, 30]) == 0.0
-    assert derive_model.norm_box([100, 50, 300, 250], (1000, 500)) == [0.1, 0.1, 0.3, 0.5]
+    assert derive_model.norm_box([100, 50, 300, 250], (1000, 500)) == [
+        0.1,
+        0.1,
+        0.3,
+        0.5,
+    ]

@@ -83,10 +83,14 @@ class DeviceCaps:
         return self.tar_gzip
 
 
-def _shell(device, command: str, *, read_timeout_s: int = 30, timeout_s: int = 60) -> str:
+def _shell(
+    device, command: str, *, read_timeout_s: int = 30, timeout_s: int = 60
+) -> str:
     """Run a device command; a broken/hanging probe means "not supported"."""
     try:
-        output = device.shell(command, read_timeout_s=read_timeout_s, timeout_s=timeout_s)
+        output = device.shell(
+            command, read_timeout_s=read_timeout_s, timeout_s=timeout_s
+        )
     except Exception:  # noqa: BLE001 - defensive probing, never raise
         return ""
     return output or ""
@@ -168,7 +172,7 @@ def _probe_unzip(device, *, device_tmp: str) -> tuple[bool, bool]:
     finally:
         try:
             Path(local_path).unlink(missing_ok=True)
-        except OSError:  # noqa: S110 - best-effort local cleanup
+        except OSError:
             pass
         _best_effort_rm(device, remote)
 
@@ -205,7 +209,9 @@ def detect_device_caps(
         caps["tar_list"] = _probe_tar(device, gzip=False, device_tmp=device_tmp)
         caps["tar_gzip"] = _probe_tar(device, gzip=True, device_tmp=device_tmp)
     if probe_unzip and found["unzip"]:
-        caps["unzip_list"], caps["unzip_pipe"] = _probe_unzip(device, device_tmp=device_tmp)
+        caps["unzip_list"], caps["unzip_pipe"] = _probe_unzip(
+            device, device_tmp=device_tmp
+        )
     return DeviceCaps(**caps)
 
 
@@ -223,10 +229,14 @@ def render_caps_report(caps: DeviceCaps) -> str:
         [
             "device capability report:",
             f"  basic tools:  {basic}",
-            f"  tar:          present={flag(caps.tar)}  "
-            f"pack(tar -cf -C -T)={flag(caps.tar_list)}  gzip(tar -czf)={flag(caps.tar_gzip)}",
-            f"  unzip:        present={flag(caps.unzip)}  "
-            f"list(unzip -l)={flag(caps.unzip_list)}  pipe(unzip -p)={flag(caps.unzip_pipe)}",
+            (
+                f"  tar:          present={flag(caps.tar)}  "
+                f"pack(tar -cf -C -T)={flag(caps.tar_list)}  gzip(tar -czf)={flag(caps.tar_gzip)}"
+            ),
+            (
+                f"  unzip:        present={flag(caps.unzip)}  "
+                f"list(unzip -l)={flag(caps.unzip_list)}  pipe(unzip -p)={flag(caps.unzip_pipe)}"
+            ),
             f"  gzip:         present={flag(caps.gzip)}",
             f"  adb batch (device-side tar packing):  {status(caps.adb_batch_ok)}",
             f"  apk batch (device-side unzip + tar):  {status(caps.apk_batch_ok)}",

@@ -17,6 +17,7 @@ from .sources.device import (
 )
 from .util import sha256_file
 
+
 def version_stem(version: dict[str, str]) -> str:
     """Build the version token used in file names, e.g. versionName 2.7.61 -> 2761."""
     digits = re.sub(r"\D", "", version.get("versionName", ""))
@@ -126,7 +127,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"pulled: {dest}  ({size} bytes)")
             print(f"sha256: {digest}")
             print(f"existing sha256: {old_digest}")
-            print("result: identical to existing local APK" if same else "result: DIFFERENT from existing local APK")
+            print(
+                "result: identical to existing local APK"
+                if same
+                else "result: DIFFERENT from existing local APK"
+            )
             if not same:
                 os.replace(part, dest)
                 print(f"replaced {dest}")

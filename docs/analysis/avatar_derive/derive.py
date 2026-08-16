@@ -16,7 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -28,7 +28,7 @@ FEATURES = ["fx", "fy", "fw", "fh", "hx", "hy", "hw", "hh"]
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def load_valid_rows(source: Path, min_conf: float = DEFAULT_MIN_CONF):
@@ -52,8 +52,18 @@ def feature_matrix(rows):
     X = []
     for _, _, b in rows:
         f, h = b["face_pos"], b["head_pos"]
-        X.append([f["x"] + f["w"] / 2.0, f["y"] + f["h"] / 2.0, f["w"], f["h"],
-                  h["x"] + h["w"] / 2.0, h["y"] + h["h"] / 2.0, h["w"], h["h"]])
+        X.append(
+            [
+                f["x"] + f["w"] / 2.0,
+                f["y"] + f["h"] / 2.0,
+                f["w"],
+                f["h"],
+                h["x"] + h["w"] / 2.0,
+                h["y"] + h["h"] / 2.0,
+                h["w"],
+                h["h"],
+            ]
+        )
     return np.asarray(X, dtype=float)
 
 
@@ -81,8 +91,14 @@ def fit_model(X, Y):
 def predict_boxes(coef, X):
     A = np.column_stack([X, np.ones(len(X))])
     c = A @ coef  # [cx, cy, s]
-    return c, np.column_stack([c[:, 0] - c[:, 2] / 2, c[:, 1] - c[:, 2] / 2,
-                               c[:, 0] + c[:, 2] / 2, c[:, 1] + c[:, 2] / 2])
+    return c, np.column_stack(
+        [
+            c[:, 0] - c[:, 2] / 2,
+            c[:, 1] - c[:, 2] / 2,
+            c[:, 0] + c[:, 2] / 2,
+            c[:, 1] + c[:, 2] / 2,
+        ]
+    )
 
 
 def iou(a, b):
@@ -95,11 +111,17 @@ def iou(a, b):
 
 def norm_box(box, size):
     w, h = size
-    return [round(box[0] / w, 6), round(box[1] / h, 6),
-            round(box[2] / w, 6), round(box[3] / h, 6)]
+    return [
+        round(box[0] / w, 6),
+        round(box[1] / h, 6),
+        round(box[2] / w, 6),
+        round(box[3] / h, 6),
+    ]
 
 
-def build_outputs(report, rows, coef, out_dir: Path, min_conf: float = DEFAULT_MIN_CONF):
+def build_outputs(
+    report, rows, coef, out_dir: Path, min_conf: float = DEFAULT_MIN_CONF
+):
     X = feature_matrix(rows)
     centers, boxes = predict_boxes(coef, X)
     ious = [iou(b["box"], boxes[i]) for i, (_, _, b) in enumerate(rows)]
@@ -108,8 +130,12 @@ def build_outputs(report, rows, coef, out_dir: Path, min_conf: float = DEFAULT_M
     for i, (cname, bname, b) in enumerate(rows):
         match_box = b["box"]
         db = [round(v, 2) for v in boxes[i]]
-        db_int = [int(round(v)) for v in boxes[i]]
-        cx, cy, s = (round(centers[i, 0], 2), round(centers[i, 1], 2), round(centers[i, 2], 2))
+        db_int = [round(v) for v in boxes[i]]
+        cx, cy, s = (
+            round(centers[i, 0], 2),
+            round(centers[i, 1], 2),
+            round(centers[i, 2], 2),
+        )
         characters.setdefault(cname, {"bases": {}})
         characters[cname]["bases"][bname] = {
             "image": b["image"],
@@ -182,15 +208,18 @@ def write_compare_images(rows, centers, boxes, out_dir: Path, n: int = 24):
         cname, bname, b = rows[i]
         try:
             img = Image.open(b["image"]).convert("RGB")
-        except Exception:
+        except Exception:  # noqa: BLE001, S112 - 跳过无法读取的图片
             continue
         dr = ImageDraw.Draw(img)
         dr.rectangle(b["box"], outline=(0, 200, 0), width=4)
         db = [float(v) for v in boxes[i]]
         dr.rectangle(db, outline=(255, 0, 0), width=4)
         f = b["face_pos"]
-        dr.rectangle([f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"]],
-                     outline=(255, 255, 0), width=2)
+        dr.rectangle(
+            [f["x"], f["y"], f["x"] + f["w"], f["y"] + f["h"]],
+            outline=(255, 255, 0),
+            width=2,
+        )
         label = f"{cname}/{bname} iou={ious[i]:.3f}"
         dr.text((8, 8), label, fill=(255, 255, 255))
         safe = bname.replace("$", "_").replace("#", "_")
@@ -200,10 +229,18 @@ def write_compare_images(rows, centers, boxes, out_dir: Path, n: int = 24):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", default=DEFAULT_SOURCE, help="输入 _face_detect_matched.json")
-    parser.add_argument("--out-dir", default=DEFAULT_OUT_DIR, help="输出目录（默认脚本所在目录）")
-    parser.add_argument("--min-conf", type=float, default=DEFAULT_MIN_CONF,
-                        help=f"face/head 置信度下限（严格大于，默认 {DEFAULT_MIN_CONF}）")
+    parser.add_argument(
+        "--source", default=DEFAULT_SOURCE, help="输入 _face_detect_matched.json"
+    )
+    parser.add_argument(
+        "--out-dir", default=DEFAULT_OUT_DIR, help="输出目录（默认脚本所在目录）"
+    )
+    parser.add_argument(
+        "--min-conf",
+        type=float,
+        default=DEFAULT_MIN_CONF,
+        help=f"face/head 置信度下限（严格大于，默认 {DEFAULT_MIN_CONF}）",
+    )
     parser.add_argument("--no-compare", action="store_true", help="跳过抽样可视化")
     args = parser.parse_args(argv)
 
@@ -231,9 +268,9 @@ def main(argv=None):
         "feature_order": FEATURES,
         "target_order": ["cx", "cy", "s"],
         "formula": "derived_box = [cx - s/2, cy - s/2, cx + s/2, cy + s/2]; "
-                   "[cx, cy, s] = coef @ [fx, fy, fw, fh, hx, hy, hw, hh, 1]",
+        "[cx, cy, s] = coef @ [fx, fy, fw, fh, hx, hy, hw, hh, 1]",
         "r2": dict(zip(["cx", "cy", "s"], r2)),
-        "coef": [list(map(lambda v: round(v, 6), row)) for row in coef],
+        "coef": [[round(v, 6) for v in row] for row in coef],
     }
     (out_dir / "model.json").write_text(
         json.dumps(model, ensure_ascii=False, indent=2), encoding="utf-8"

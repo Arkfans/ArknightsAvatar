@@ -1,10 +1,10 @@
-﻿import lz4.block
+import lz4.block
 import pytest
 
 from arknightsavatar.unpack.ak import (
+    _read_extended_length,
     decompress_ak_lz4,
     install_unitypy_ak_patch,
-    _read_extended_length,
     unscramble_ak_lz4,
 )
 
@@ -45,7 +45,7 @@ def _scramble(payload: bytes, uncompressed_size: int) -> bytes:
     [
         b"hello world hello world hello world " * 20,
         bytes(range(256)) * 8,
-        (b"Arknights LZ4 variant test - " + "明日方舟".encode("utf-8")) * 30 + b"\x00" * 64,
+        (b"Arknights LZ4 variant test - " + "明日方舟".encode()) * 30 + b"\x00" * 64,
     ],
 )
 def test_decompress_ak_lz4_roundtrip(payload: bytes):
@@ -66,5 +66,7 @@ def test_install_unitypy_ak_patch_wires_lzham():
     from UnityPy.enums import CompressionFlags
     from UnityPy.helpers import CompressionHelper
 
-    assert CompressionHelper.DECOMPRESSION_MAP[CompressionFlags.LZHAM] is decompress_ak_lz4
+    assert (
+        CompressionHelper.DECOMPRESSION_MAP[CompressionFlags.LZHAM] is decompress_ak_lz4
+    )
     assert CompressionHelper.DECOMPRESSION_MAP[5] is decompress_ak_lz4

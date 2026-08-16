@@ -7,6 +7,9 @@ import sys
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
+from typing import ClassVar
+
+from arknightsavatar.device_caps import detect_device_caps
 
 from .adb import (
     _DEVICE_TMP,
@@ -18,7 +21,6 @@ from .adb import (
 )
 from .base import FileInfo, Source
 from .device import connect_device, installed_apk_paths, load_rsa_keys
-from arknightsavatar.device_caps import detect_device_caps
 
 _UNZIP_L_LINE = re.compile(r"^\s*(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+(.+)$")
 
@@ -28,7 +30,7 @@ class ApkAdbSource(Source):
 
     name = "apk"
 
-    CATEGORY_SUBPATHS = {
+    CATEGORY_SUBPATHS: ClassVar[dict[str, tuple[str, ...]]] = {
         "characters": ("avg", "characters"),
         "avatars": ("spritepack",),
     }
@@ -63,7 +65,9 @@ class ApkAdbSource(Source):
         paths = installed_apk_paths(self._device, package)
         if not paths:
             raise SystemExit(f"package not installed: {package}")
-        self._apk_paths = sorted(paths, key=lambda path: (0 if path.endswith("base.apk") else 1, path))
+        self._apk_paths = sorted(
+            paths, key=lambda path: (0 if path.endswith("base.apk") else 1, path)
+        )
         self._show_progress = sys.stderr.isatty() if progress is None else progress
         self._batch = batch
         if batch:
@@ -133,7 +137,9 @@ class ApkAdbSource(Source):
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)
 
-    def fetch_many(self, items: Sequence[tuple[FileInfo, Path]]) -> list[tuple[FileInfo, Exception]]:
+    def fetch_many(
+        self, items: Sequence[tuple[FileInfo, Path]]
+    ) -> list[tuple[FileInfo, Exception]]:
         """Fetch several files at once by packing them on the device.
 
         Each category becomes one tar archive on the device: the needed zip
@@ -157,7 +163,9 @@ class ApkAdbSource(Source):
                 failed_rels = {info.rel for info, _ in pack_failures}
                 if not failed_rels:
                     continue
-                fallback = [(info, dest) for info, dest in cat_items if info.rel in failed_rels]
+                fallback = [
+                    (info, dest) for info, dest in cat_items if info.rel in failed_rels
+                ]
                 self._fetch_one_by_one(fallback, failures)
                 continue
 
@@ -198,7 +206,9 @@ class ApkAdbSource(Source):
             f"{_DEVICE_TMP}/arknights_ab_{unique}.entries_{index}"
             for index in range(len(self._apk_paths))
         ]
-        local_fd, local_pack = tempfile.mkstemp(suffix=".tar", prefix=f"arknights_ab_{category}_")
+        local_fd, local_pack = tempfile.mkstemp(
+            suffix=".tar", prefix=f"arknights_ab_{category}_"
+        )
         os.close(local_fd)
         local_pack = Path(local_pack)
         try:
@@ -209,16 +219,22 @@ class ApkAdbSource(Source):
             # duplicates, so each rel maps to exactly one APK).
             by_apk: dict[str, list[str]] = {}
             for info, _ in items:
-                by_apk.setdefault(self._entry_apk[info.rel], []).append(self._entry_for_rel(info.rel))
+                by_apk.setdefault(self._entry_apk[info.rel], []).append(
+                    self._entry_for_rel(info.rel)
+                )
             for apk, entries in by_apk.items():
                 entries_list = entries_lists[self._apk_paths.index(apk)]
                 write_device_listing(self._device, entries_list, entries)
                 self._unzip_entries_on_device(apk, entries_list, tmpdir)
 
             tar_on_device(self._device, pack, tmpdir, names_list)
-            progress = _PullProgress(f"{category} ({len(items)} files)", enabled=self._show_progress)
+            progress = _PullProgress(
+                f"{category} ({len(items)} files)", enabled=self._show_progress
+            )
             try:
-                self._device.pull(pack, str(local_pack), progress_callback=progress, read_timeout_s=60)
+                self._device.pull(
+                    pack, str(local_pack), progress_callback=progress, read_timeout_s=60
+                )
             finally:
                 progress.finish()
             return extract_pack(local_pack, items)
@@ -227,7 +243,9 @@ class ApkAdbSource(Source):
             rm_device_files(self._device, tmpdir, recursive=True)
             local_pack.unlink(missing_ok=True)
 
-    def _unzip_entries_on_device(self, apk: str, entries_list: str, tmpdir: str) -> None:
+    def _unzip_entries_on_device(
+        self, apk: str, entries_list: str, tmpdir: str
+    ) -> None:
         """Extract the listed zip entries to tmpdir (as basenames) via unzip -p.
 
         Only relies on the device `unzip -p` (verified on toybox); entries
@@ -236,8 +254,8 @@ class ApkAdbSource(Source):
         """
         command = (
             f"mkdir -p {shlex.quote(tmpdir)} && "
-            f"while IFS= read -r e; do unzip -p {self._quote(apk)} \"$e\" "
-            f"> {shlex.quote(tmpdir)}/\"${{e##*/}}\"; done < {shlex.quote(entries_list)}"
+            f'while IFS= read -r e; do unzip -p {self._quote(apk)} "$e" '
+            f'> {shlex.quote(tmpdir)}/"${{e##*/}}"; done < {shlex.quote(entries_list)}'
         )
         self._device.shell(command, read_timeout_s=600, timeout_s=3600)
 

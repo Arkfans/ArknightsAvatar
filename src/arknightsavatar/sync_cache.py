@@ -27,7 +27,7 @@ import json
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from arknightsavatar.config import DataRepoConfig, load_config
@@ -43,17 +43,23 @@ class SyncError(Exception):
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def git(cwd: Path, *argv: str) -> subprocess.CompletedProcess:
     """Run the git CLI in ``cwd``, capturing output (never raises on non-zero)."""
-    return subprocess.run(["git", *argv], cwd=str(cwd), capture_output=True, text=True)
+    return subprocess.run(
+        ["git", *argv],
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        check=False,  # 调用方检查 returncode
+    )
 
 
 def ensure_git_available() -> None:
     result = subprocess.run(
-        ["git", "--version"], capture_output=True, text=True
+        ["git", "--version"], capture_output=True, text=True, check=False
     )
     if result.returncode != 0:
         raise SyncError("git CLI not found on PATH; sync-cache requires git")
@@ -85,7 +91,9 @@ def ensure_working_copy(repo: DataRepoConfig, root: Path, pull: bool) -> Path:
             "move it away or fix data_repo.path"
         )
     workdir.parent.mkdir(parents=True, exist_ok=True)
-    result = git(workdir.parent, "clone", "--branch", repo.branch, repo.url, str(workdir.name))
+    result = git(
+        workdir.parent, "clone", "--branch", repo.branch, repo.url, str(workdir.name)
+    )
     if result.returncode != 0:
         raise SyncError(f"git clone failed: {result.stderr.strip()}")
     return workdir
@@ -137,10 +145,9 @@ def _same_file(
     if mode == COMPARE_CONTENT:
         return _sha256(source) == _sha256(dest)
     if src_record is not None and dst_record is not None:
-        return (
-            src_record.get("size") == dst_record.get("size")
-            and src_record.get("sha256") == dst_record.get("sha256")
-        )
+        return src_record.get("size") == dst_record.get("size") and src_record.get(
+            "sha256"
+        ) == dst_record.get("sha256")
     return _same_size_mtime(source, dest)
 
 
@@ -162,7 +169,9 @@ def mirror_dir(
     """
     src_files = {p.relative_to(source): p for p in source.rglob("*") if p.is_file()}
     dest.mkdir(parents=True, exist_ok=True)
-    dst_manifest = load_category_manifest(dest / "manifest.json") if manifest is not None else {}
+    dst_manifest = (
+        load_category_manifest(dest / "manifest.json") if manifest is not None else {}
+    )
     for rel, src_file in sorted(
         src_files.items(), key=lambda item: item[0].as_posix() == "manifest.json"
     ):
@@ -190,7 +199,9 @@ def mirror_dir(
                 pass
 
 
-def mirror_file(source: Path, dest: Path, stats: dict, mode: str = COMPARE_AUTO) -> None:
+def mirror_file(
+    source: Path, dest: Path, stats: dict, mode: str = COMPARE_AUTO
+) -> None:
     if dest.is_dir():
         shutil.rmtree(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -200,7 +211,12 @@ def mirror_file(source: Path, dest: Path, stats: dict, mode: str = COMPARE_AUTO)
 
 
 def mirror_category(
-    local: str, remote: str, root: Path, workdir: Path, stats: dict, mode: str = COMPARE_AUTO
+    local: str,
+    remote: str,
+    root: Path,
+    workdir: Path,
+    stats: dict,
+    mode: str = COMPARE_AUTO,
 ) -> None:
     source = Path(local)
     if not source.is_absolute():
@@ -208,7 +224,9 @@ def mirror_category(
     dest = workdir / remote
     if source.is_dir():
         manifest = (
-            load_category_manifest(source / "manifest.json") if mode != COMPARE_SIZE_MTIME else {}
+            load_category_manifest(source / "manifest.json")
+            if mode != COMPARE_SIZE_MTIME
+            else {}
         )
         mirror_dir(source, dest, stats, mode=mode, manifest=manifest)
     elif source.is_file():
@@ -218,7 +236,9 @@ def mirror_category(
         stats["missing"] += 1
 
 
-def restore_category(local: str, remote: str, root: Path, workdir: Path, stats: dict) -> None:
+def restore_category(
+    local: str, remote: str, root: Path, workdir: Path, stats: dict
+) -> None:
     """Copy files present in the data repo but missing locally (never overwrites)."""
     source = workdir / remote
     dest = Path(local)
@@ -324,7 +344,9 @@ def main(argv: list[str] | None = None) -> int:
             for category in config.data_repo.categories:
                 restore_category(category.local, category.remote, root, workdir, stats)
         for category in config.data_repo.categories:
-            mirror_category(category.local, category.remote, root, workdir, stats, mode=mode)
+            mirror_category(
+                category.local, category.remote, root, workdir, stats, mode=mode
+            )
 
         message = args.message or f"sync {_now()}"
         committed = commit_changes(workdir, message, dry_run=args.dry_run)

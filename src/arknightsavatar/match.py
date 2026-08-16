@@ -6,7 +6,7 @@ import re
 import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from arknightsavatar import paths, reporting
@@ -83,7 +83,9 @@ def _avatar_candidates(
         return []
     pattern = re.compile(rf"^char_{re.escape(seq)}_", re.IGNORECASE)
     names = sorted(
-        p.name for p in avatars_dir.glob("*.png") if p.is_file() and pattern.match(p.name)
+        p.name
+        for p in avatars_dir.glob("*.png")
+        if p.is_file() and pattern.match(p.name)
     )
     if character is None:
         return names
@@ -131,12 +133,16 @@ def _read_rgba(path: Path) -> np.ndarray:
     return image
 
 
-def _composite_on_color(rgba: np.ndarray, bg: tuple[int, int, int] = (255, 255, 255)) -> np.ndarray:
+def _composite_on_color(
+    rgba: np.ndarray, bg: tuple[int, int, int] = (255, 255, 255)
+) -> np.ndarray:
     """将 BGRA 图像 alpha 合成到纯色背景上，返回 3 通道 BGR。"""
     b, g, r, a = cv2.split(rgba)
     alpha = a.astype(np.float32) / 255.0
     bg_arr = np.array(bg, dtype=np.float32)
-    blended = cv2.merge([b, g, r]).astype(np.float32) * alpha[:, :, None] + bg_arr * (1.0 - alpha[:, :, None])
+    blended = cv2.merge([b, g, r]).astype(np.float32) * alpha[:, :, None] + bg_arr * (
+        1.0 - alpha[:, :, None]
+    )
     return blended.clip(0, 255).astype(np.uint8)
 
 
@@ -161,7 +167,16 @@ def render_match_image(
         cv2.rectangle(canvas, (x1, y1), (x2, y2), BOX_COLOR, BOX_THICKNESS)
         label = f"{threshold:.4f}"
         anchor_y = y1 - 6 if y1 - 6 >= 16 else y1 + 16
-        cv2.putText(canvas, label, (x1 + 4, anchor_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, TEXT_COLOR, 1, cv2.LINE_AA)
+        cv2.putText(
+            canvas,
+            label,
+            (x1 + 4, anchor_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            TEXT_COLOR,
+            1,
+            cv2.LINE_AA,
+        )
 
     try:
         avatar_rgba = _read_rgba(avatar_path)
@@ -177,7 +192,7 @@ def render_match_image(
     ah, aw = avatar_bgr.shape[:2]
     paste_x = base_size - aw
     paste_y = base_size - ah
-    canvas[paste_y:paste_y + ah, paste_x:paste_x + aw] = avatar_bgr
+    canvas[paste_y : paste_y + ah, paste_x : paste_x + aw] = avatar_bgr
     return canvas
 
 
@@ -193,7 +208,12 @@ def render_match_images(
     count = 0
     for name, char in report.characters.items():
         for base_name, result in char.bases.items():
-            if not result.ok or result.box_norm is None or result.avatar is None or result.threshold is None:
+            if (
+                not result.ok
+                or result.box_norm is None
+                or result.avatar is None
+                or result.threshold is None
+            ):
                 continue
             try:
                 out_name = f"{name}__{Path(base_name).stem}.png"
@@ -211,7 +231,10 @@ def render_match_images(
                 buf.tofile(str(out_path))
                 count += 1
             except Exception as error:  # noqa: BLE001 - 单张失败不中断
-                print(f"warning: cannot render {name}/{base_name}: {error}", file=sys.stderr)
+                print(
+                    f"warning: cannot render {name}/{base_name}: {error}",
+                    file=sys.stderr,
+                )
     return count
 
 
@@ -226,7 +249,7 @@ def _prepare_base(path: Path) -> tuple[np.ndarray, tuple[int, int]]:
     resized = cv2.resize(image, (MATCH_SIZE, MATCH_SIZE))
     gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
     canvas = np.zeros((MATCH_HEIGHT, MATCH_SIZE), dtype=np.uint8)
-    canvas[BASE_EXTEND_TOP:BASE_EXTEND_TOP + MATCH_SIZE, :] = gray
+    canvas[BASE_EXTEND_TOP : BASE_EXTEND_TOP + MATCH_SIZE, :] = gray
     return canvas, size
 
 
@@ -298,7 +321,10 @@ def _template_match_gray(
     def _update_best(o_offset: int, o_res: np.ndarray) -> None:
         """更新最佳 offset/阈值；首次跨阈值时按粗步长回查 ±1..±(coarse_increase-1)。"""
         nonlocal best_offset, best_threshold, res, refined
-        crossed = best_threshold < coarse_threshold and float(np.max(o_res)) >= coarse_threshold
+        crossed = (
+            best_threshold < coarse_threshold
+            and float(np.max(o_res)) >= coarse_threshold
+        )
         best_offset = o_offset
         best_threshold = float(np.max(o_res))
         res = o_res
@@ -317,7 +343,11 @@ def _template_match_gray(
 
     def _optimize(o_offset: int, o_increase: int) -> bool:
         nonlocal offset
-        times = FIND_MAX_OPTIMIZE_TIMES if best_threshold > stop_threshold else MAX_OPTIMIZE_TIMES
+        times = (
+            FIND_MAX_OPTIMIZE_TIMES
+            if best_threshold > stop_threshold
+            else MAX_OPTIMIZE_TIMES
+        )
         for _ in range(times):
             o_offset += _step() if o_increase > 0 else -_step()
             if not _check_valid_offset(o_offset):
@@ -329,7 +359,9 @@ def _template_match_gray(
                 return True
         return False
 
-    increase = _step() if float(np.max(_find(_step()))) > initial_threshold else -_step()
+    increase = (
+        _step() if float(np.max(_find(_step()))) > initial_threshold else -_step()
+    )
     if_reversed = False
 
     while True:
@@ -495,7 +527,8 @@ class CharacterMatch:
             status=str(data.get("status", "ok")),
             candidates=list(data.get("candidates") or []),
             bases={
-                base: BaseMatch.from_dict(item) for base, item in (data.get("bases") or {}).items()
+                base: BaseMatch.from_dict(item)
+                for base, item in (data.get("bases") or {}).items()
             },
         )
 
@@ -523,7 +556,9 @@ class MatchReport:
             "characters_dir": self.characters_dir,
             "avatars_dir": self.avatars_dir,
             "stats": self.stats,
-            "characters": {name: item.as_dict() for name, item in self.characters.items()},
+            "characters": {
+                name: item.as_dict() for name, item in self.characters.items()
+            },
         }
 
 
@@ -555,7 +590,7 @@ def match_base(
     for avatar_name in avatar_paths:
         try:
             avatar_gray = _prepare_avatar(avatars_dir / avatar_name)
-        except Exception:  # noqa: BLE001 - 单个头像不可读时跳过
+        except Exception:  # noqa: BLE001, S112 - 单个头像不可读时跳过
             continue
         threshold, box, candidate_offsets = _template_match_gray(
             base_gray,
@@ -581,7 +616,12 @@ def match_base(
     threshold, box, avatar_name = best
     sx = width / MATCH_SIZE
     sy = height / MATCH_SIZE
-    box_orig = [round(box[0] * sx), round(box[1] * sy), round(box[2] * sx), round(box[3] * sy)]
+    box_orig = [
+        round(box[0] * sx),
+        round(box[1] * sy),
+        round(box[2] * sx),
+        round(box[3] * sy),
+    ]
     box_norm = [round(v / MATCH_SIZE, 6) for v in box]
     return BaseMatch(
         avatar=avatar_name,
@@ -616,7 +656,9 @@ def compute_stats(
     for match in characters.values():
         stats["total"] += 1
         if source:
-            stats["base_files"] += len((source.get(match.name) or {}).get("bases") or {})
+            stats["base_files"] += len(
+                (source.get(match.name) or {}).get("bases") or {}
+            )
         else:
             stats["base_files"] += len(match.bases)
         for result in match.bases.values():
@@ -738,11 +780,9 @@ def match_characters(
     names = _target_names(classified, character=character, limit=limit, only=only)
     total = len(names)
     characters_map = classified.get("characters", {})
-    processed = 0
 
-    for name in names:
+    for processed, name in enumerate(names, start=1):
         item = characters_map[name]
-        processed += 1
 
         bases = item.get("bases") or {}
         seq = _char_seq(name)
@@ -775,12 +815,16 @@ def match_characters(
             progress(processed, total, name)
 
     return MatchReport(
-        generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        classified=str(classified_path or characters_dir.parent / "_characters_classified.json"),
+        generated_at=datetime.now(UTC).isoformat(timespec="seconds"),
+        classified=str(
+            classified_path or characters_dir.parent / "_characters_classified.json"
+        ),
         characters_dir=str(characters_dir),
         avatars_dir=str(avatars_dir),
         characters=characters,
-        stats=compute_stats(characters, stop_threshold=stop_threshold, classified=classified),
+        stats=compute_stats(
+            characters, stop_threshold=stop_threshold, classified=classified
+        ),
     )
 
 
@@ -883,7 +927,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
+def _make_progress(
+    total: int,
+) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
     """返回 (progress, close)；优先 tqdm 进度条，缺失时回退为逐条文本。"""
     if tqdm is not None:
         bar = tqdm(total=total, unit="char", desc="match", dynamic_ncols=True)
@@ -940,7 +986,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.character is not None:
         if args.character not in (classified.get("characters") or {}):
-            print(f"error: character not found in {classified_path}: {args.character}", file=sys.stderr)
+            print(
+                f"error: character not found in {classified_path}: {args.character}",
+                file=sys.stderr,
+            )
             return 1
         if not _is_target_character(args.character):
             print(
@@ -961,7 +1010,9 @@ def main(argv: list[str] | None = None) -> int:
                 f"warning: cannot read existing report {output}: {error}; full match",
                 file=sys.stderr,
             )
-        if old_report is not None and not isinstance(old_report.get("characters"), dict):
+        if old_report is not None and not isinstance(
+            old_report.get("characters"), dict
+        ):
             print(
                 f"warning: existing report {output} has no characters map; full match",
                 file=sys.stderr,
@@ -1028,14 +1079,18 @@ def main(argv: list[str] | None = None) -> int:
             if name in report.characters:
                 merged[name] = report.characters[name]
             elif name in (old_report.get("characters") or {}):
-                merged[name] = CharacterMatch.from_dict(name, old_report["characters"][name])
+                merged[name] = CharacterMatch.from_dict(
+                    name, old_report["characters"][name]
+                )
         report = MatchReport(
             generated_at=report.generated_at,
             classified=report.classified,
             characters_dir=report.characters_dir,
             avatars_dir=report.avatars_dir,
             characters=merged,
-            stats=compute_stats(merged, stop_threshold=args.stop_threshold, classified=classified),
+            stats=compute_stats(
+                merged, stop_threshold=args.stop_threshold, classified=classified
+            ),
         )
     stats = report.stats
     print(

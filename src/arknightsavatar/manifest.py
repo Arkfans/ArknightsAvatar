@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -23,7 +23,7 @@ class Manifest:
         self.files: dict[str, FileRecord] = {}
 
     @classmethod
-    def load(cls, path: Path, game_version: str = "unknown") -> "Manifest":
+    def load(cls, path: Path, game_version: str = "unknown") -> Manifest:
         manifest = cls(path, game_version)
         if path.exists():
             with path.open("rt", encoding="utf8") as f:
@@ -44,8 +44,10 @@ class Manifest:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
             "game_version": self.game_version,
-            "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "files": {rel: asdict(record) for rel, record in sorted(self.files.items())},
+            "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "files": {
+                rel: asdict(record) for rel, record in sorted(self.files.items())
+            },
         }
         with self.path.open("wt", encoding="utf8") as f:
             json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -59,7 +61,7 @@ class FailureLog:
         self.failures: dict[str, dict] = {}
 
     @classmethod
-    def load(cls, path: Path) -> "FailureLog":
+    def load(cls, path: Path) -> FailureLog:
         log = cls(path)
         if path.exists():
             with path.open("rt", encoding="utf8") as f:

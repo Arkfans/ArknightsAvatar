@@ -77,7 +77,9 @@ def test_apk_source_mapping(tmp_path: Path):
     assert [info.rel for info in source.list_files("characters")] == [
         "characters/avg_007_closre_1.ab"
     ]
-    assert [info.rel for info in source.list_files("avatars")] == ["avatars/ui_char_avatar_0.ab"]
+    assert [info.rel for info in source.list_files("avatars")] == [
+        "avatars/ui_char_avatar_0.ab"
+    ]
 
     dest = tmp_path / "out" / "avatars" / "ui_char_avatar_0.ab"
     source.fetch_to("avatars/ui_char_avatar_0.ab", dest)
@@ -85,16 +87,14 @@ def test_apk_source_mapping(tmp_path: Path):
 
 
 def test_parse_unzip_l_extracts_size_and_name():
-    output = "\n".join(
-        [
-            "Archive:  /data/app/base.apk",
-            "  Length      Date    Time    Name",
-            "---------  ---------- -----   ----",
-            "    10022  2026-07-22 00:19   assets/AB/Android/spritepack/a.ab",
-            "  3205090  2026-07-22 00:19   assets/AB/Android/spritepack/b.ab",
-            "---------                     -------",
-            "  3215112                      2 files",
-        ]
+    output = (
+        "Archive:  /data/app/base.apk\n"
+        "  Length      Date    Time    Name\n"
+        "---------  ---------- -----   ----\n"
+        "    10022  2026-07-22 00:19   assets/AB/Android/spritepack/a.ab\n"
+        "  3205090  2026-07-22 00:19   assets/AB/Android/spritepack/b.ab\n"
+        "---------                     -------\n"
+        "  3215112                      2 files"
     )
     assert ApkAdbSource._parse_unzip_l(output) == [
         (10022, "assets/AB/Android/spritepack/a.ab"),
@@ -108,15 +108,19 @@ def test_apk_adb_source_lists_and_dedups_with_base_priority(tmp_path: Path):
         [
             (
                 "unzip -l /data/app/base.apk",
-                "  Length      Date    Time    Name\n"
-                "    10022  2026-07-22 00:19   assets/AB/Android/spritepack/ui_char_avatar_0.ab\n"
-                "        1  2026-07-22 00:19   assets/AB/Android/spritepack/dup.ab\n",
+                (
+                    "  Length      Date    Time    Name\n"
+                    "    10022  2026-07-22 00:19   assets/AB/Android/spritepack/ui_char_avatar_0.ab\n"
+                    "        1  2026-07-22 00:19   assets/AB/Android/spritepack/dup.ab\n"
+                ),
             ),
             (
                 "unzip -l /data/app/split.apk",
-                "  Length      Date    Time    Name\n"
-                "       20  2026-07-22 00:19   assets/AB/Android/spritepack/split_only.ab\n"
-                "       99  2026-07-22 00:19   assets/AB/Android/spritepack/dup.ab\n",
+                (
+                    "  Length      Date    Time    Name\n"
+                    "       20  2026-07-22 00:19   assets/AB/Android/spritepack/split_only.ab\n"
+                    "       99  2026-07-22 00:19   assets/AB/Android/spritepack/dup.ab\n"
+                ),
             ),
         ],
     )
@@ -171,7 +175,9 @@ def test_apk_adb_fetch_many_packs_pulls_once_and_extracts(tmp_path: Path):
 
     # one pack pull over the sync protocol, with progress and the read timeout
     assert device.pull.call_count == 1
-    assert device.pull.call_args.args[0].startswith("/data/local/tmp/arknights_ab_avatars_")
+    assert device.pull.call_args.args[0].startswith(
+        "/data/local/tmp/arknights_ab_avatars_"
+    )
     assert device.pull.call_args.kwargs["progress_callback"] is not None
     assert device.pull.call_args.kwargs["read_timeout_s"] == 60
 
@@ -179,12 +185,15 @@ def test_apk_adb_fetch_many_packs_pulls_once_and_extracts(tmp_path: Path):
     printf_cmds = [cmd for cmd in shells if cmd.startswith("printf")]
     assert len(printf_cmds) == 2
     assert any(".list" in cmd and "a.ab" in cmd for cmd in printf_cmds)
-    assert any(".entries_0" in cmd and "assets/AB/Android/spritepack" in cmd for cmd in printf_cmds)
+    assert any(
+        ".entries_0" in cmd and "assets/AB/Android/spritepack" in cmd
+        for cmd in printf_cmds
+    )
 
     unzip_cmd = next(cmd for cmd in shells if cmd.startswith("mkdir -p"))
     assert "/data/app/base.apk" in unzip_cmd
     assert "/arknights_ab_avatars_" in unzip_cmd
-    assert '${e##*/}' in unzip_cmd  # basename via mksh parameter expansion
+    assert "${e##*/}" in unzip_cmd  # basename via mksh parameter expansion
     assert "while IFS= read -r e; do unzip -p" in unzip_cmd
 
     tar_cmd = next(cmd for cmd in shells if cmd.startswith("tar"))
@@ -193,7 +202,9 @@ def test_apk_adb_fetch_many_packs_pulls_once_and_extracts(tmp_path: Path):
 
     # device scratch files are cleaned up: plain rm for files, rm -rf for tmpdir
     rm_cmds = [cmd for cmd in shells if cmd.startswith("rm -f")]
-    assert rm_cmds and any(".tar" in cmd and ".list" in cmd and ".entries_0" in cmd for cmd in rm_cmds)
+    assert rm_cmds and any(
+        ".tar" in cmd and ".list" in cmd and ".entries_0" in cmd for cmd in rm_cmds
+    )
     assert any(cmd.startswith("rm -rf") and ".d" in cmd for cmd in shells)
     # no leftover local pack
     assert not list(tmp_path.rglob("arknights_ab_*"))
@@ -220,8 +231,14 @@ def test_apk_adb_fetch_many_groups_entries_by_apk(tmp_path: Path):
 
     printf_cmds = [cmd for cmd in shells if cmd.startswith("printf")]
     assert len(printf_cmds) == 3  # names list + one entries list per APK
-    assert "assets/AB/Android/spritepack/a.ab" in printf_cmds[1] and ".entries_0" in printf_cmds[1]
-    assert "assets/AB/Android/spritepack/b.ab" in printf_cmds[2] and ".entries_1" in printf_cmds[2]
+    assert (
+        "assets/AB/Android/spritepack/a.ab" in printf_cmds[1]
+        and ".entries_0" in printf_cmds[1]
+    )
+    assert (
+        "assets/AB/Android/spritepack/b.ab" in printf_cmds[2]
+        and ".entries_1" in printf_cmds[2]
+    )
 
     unzip_cmds = [cmd for cmd in shells if cmd.startswith("mkdir -p")]
     assert len(unzip_cmds) == 2
@@ -276,7 +293,7 @@ def test_apk_adb_fetch_many_reports_failures_when_fallback_also_fails(tmp_path: 
         "avatars/b.ab": "/data/app/base.apk",
     }
     # b.ab is in neither the pack nor the device: both paths must fail
-    device, _ = _attach_apk_pack_device(source, {"a.ab": b"a" * 100})
+    _ = _attach_apk_pack_device(source, {"a.ab": b"a" * 100})
 
     items = [
         (FileInfo(rel="avatars/a.ab", size=100), tmp_path / "a.ab.part"),
@@ -331,7 +348,10 @@ def test_apk_adb_fetch_many_cleanup_after_failed_pack_pull(tmp_path: Path):
 
     device.pull.side_effect = fake_pull
 
-    items = [(FileInfo(rel=f"avatars/{name}", size=10), tmp_path / f"{name}.part") for name in files]
+    items = [
+        (FileInfo(rel=f"avatars/{name}", size=10), tmp_path / f"{name}.part")
+        for name in files
+    ]
     assert source.fetch_many(items) == []
 
     assert (tmp_path / "a.ab.part").read_bytes() == b"a" * 10
@@ -347,7 +367,10 @@ def test_apk_adb_fetch_many_refills_entry_apk(tmp_path: Path):
     )
     source = _make_apk_adb_source(
         ["/data/app/base.apk"],
-        [("unzip -l /data/app/base.apk", listing), ("unzip -p /data/app/base.apk", b"a" * 100)],
+        [
+            ("unzip -l /data/app/base.apk", listing),
+            ("unzip -p /data/app/base.apk", b"a" * 100),
+        ],
     )
     device = source._device
     shells: list[str] = []

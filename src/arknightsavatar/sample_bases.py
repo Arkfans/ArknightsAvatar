@@ -10,7 +10,6 @@ from pathlib import Path
 
 from arknightsavatar import paths
 
-
 DEFAULT_CLASSIFIED = paths.CLASSIFIED
 DEFAULT_OUTPUT_DIR = paths.BASES_SAMPLE_DIR
 
@@ -26,7 +25,9 @@ class SampleResult:
     collisions: list[tuple[str, str]] = field(default_factory=list)
 
 
-def select_characters(report: dict, count: int, seed: int | None) -> tuple[list[str], int]:
+def select_characters(
+    report: dict, count: int, seed: int | None
+) -> tuple[list[str], int]:
     """从报告中随机抽取 count 个至少含一张底图的角色，返回 (选中列表, 可选总数)。"""
     characters = report.get("characters", {})
     eligible = sorted(
@@ -125,9 +126,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: no 'characters' object in {classified}", file=sys.stderr)
         return 1
 
-    characters_dir = Path(args.characters_dir or report.get("characters_dir") or paths.UNPACKED_CHARACTERS_DIR)
+    characters_dir = Path(
+        args.characters_dir
+        or report.get("characters_dir")
+        or paths.UNPACKED_CHARACTERS_DIR
+    )
     if not characters_dir.is_dir():
-        print(f"error: characters directory not found: {characters_dir}", file=sys.stderr)
+        print(
+            f"error: characters directory not found: {characters_dir}", file=sys.stderr
+        )
         return 1
     if args.count < 1:
         print("error: --count must be >= 1", file=sys.stderr)
@@ -139,12 +146,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     output_dir = Path(args.output_dir)
-    copied, missing, collisions = copy_bases(report, selected, characters_dir, output_dir)
+    copied, missing, collisions = copy_bases(
+        report, selected, characters_dir, output_dir
+    )
 
     seed_note = f" (seed={args.seed})" if args.seed is not None else ""
-    print(
-        f"sampled {len(selected)}/{eligible} characters{seed_note} -> {output_dir}"
-    )
+    print(f"sampled {len(selected)}/{eligible} characters{seed_note} -> {output_dir}")
     print(f"base files copied: {len(copied)}")
     if collisions:
         print(f"same-name collisions renamed with <char_id>_ prefix: {len(collisions)}")

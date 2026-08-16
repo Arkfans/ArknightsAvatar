@@ -9,7 +9,9 @@ from arknightsavatar.config import DataRepoCategory
 
 
 def _git_available() -> bool:
-    result = subprocess.run(["git", "--version"], capture_output=True, text=True)
+    result = subprocess.run(
+        ["git", "--version"], capture_output=True, text=True, check=False
+    )
     return result.returncode == 0
 
 
@@ -17,7 +19,9 @@ pytestmark = pytest.mark.skipif(not _git_available(), reason="git CLI not availa
 
 
 def _run_git(cwd: Path, *argv: str) -> None:
-    result = subprocess.run(["git", *argv], cwd=str(cwd), capture_output=True, text=True)
+    result = subprocess.run(
+        ["git", *argv], cwd=str(cwd), capture_output=True, text=True, check=False
+    )
     assert result.returncode == 0, result.stderr
 
 
@@ -41,8 +45,14 @@ def _write_config(tmp_path: Path, url: str, categories: list[dict]) -> Path:
     repo = tmp_path / "data_repo.yaml"
     # JSON 是合法 YAML，data_repo 配置与主配置同目录（load_config 的默认查找位置）。
     repo.write_text(
-        json.dumps({"path": "data_cache", "url": url, "branch": "main",
-                    "categories": categories}),
+        json.dumps(
+            {
+                "path": "data_cache",
+                "url": url,
+                "branch": "main",
+                "categories": categories,
+            }
+        ),
         encoding="utf8",
     )
     return config
@@ -86,7 +96,9 @@ class Writer:
 
 def test_picker_multi_defaults_to_all_selected():
     writer = Writer()
-    result = setup.pick(["a", "b", "c"], multi=True, read_key=_keys("enter"), write=writer)
+    result = setup.pick(
+        ["a", "b", "c"], multi=True, read_key=_keys("enter"), write=writer
+    )
     assert result == [0, 1, 2]
     assert "[x] a" in writer.text
     assert "[x] c" in writer.text
@@ -95,7 +107,10 @@ def test_picker_multi_defaults_to_all_selected():
 def test_picker_multi_toggle_and_move():
     writer = Writer()
     result = setup.pick(
-        ["a", "b", "c"], multi=True, read_key=_keys("down", "space", "enter"), write=writer
+        ["a", "b", "c"],
+        multi=True,
+        read_key=_keys("down", "space", "enter"),
+        write=writer,
     )
     assert result == [0, 2]  # 默认全选，下移后空格取消 b
     assert "[ ] b" in writer.text
@@ -123,7 +138,9 @@ def test_picker_multi_initial_override():
 
 def test_picker_single_enter_confirms_cursor():
     writer = Writer()
-    result = setup.pick(["x", "y"], multi=False, read_key=_keys("down", "enter"), write=writer)
+    result = setup.pick(
+        ["x", "y"], multi=False, read_key=_keys("down", "enter"), write=writer
+    )
     assert result == [1]
 
 
@@ -194,9 +211,14 @@ def test_full_mode_end_to_end(tmp_path, monkeypatch):
 
 
 def test_category_name_includes_description():
-    category = DataRepoCategory(local="data/recognition", remote="recognition", desc="识别数据")
+    category = DataRepoCategory(
+        local="data/recognition", remote="recognition", desc="识别数据"
+    )
     assert setup._category_name(category) == "recognition（识别数据）"
-    assert setup._category_name(DataRepoCategory(local="data/schema", remote="schema")) == "schema"
+    assert (
+        setup._category_name(DataRepoCategory(local="data/schema", remote="schema"))
+        == "schema"
+    )
 
 
 def test_prompt_categories_shows_descriptions(monkeypatch, capsys):
@@ -213,7 +235,9 @@ def test_prompt_categories_shows_descriptions(monkeypatch, capsys):
     monkeypatch.setattr(setup, "KeyReader", lambda stream: FakeReader())
     monkeypatch.setattr(setup.sys, "stdin", FakeStdin(isatty=True))
     categories = [
-        DataRepoCategory(local="data/recognition", remote="recognition", desc="识别数据"),
+        DataRepoCategory(
+            local="data/recognition", remote="recognition", desc="识别数据"
+        ),
         DataRepoCategory(local="data/schema", remote="schema"),
     ]
     assert setup._prompt_categories(categories) == [0, 1]
@@ -240,15 +264,20 @@ def test_download_restores_selected_categories(tmp_path, monkeypatch, capsys):
     )
     # 本地已有文件不应被镜像回工作副本（仅下载，不镜像不提交）
     (tmp_path / "data" / "recognition").mkdir(parents=True)
-    (tmp_path / "data" / "recognition" / "local_only.json").write_text("x", encoding="utf8")
+    (tmp_path / "data" / "recognition" / "local_only.json").write_text(
+        "x", encoding="utf8"
+    )
 
     assert (
         setup.main(
             [
                 "--download",
-                "--category", "recognition",
-                "--category", "export",
-                "--config", str(config),
+                "--category",
+                "recognition",
+                "--category",
+                "export",
+                "--config",
+                str(config),
             ]
         )
         == 0
@@ -292,7 +321,9 @@ def test_download_unknown_category(tmp_path, monkeypatch, capsys):
     config = _write_config(
         tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
     )
-    assert setup.main(["--download", "--category", "nope", "--config", str(config)]) == 1
+    assert (
+        setup.main(["--download", "--category", "nope", "--config", str(config)]) == 1
+    )
     err = capsys.readouterr().err
     assert "未知分类" in err
     assert "recognition" in err
@@ -303,14 +334,18 @@ def test_download_empty_url_without_working_copy(tmp_path, monkeypatch, capsys):
     config = _write_config(
         tmp_path, "", [{"local": "data/recognition", "remote": "recognition"}]
     )
-    assert setup.main(["--download", "--category", "recognition", "--config", str(config)]) == 1
+    assert (
+        setup.main(["--download", "--category", "recognition", "--config", str(config)])
+        == 1
+    )
     assert "data_repo.url is empty" in capsys.readouterr().err
 
 
 def test_download_requires_tty_for_interactive(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     config = _write_config(
-        tmp_path, "http://example.invalid/repo.git",
+        tmp_path,
+        "http://example.invalid/repo.git",
         [{"local": "data/recognition", "remote": "recognition"}],
     )
     monkeypatch.setattr(setup.sys, "stdin", FakeStdin(isatty=False))

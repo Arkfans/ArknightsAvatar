@@ -1,4 +1,4 @@
-﻿import json
+import json
 from pathlib import Path
 
 from arknightsavatar.sample_bases import main, select_characters
@@ -37,7 +37,11 @@ def _build_report(root: Path, specs: dict[str, dict[str, list[str]]]) -> Path:
                     "empty": sum(not b for b in specs.values()),
                     "no_base": 0,
                     "base_files": sum(len(b) for b in specs.values()),
-                    "diff_files": sum(len(diffs) for bases in specs.values() for diffs in bases.values()),
+                    "diff_files": sum(
+                        len(diffs)
+                        for bases in specs.values()
+                        for diffs in bases.values()
+                    ),
                 },
                 "characters": characters,
             }
@@ -58,7 +62,9 @@ def test_copies_only_bases_flattened(tmp_path: Path):
     )
     output = tmp_path / "out"
 
-    code = main(["--classified", str(report), "-n", "3", "--seed", "1", "-o", str(output)])
+    code = main(
+        ["--classified", str(report), "-n", "3", "--seed", "1", "-o", str(output)]
+    )
 
     assert code == 0
     assert sorted(p.name for p in output.iterdir()) == [
@@ -78,8 +84,14 @@ def test_seed_reproducible_and_count_limited(capsys, tmp_path: Path):
     out1 = tmp_path / "out1"
     out2 = tmp_path / "out2"
 
-    assert main(["--classified", str(report), "-n", "2", "--seed", "7", "-o", str(out1)]) == 0
-    assert main(["--classified", str(report), "-n", "2", "--seed", "7", "-o", str(out2)]) == 0
+    assert (
+        main(["--classified", str(report), "-n", "2", "--seed", "7", "-o", str(out1)])
+        == 0
+    )
+    assert (
+        main(["--classified", str(report), "-n", "2", "--seed", "7", "-o", str(out2)])
+        == 0
+    )
 
     first = {p.name for p in out1.iterdir()}
     second = {p.name for p in out2.iterdir()}
@@ -157,7 +169,9 @@ def test_same_name_bases_renamed_with_char_prefix(capsys, tmp_path: Path):
 def test_select_characters_skips_no_base(tmp_path: Path):
     report = _build_report(tmp_path, {"c1": {"c1.png": []}, "c_empty": {}})
 
-    selected, eligible = select_characters(json.loads(report.read_text(encoding="utf8")), 100, seed=None)
+    selected, eligible = select_characters(
+        json.loads(report.read_text(encoding="utf8")), 100, seed=None
+    )
 
     assert eligible == 1
     assert selected == ["c1"]

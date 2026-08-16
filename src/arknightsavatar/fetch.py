@@ -33,7 +33,9 @@ def make_source(
         )
     if name == "local-apk":
         if not config.apk.dir:
-            raise SystemExit("apk.dir is not configured (config.toml or ARKNIGHTSAVATAR_APK_DIR)")
+            raise SystemExit(
+                "apk.dir is not configured (config.toml or ARKNIGHTSAVATAR_APK_DIR)"
+            )
         return ApkSource(config.apk.dir)
     if name == "adb":
         return AdbSource(
@@ -80,7 +82,10 @@ def run_fetch(
     """
     manifest = Manifest.load(raw_dir / "manifest.json", game_version=game_version)
     failures = FailureLog.load(raw_dir / "_failed.json")
-    stats = {category: {"listed": 0, "fetched": 0, "skipped": 0, "failed": 0} for category in categories}
+    stats = {
+        category: {"listed": 0, "fetched": 0, "skipped": 0, "failed": 0}
+        for category in categories
+    }
     dirty = 0
 
     for category in categories:
@@ -130,7 +135,11 @@ def run_fetch(
                     os.replace(tmp, dest)
                     manifest.set(
                         info.rel,
-                        FileRecord(size=size, sha256=digest, source=source.source_name(info.rel)),
+                        FileRecord(
+                            size=size,
+                            sha256=digest,
+                            source=source.source_name(info.rel),
+                        ),
                     )
                     stats[category]["fetched"] += 1
                 except Exception as error:  # noqa: BLE001 - record and continue
@@ -153,7 +162,9 @@ def run_fetch(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="arknightsavatar-fetch", description="Fetch AB resources into data/raw.")
+    parser = argparse.ArgumentParser(
+        prog="arknightsavatar-fetch", description="Fetch AB resources into data/raw."
+    )
     parser.add_argument("--config", help="Path to config file")
     parser.add_argument(
         "--source",
@@ -164,8 +175,12 @@ def build_parser() -> argparse.ArgumentParser:
         "installed APK fills gaps — together they are the complete dataset)",
     )
     parser.add_argument("--category", choices=[*CATEGORIES, "all"], default="all")
-    parser.add_argument("--raw-dir", default=paths.RAW_DIR, help="Output cache directory")
-    parser.add_argument("--force", action="store_true", help="Re-fetch even if manifest says unchanged")
+    parser.add_argument(
+        "--raw-dir", default=paths.RAW_DIR, help="Output cache directory"
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Re-fetch even if manifest says unchanged"
+    )
     parser.add_argument(
         "--no-batch",
         action="store_true",
@@ -191,7 +206,13 @@ def main(argv: list[str] | None = None) -> int:
             compress=args.compress,
         )
         categories = list(CATEGORIES) if args.category == "all" else [args.category]
-        stats = run_fetch(source, categories, Path(args.raw_dir), force=args.force, game_version=config.game_version)
+        stats = run_fetch(
+            source,
+            categories,
+            Path(args.raw_dir),
+            force=args.force,
+            game_version=config.game_version,
+        )
     except Exception as error:  # noqa: BLE001 - CLI boundary
         print(f"error: {type(error).__name__}: {error}", file=sys.stderr)
         return 1

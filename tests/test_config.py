@@ -49,7 +49,9 @@ dir = "apk/game"
 
 def test_adb_game_default_location(tmp_path):
     config_path = tmp_path / "config.toml"
-    config_path.write_text('[adb]\nhost = "1.2.3.4"\n[adb.game]\nserver = "official"\n', encoding="utf8")
+    config_path.write_text(
+        '[adb]\nhost = "1.2.3.4"\n[adb.game]\nserver = "official"\n', encoding="utf8"
+    )
     config = load_config(config_path)
     assert config.adb.location == ""
     assert config.adb.resolved_location() == (
@@ -122,7 +124,9 @@ def test_data_repo_env_overrides(tmp_path, monkeypatch):
 
 def test_data_repo_config_env_override(tmp_path, monkeypatch):
     repo_path = tmp_path / "custom_repo.yaml"
-    repo_path.write_text("path: elsewhere\nurl: https://example.com/data.git\n", encoding="utf8")
+    repo_path.write_text(
+        "path: elsewhere\nurl: https://example.com/data.git\n", encoding="utf8"
+    )
     monkeypatch.setenv("ARKNIGHTSAVATAR_DATA_REPO_CONFIG", str(repo_path))
     config = load_config(tmp_path / "config.toml")
     assert config.data_repo.path == "elsewhere"

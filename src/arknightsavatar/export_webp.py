@@ -195,9 +195,13 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
+def _make_progress(
+    total: int,
+) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
     if tqdm is not None:
-        bar = tqdm(total=total, unit="character", desc="convert webp", dynamic_ncols=True)
+        bar = tqdm(
+            total=total, unit="character", desc="convert webp", dynamic_ncols=True
+        )
 
         def progress(index: int, total_count: int, label: str) -> None:
             bar.set_postfix_str(label)
@@ -218,10 +222,16 @@ def main(argv: list[str] | None = None) -> int:
 
     args = build_parser().parse_args(argv)
     if not 0 <= args.quality <= 100:
-        print(f"error: --quality must be between 0 and 100 (got {args.quality})", file=sys.stderr)
+        print(
+            f"error: --quality must be between 0 and 100 (got {args.quality})",
+            file=sys.stderr,
+        )
         return 1
     if not 0 <= args.method <= 6:
-        print(f"error: --method must be between 0 and 6 (got {args.method})", file=sys.stderr)
+        print(
+            f"error: --method must be between 0 and 6 (got {args.method})",
+            file=sys.stderr,
+        )
         return 1
     if args.limit < 0:
         print(f"error: --limit must be >= 0 (got {args.limit})", file=sys.stderr)

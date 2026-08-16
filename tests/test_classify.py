@@ -59,7 +59,10 @@ def test_dollar_multi_base_diffs_grouped(tmp_path: Path):
         },
     )
     for n in ("avg_1014_nearl2_1$1", "avg_1014_nearl2_1$2", "1$1", "2$1", "1$2", "2$2"):
-        _write_png(char_dir / f"{n}.png", (64, 64) if "$" in n and not n.startswith("avg") else (1024, 1024))
+        _write_png(
+            char_dir / f"{n}.png",
+            (64, 64) if "$" in n and not n.startswith("avg") else (1024, 1024),
+        )
 
     result = classify_character_dir(char_dir)
 
@@ -81,14 +84,21 @@ def test_skin_numbered_dir_base_is_seq1(tmp_path: Path):
 
     assert result.status == "ok"
     assert list(result.bases) == ["char_017_homura_1.png"]
-    assert result.bases["char_017_homura_1.png"] == ["char_017_homura_2.png", "char_017_homura_3.png"]
+    assert result.bases["char_017_homura_1.png"] == [
+        "char_017_homura_2.png",
+        "char_017_homura_3.png",
+    ]
 
 
 def test_bare_root_preferred_over_numbered(tmp_path: Path):
     """裸根名存在时它是唯一底图，_1.._7 都是差分（char_201_moeshd）。"""
     char_dir = tmp_path / "char_201_moeshd"
     char_dir.mkdir()
-    _write_meta(char_dir, {f"char_201_moeshd_{i}": [1024, 1024] for i in range(1, 8)} | {"char_201_moeshd": [1024, 1024]})
+    _write_meta(
+        char_dir,
+        {f"char_201_moeshd_{i}": [1024, 1024] for i in range(1, 8)}
+        | {"char_201_moeshd": [1024, 1024]},
+    )
     _write_png(char_dir / "char_201_moeshd.png", (1024, 1024))
     for i in range(1, 8):
         _write_png(char_dir / f"char_201_moeshd_{i}.png", (1024, 1024))
@@ -144,7 +154,9 @@ def test_no_base_fallback_smallest_string(tmp_path: Path):
     result = classify_character_dir(char_dir)
 
     assert result.status == "ok"
-    assert result.bases == {"char_242_mayer#2.png": [f"char_242_mayer#{i}.png" for i in (3, 4, 5)]}
+    assert result.bases == {
+        "char_242_mayer#2.png": [f"char_242_mayer#{i}.png" for i in (3, 4, 5)]
+    }
     assert result.unassigned == []
 
 
@@ -171,7 +183,9 @@ def test_single_image_any_name_is_base(tmp_path: Path):
 def test_case_insensitive_base_match(tmp_path: Path):
     char_dir = tmp_path / "avg_274_astesia_1"
     char_dir.mkdir()
-    _write_meta(char_dir, {"avg_274_Astesia_1": [1024, 1024], "avg_274_Astesia_2": [1024, 1024]})
+    _write_meta(
+        char_dir, {"avg_274_Astesia_1": [1024, 1024], "avg_274_Astesia_2": [1024, 1024]}
+    )
     _write_png(char_dir / "avg_274_Astesia_1.png", (1024, 1024))
     _write_png(char_dir / "avg_274_Astesia_2.png", (1024, 1024))
 

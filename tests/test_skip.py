@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import shutil
 from pathlib import Path
@@ -13,7 +13,10 @@ def test_load_missing_and_invalid():
     workdir = PROJECT_ROOT / f"arknightsavatar_skip_test_{uuid4().hex[:8]}"
     os.makedirs(workdir, mode=0o777)
     try:
-        assert SkipList.load(workdir / "missing.json").is_character_skipped("anything") is False
+        assert (
+            SkipList.load(workdir / "missing.json").is_character_skipped("anything")
+            is False
+        )
 
         bad = workdir / "bad.json"
         bad.write_text("{not json", encoding="utf8")

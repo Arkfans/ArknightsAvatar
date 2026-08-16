@@ -8,7 +8,7 @@ standard LZ4 and decompresses them, so UnityPy can parse the bundle.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 import lz4.block
 
@@ -32,7 +32,9 @@ def _read_extended_length(data: bytearray, pos: int) -> tuple[int, int]:
     return length, pos
 
 
-def unscramble_ak_lz4(compressed_data: bytes | bytearray, uncompressed_size: int) -> bytes:
+def unscramble_ak_lz4(
+    compressed_data: bytes | bytearray, uncompressed_size: int
+) -> bytes:
     """Rewrite Arknights scrambled-LZ4 bytes back into standard LZ4 blocks.
 
     The transformation is an involution for the token/offset swaps, so it can
@@ -67,7 +69,9 @@ def unscramble_ak_lz4(compressed_data: bytes | bytearray, uncompressed_size: int
     return bytes(data)
 
 
-def decompress_ak_lz4(compressed_data: bytes | bytearray, uncompressed_size: int) -> bytes:
+def decompress_ak_lz4(
+    compressed_data: bytes | bytearray, uncompressed_size: int
+) -> bytes:
     """Decompress an Arknights custom-compressed UnityFS block."""
     fixed = unscramble_ak_lz4(compressed_data, uncompressed_size)
     return lz4.block.decompress(fixed, uncompressed_size)

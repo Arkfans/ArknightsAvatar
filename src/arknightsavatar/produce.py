@@ -93,7 +93,8 @@ def main(argv: list[str] | None = None) -> int:
         "generated_at": _now(),
         "started_at": started,
         "steps": results,
-        "ok": len(results) == len(expected) and all(code == 0 for code in results.values()),
+        "ok": len(results) == len(expected)
+        and all(code == 0 for code in results.values()),
     }
     write_stats(args.stats_out, payload)
     print(f"produce stats written: {args.stats_out}")

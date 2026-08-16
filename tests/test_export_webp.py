@@ -1,4 +1,4 @@
-﻿import os
+import os
 import shutil
 from pathlib import Path
 from uuid import uuid4
@@ -21,7 +21,9 @@ def workdir():
     shutil.rmtree(base, ignore_errors=True)
 
 
-def _write_png(path: Path, size: int = 180, color=(0, 128, 255, 255), transparent: bool = False) -> None:
+def _write_png(
+    path: Path, size: int = 180, color=(0, 128, 255, 255), transparent: bool = False
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     image = Image.new("RGBA", (size, size), color)
     if transparent:
@@ -35,7 +37,10 @@ def test_iter_character_dirs_sorted_and_ignores_files(workdir):
     (export / "b_char").mkdir(parents=True)
     (export / "a_char").mkdir(parents=True)
     (export / "note.txt").write_text("x", encoding="utf8")
-    assert [p.name for p in export_webp.iter_character_dirs(export)] == ["a_char", "b_char"]
+    assert [p.name for p in export_webp.iter_character_dirs(export)] == [
+        "a_char",
+        "b_char",
+    ]
     assert export_webp.iter_character_dirs(root / "missing") == []
 
 
@@ -47,7 +52,9 @@ def test_iter_pngs_finds_nested_and_sorted(workdir):
     (char_dir / "2$1.png").write_bytes(b"x")
     (char_dir / "sub" / "1$1.png").write_bytes(b"x")
     (char_dir / "alpha.png").write_bytes(b"x")
-    names = [p.relative_to(char_dir).as_posix() for p in export_webp.iter_pngs(char_dir)]
+    names = [
+        p.relative_to(char_dir).as_posix() for p in export_webp.iter_pngs(char_dir)
+    ]
     assert names == ["10$1.png", "2$1.png", "alpha.png", "sub/1$1.png"]
 
 
@@ -74,7 +81,9 @@ def test_convert_characters_incremental_and_stats(workdir):
 
     calls: list[str] = []
     stats = export_webp.convert_characters(
-        export, out, progress=lambda index, total, label: calls.append(f"{index}/{total} {label}")
+        export,
+        out,
+        progress=lambda index, total, label: calls.append(f"{index}/{total} {label}"),
     )
     assert stats["characters"] == 2
     assert stats["images"] == 3
@@ -219,21 +228,28 @@ def test_main_end_to_end(workdir):
 
     # --character / --limit / --force
     out_char = root / "out_char"
-    assert export_webp.main(
-        ["--export-dir", str(export), "-o", str(out_char), "--character", "c2"]
-    ) == 0
+    assert (
+        export_webp.main(
+            ["--export-dir", str(export), "-o", str(out_char), "--character", "c2"]
+        )
+        == 0
+    )
     assert sorted(p.name for p in out_char.iterdir()) == ["c2"]
 
     out_limit = root / "out_limit"
-    assert export_webp.main(
-        ["--export-dir", str(export), "-o", str(out_limit), "--limit", "1"]
-    ) == 0
+    assert (
+        export_webp.main(
+            ["--export-dir", str(export), "-o", str(out_limit), "--limit", "1"]
+        )
+        == 0
+    )
     assert sorted(p.name for p in out_limit.iterdir()) == ["c1"]
 
     out_force = root / "out_force"
-    assert export_webp.main(
-        ["--export-dir", str(export), "-o", str(out_force), "--force"]
-    ) == 0
+    assert (
+        export_webp.main(["--export-dir", str(export), "-o", str(out_force), "--force"])
+        == 0
+    )
 
 
 def test_main_errors(workdir):
@@ -242,18 +258,8 @@ def test_main_errors(workdir):
     _write_png(export / "c1" / "1$1.png")
 
     assert export_webp.main(["--export-dir", str(root / "missing")]) == 1
-    assert export_webp.main(
-        ["--export-dir", str(export), "--character", "ghost"]
-    ) == 1
-    assert export_webp.main(
-        ["--export-dir", str(export), "--quality", "101"]
-    ) == 1
-    assert export_webp.main(
-        ["--export-dir", str(export), "--quality", "-1"]
-    ) == 1
-    assert export_webp.main(
-        ["--export-dir", str(export), "--method", "7"]
-    ) == 1
-    assert export_webp.main(
-        ["--export-dir", str(export), "--limit", "-1"]
-    ) == 1
+    assert export_webp.main(["--export-dir", str(export), "--character", "ghost"]) == 1
+    assert export_webp.main(["--export-dir", str(export), "--quality", "101"]) == 1
+    assert export_webp.main(["--export-dir", str(export), "--quality", "-1"]) == 1
+    assert export_webp.main(["--export-dir", str(export), "--method", "7"]) == 1
+    assert export_webp.main(["--export-dir", str(export), "--limit", "-1"]) == 1

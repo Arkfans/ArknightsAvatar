@@ -1,4 +1,4 @@
-﻿import json
+import json
 import math
 import os
 import shutil
@@ -65,7 +65,9 @@ def _write_extract_report(root: Path, specs: dict[str, dict[str, str]]) -> Path:
                 "characters": {
                     char_id: {
                         "bases": {},
-                        "diffs": {name: {"status": status} for name, status in diffs.items()},
+                        "diffs": {
+                            name: {"status": status} for name, status in diffs.items()
+                        },
                     }
                     for char_id, diffs in specs.items()
                 },
@@ -108,7 +110,9 @@ def test_collect_diff_names_flattens_excludes_alpha_and_sorts():
 def test_collect_diff_names_handles_malformed_items():
     assert collage.collect_diff_names(None) == []
     assert collage.collect_diff_names({"bases": None}) == []
-    assert collage.collect_diff_names({"bases": {"b.png": {"diff": "not-a-list"}}}) == []
+    assert (
+        collage.collect_diff_names({"bases": {"b.png": {"diff": "not-a-list"}}}) == []
+    )
 
 
 def test_load_skipped_only_dropped(workdir):
@@ -142,7 +146,10 @@ def test_load_skipped_invalid_report(workdir):
 
 
 def test_build_collage_dimensions():
-    tiles = [(f"{i}$1.png", Image.new("RGBA", (TILE, TILE), (255, 0, 0, 255)), "") for i in range(5)]
+    tiles = [
+        (f"{i}$1.png", Image.new("RGBA", (TILE, TILE), (255, 0, 0, 255)), "")
+        for i in range(5)
+    ]
     columns = 3
     rows = math.ceil(5 / columns)
     image = collage.build_collage(tiles, columns=columns)
@@ -371,9 +378,7 @@ def test_process_characters_skip_diff_only(workdir):
 def test_process_characters_invalid_report_raises(workdir):
     root = Path(workdir)
     with pytest.raises(ValueError):
-        collage.process_characters(
-            {"characters": None}, root / "export", root / "out"
-        )
+        collage.process_characters({"characters": None}, root / "export", root / "out")
 
 
 def test_main_default_all_characters(workdir):
@@ -392,14 +397,21 @@ def test_main_default_all_characters(workdir):
     extract_report = _write_extract_report(root, {})
     out = root / "out"
 
-    assert collage.main(
-        [
-            "--classified", str(report),
-            "--export-dir", str(root / "export"),
-            "--extract-report", str(extract_report),
-            "-o", str(out),
-        ]
-    ) == 0
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(root / "export"),
+                "--extract-report",
+                str(extract_report),
+                "-o",
+                str(out),
+            ]
+        )
+        == 0
+    )
 
     assert {p.name for p in out.iterdir()} == {"c1.png", "c2.png"}
     # 2 diffs, default 3 columns -> one row
@@ -419,15 +431,43 @@ def test_main_character_filter_and_limit(workdir):
     export = root / "export"
 
     out1 = root / "out1"
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--extract-report", str(extract_report), "-o", str(out1), "--character", "c2"]
-    ) == 0
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(export),
+                "--extract-report",
+                str(extract_report),
+                "-o",
+                str(out1),
+                "--character",
+                "c2",
+            ]
+        )
+        == 0
+    )
     assert [p.name for p in out1.iterdir()] == ["c2.png"]
 
     out2 = root / "out2"
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--extract-report", str(extract_report), "-o", str(out2), "--limit", "1"]
-    ) == 0
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(export),
+                "--extract-report",
+                str(extract_report),
+                "-o",
+                str(out2),
+                "--limit",
+                "1",
+            ]
+        )
+        == 0
+    )
     assert [p.name for p in out2.iterdir()] == ["c1.png"]
 
 
@@ -440,13 +480,41 @@ def test_main_columns_changes_width(workdir):
     export = root / "export"
 
     out2 = root / "out2"
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--extract-report", str(extract_report), "-o", str(out2), "--columns", "2"]
-    ) == 0
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(export),
+                "--extract-report",
+                str(extract_report),
+                "-o",
+                str(out2),
+                "--columns",
+                "2",
+            ]
+        )
+        == 0
+    )
     out5 = root / "out5"
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--extract-report", str(extract_report), "-o", str(out5), "--columns", "5"]
-    ) == 0
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(export),
+                "--extract-report",
+                str(extract_report),
+                "-o",
+                str(out5),
+                "--columns",
+                "5",
+            ]
+        )
+        == 0
+    )
 
     assert Image.open(out2 / "c1.png").width == 2 * TILE + 3 * PAD
     assert Image.open(out5 / "c1.png").width == 5 * TILE + 6 * PAD
@@ -466,16 +534,48 @@ def test_main_show_skipped_and_extract_report(workdir):
 
     # default: skipped (dropped) diff omitted even though its avatar exists
     out_default = root / "out_default"
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--extract-report", str(extract_report), "-o", str(out_default), "--columns", "2"]
-    ) == 0
-    assert Image.open(out_default / "c1.png").size == (2 * TILE + 3 * PAD, TILE + 2 * PAD)
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(export),
+                "--extract-report",
+                str(extract_report),
+                "-o",
+                str(out_default),
+                "--columns",
+                "2",
+            ]
+        )
+        == 0
+    )
+    assert Image.open(out_default / "c1.png").size == (
+        2 * TILE + 3 * PAD,
+        TILE + 2 * PAD,
+    )
 
     # --show-skipped: 3 tiles, 2 rows, third is rendered with [skipped] label
     out_show = root / "out_show"
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--extract-report", str(extract_report), "-o", str(out_show), "--columns", "2", "--show-skipped"]
-    ) == 0
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(export),
+                "--extract-report",
+                str(extract_report),
+                "-o",
+                str(out_show),
+                "--columns",
+                "2",
+                "--show-skipped",
+            ]
+        )
+        == 0
+    )
     image = Image.open(out_show / "c1.png")
     assert image.size == (2 * TILE + 3 * PAD, 2 * TILE + 3 * PAD)
     assert _min_pixel_sum(image.crop(_tile_box(2, 2))) < 300  # [skipped] label
@@ -486,12 +586,24 @@ def test_main_default_extract_report_missing_falls_back(workdir, monkeypatch):
     report = _build_report(root, {"c1": {"c1.png": ["1$1.png", "2$1.png"]}})
     _write_avatar(root / "export" / "c1" / "1$1.png")
     # 2$1.png missing and no extract report -> rendered as [x] placeholder
-    monkeypatch.setattr(collage, "DEFAULT_EXTRACT_REPORT", str(root / "no_extract.json"))
+    monkeypatch.setattr(
+        collage, "DEFAULT_EXTRACT_REPORT", str(root / "no_extract.json")
+    )
     out = root / "out"
 
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(root / "export"), "-o", str(out)]
-    ) == 0
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(root / "export"),
+                "-o",
+                str(out),
+            ]
+        )
+        == 0
+    )
     image = Image.open(out / "c1.png")
     assert image.size == (3 * TILE + 4 * PAD, TILE + 2 * PAD)
     assert _min_pixel_sum(image.crop(_tile_box(1, 3))) < 300  # [x] placeholder
@@ -504,19 +616,45 @@ def test_main_errors(workdir):
     _write_avatar(export / "c1" / "1$1.png")
 
     assert collage.main(["--classified", str(root / "missing.json")]) == 1
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--columns", "0"]
-    ) == 1
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--limit", "-1"]
-    ) == 1
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--character", "ghost"]
-    ) == 1
+    assert (
+        collage.main(
+            ["--classified", str(report), "--export-dir", str(export), "--columns", "0"]
+        )
+        == 1
+    )
+    assert (
+        collage.main(
+            ["--classified", str(report), "--export-dir", str(export), "--limit", "-1"]
+        )
+        == 1
+    )
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(export),
+                "--character",
+                "ghost",
+            ]
+        )
+        == 1
+    )
     # explicit missing extract report is an error
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(export), "--extract-report", str(root / "missing_extract.json")]
-    ) == 1
+    assert (
+        collage.main(
+            [
+                "--classified",
+                str(report),
+                "--export-dir",
+                str(export),
+                "--extract-report",
+                str(root / "missing_extract.json"),
+            ]
+        )
+        == 1
+    )
 
 
 def test_main_invalid_report_and_missing_export(workdir):
@@ -526,6 +664,9 @@ def test_main_invalid_report_and_missing_export(workdir):
     assert collage.main(["--classified", str(bad)]) == 1
 
     report = _build_report(root, {"c1": {"c1.png": ["1$1.png"]}})
-    assert collage.main(
-        ["--classified", str(report), "--export-dir", str(root / "noexport")]
-    ) == 1
+    assert (
+        collage.main(
+            ["--classified", str(report), "--export-dir", str(root / "noexport")]
+        )
+        == 1
+    )

@@ -19,7 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from arknightsavatar import __version__, paths
@@ -31,7 +31,7 @@ HEADER_KEYS = ("schema_version", "pipeline_version", "game_version", "generated_
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def sha256_file(path: str | Path) -> str:
@@ -70,7 +70,9 @@ def report_header(
     return {
         "schema_version": SCHEMA_VERSION,
         "pipeline_version": __version__,
-        "game_version": game_version if game_version is not None else load_game_version(),
+        "game_version": game_version
+        if game_version is not None
+        else load_game_version(),
         "generated_at": generated_at if generated_at is not None else now_iso(),
     }
 

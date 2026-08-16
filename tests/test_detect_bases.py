@@ -1,8 +1,8 @@
 import json
 import os
 import shutil
-from uuid import uuid4
 from pathlib import Path
+from uuid import uuid4
 
 import cv2
 import numpy as np
@@ -11,7 +11,6 @@ from PIL import Image
 
 from arknightsavatar import detect, detect_bases
 from arknightsavatar.skip import SkipList
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -35,7 +34,7 @@ def _fake_detector(*boxes: tuple[float, ...]):
 
     def detector(bgr: np.ndarray) -> list[dict]:
         return [
-            {"bbox": [int(round(v)) for v in box[:4]], "confidence": float(box[4])}
+            {"bbox": [round(v) for v in box[:4]], "confidence": float(box[4])}
             for box in boxes
         ]
 
@@ -88,7 +87,9 @@ def _stub_top1(image_path, **kwargs):
     }
 
 
-def _stub_head_top1(image_path, *, conf=detect_bases.DEFAULT_HEAD_CONF, detector=None) -> dict:
+def _stub_head_top1(
+    image_path, *, conf=detect_bases.DEFAULT_HEAD_CONF, detector=None
+) -> dict:
     """CLI 测试用的 detect_head_top1 替身，不依赖真实模型。"""
     return {
         "head_detected": True,
@@ -144,7 +145,9 @@ def test_filter_bases_skips_entries_without_threshold(workdir: Path):
 
     selected = detect_bases.filter_bases(report, threshold=0.95)
 
-    assert [(name, base) for name, base, _, _ in selected] == [("avg_001_a_1", "ok.png")]
+    assert [(name, base) for name, base, _, _ in selected] == [
+        ("avg_001_a_1", "ok.png")
+    ]
 
 
 def test_filter_bases_respects_skip(workdir: Path):
@@ -166,7 +169,9 @@ def test_filter_bases_respects_skip(workdir: Path):
         skip=SkipList({"skip_all": "reason", "avg_001_a_1/skip.png": "bad"}),
     )
 
-    assert [(name, base) for name, base, _, _ in result] == [("avg_001_a_1", "keep.png")]
+    assert [(name, base) for name, base, _, _ in result] == [
+        ("avg_001_a_1", "keep.png")
+    ]
 
 
 def test_filter_bases_characters_dir_override(workdir: Path):
@@ -277,7 +282,11 @@ def test_detect_matched_bases_character_filter_and_limit(workdir: Path):
     head_detector = _fake_head_detector(((10, 10, 60, 60), 0.8))
 
     limited = detect_bases.detect_matched_bases(
-        report_data, characters_dir, limit=1, detector=detector, head_detector=head_detector
+        report_data,
+        characters_dir,
+        limit=1,
+        detector=detector,
+        head_detector=head_detector,
     )
     assert limited.stats["filtered"] == 1
     assert list(limited.characters) == ["avg_001_a_1"]
@@ -462,10 +471,14 @@ def test_render_annotations_sets_vis_image(workdir: Path):
     assert out.is_file()
     assert report.characters["avg_001_a_1"].bases["a.png"].vis_image == str(out)
     payload = report.as_dict()
-    assert payload["characters"]["avg_001_a_1"]["bases"]["a.png"]["vis_image"] == str(out)
+    assert payload["characters"]["avg_001_a_1"]["bases"]["a.png"]["vis_image"] == str(
+        out
+    )
 
 
-def test_render_annotations_bad_image_warns(workdir: Path, capsys: pytest.CaptureFixture):
+def test_render_annotations_bad_image_warns(
+    workdir: Path, capsys: pytest.CaptureFixture
+):
     characters_dir = workdir / "characters"
     report_data = _match_report(
         characters_dir,
@@ -485,7 +498,9 @@ def test_render_annotations_bad_image_warns(workdir: Path, capsys: pytest.Captur
     assert "cannot render" in capsys.readouterr().err
 
 
-def test_cli_missing_match_report(cli_env, capsys: pytest.CaptureFixture, workdir: Path):
+def test_cli_missing_match_report(
+    cli_env, capsys: pytest.CaptureFixture, workdir: Path
+):
     code = detect_bases.main(["--match", str(workdir / "missing.json")])
     assert code == 1
     assert "match report not found" in capsys.readouterr().err
@@ -514,9 +529,12 @@ def test_cli_run_writes_report_and_images(cli_env, workdir: Path):
 
     code = detect_bases.main(
         [
-            "--match", str(match_path),
-            "--output", str(output),
-            "--vis-dir", str(vis_dir),
+            "--match",
+            str(match_path),
+            "--output",
+            str(output),
+            "--vis-dir",
+            str(vis_dir),
         ]
     )
 
@@ -563,11 +581,15 @@ def test_cli_all_cached_skips_detection(cli_env, workdir, capsys, monkeypatch):
 
     monkeypatch.setattr(detect, "detect_top1", counting_top1)
 
-    code = detect_bases.main(["--match", str(match_path), "--output", str(output), "--no-vis"])
+    code = detect_bases.main(
+        ["--match", str(match_path), "--output", str(output), "--no-vis"]
+    )
     assert code == 0
     assert calls["n"] == 2
 
-    code = detect_bases.main(["--match", str(match_path), "--output", str(output), "--no-vis"])
+    code = detect_bases.main(
+        ["--match", str(match_path), "--output", str(output), "--no-vis"]
+    )
     assert code == 0
     assert calls["n"] == 2  # 第二次未调用模型
     out = capsys.readouterr().out
@@ -620,12 +642,22 @@ def test_cli_incremental_detects_only_missing(cli_env, workdir, capsys, monkeypa
     monkeypatch.setattr(detect, "detect_top1", counting_top1)
 
     code = detect_bases.main(
-        ["--match", str(match_path), "--output", str(output), "--no-vis", "--limit", "2"]
+        [
+            "--match",
+            str(match_path),
+            "--output",
+            str(output),
+            "--no-vis",
+            "--limit",
+            "2",
+        ]
     )
     assert code == 0
     assert calls["n"] == 2  # 第一轮只处理前两张
 
-    code = detect_bases.main(["--match", str(match_path), "--output", str(output), "--no-vis"])
+    code = detect_bases.main(
+        ["--match", str(match_path), "--output", str(output), "--no-vis"]
+    )
     assert code == 0
     assert calls["n"] == 3  # 第二轮只检测缺失的 c.png
     assert "reusing 2 cached detection(s)" in capsys.readouterr().out
@@ -647,7 +679,9 @@ def test_cli_force_redetects_cached(cli_env, workdir, monkeypatch):
     _write_image(characters_dir / "avg_001_a_1" / "a.png")
     match_path = workdir / "match.json"
     match_path.write_text(
-        json.dumps(_match_report(characters_dir, {"avg_001_a_1": {"a.png": _entry(0.96)}})),
+        json.dumps(
+            _match_report(characters_dir, {"avg_001_a_1": {"a.png": _entry(0.96)}})
+        ),
         encoding="utf8",
     )
     output = workdir / "report.json"
@@ -660,7 +694,9 @@ def test_cli_force_redetects_cached(cli_env, workdir, monkeypatch):
 
     monkeypatch.setattr(detect, "detect_top1", counting_top1)
 
-    code = detect_bases.main(["--match", str(match_path), "--output", str(output), "--no-vis"])
+    code = detect_bases.main(
+        ["--match", str(match_path), "--output", str(output), "--no-vis"]
+    )
     assert code == 0
     assert calls["n"] == 1
 
@@ -751,9 +787,12 @@ def test_cli_no_vis_skips_images(cli_env, workdir: Path, capsys: pytest.CaptureF
 
     code = detect_bases.main(
         [
-            "--match", str(match_path),
-            "--output", str(output),
-            "--vis-dir", str(vis_dir),
+            "--match",
+            str(match_path),
+            "--output",
+            str(output),
+            "--vis-dir",
+            str(vis_dir),
             "--no-vis",
         ]
     )
@@ -781,7 +820,7 @@ def test_cli_output_stdout_dash(cli_env, capsys: pytest.CaptureFixture, workdir:
 
     assert code == 0
     out = capsys.readouterr().out
-    payload = json.loads(out[out.index("{"): out.rfind("}") + 1])
+    payload = json.loads(out[out.index("{") : out.rfind("}") + 1])
     assert payload["stats"]["filtered"] == 1
     assert payload["stats"]["detected"] == 1
 
@@ -803,7 +842,9 @@ def test_cli_head_conf_flag_and_report_fields(cli_env, workdir: Path):
     _write_image(characters_dir / "avg_001_a_1" / "a.png")
     match_path = workdir / "match.json"
     match_path.write_text(
-        json.dumps(_match_report(characters_dir, {"avg_001_a_1": {"a.png": _entry(0.96)}})),
+        json.dumps(
+            _match_report(characters_dir, {"avg_001_a_1": {"a.png": _entry(0.96)}})
+        ),
         encoding="utf8",
     )
     output = workdir / "report.json"

@@ -26,7 +26,10 @@ def load_rsa_keys(key_path: str | None = None) -> list:
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         keygen(str(path))
-        print(f"generated adb key: {path} (authorize it once on the device)", file=sys.stderr)
+        print(
+            f"generated adb key: {path} (authorize it once on the device)",
+            file=sys.stderr,
+        )
     return [PythonRSASigner.FromRSAKeyPath(str(path))]
 
 
@@ -56,8 +59,10 @@ def connect_device(
         )
 
     try:
-        device.connect(rsa_keys=rsa_keys, auth_timeout_s=auth_timeout_s, auth_callback=_prompt)
-    except Exception as error:  # noqa: BLE001 - wrap with guidance and re-raise
+        device.connect(
+            rsa_keys=rsa_keys, auth_timeout_s=auth_timeout_s, auth_callback=_prompt
+        )
+    except Exception as error:
         name = type(error).__name__
         if "DeviceAuthError" in name or "AdbTimeoutError" in name:
             print(

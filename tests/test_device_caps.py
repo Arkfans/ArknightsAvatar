@@ -3,11 +3,14 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import adb_shell.adb_device
-import pytest
 
 import arknightsavatar.device_caps as dc
 from arknightsavatar.config import AdbConfig, Config
-from arknightsavatar.device_caps import DeviceCaps, detect_device_caps, render_caps_report
+from arknightsavatar.device_caps import (
+    DeviceCaps,
+    detect_device_caps,
+    render_caps_report,
+)
 from arknightsavatar.sources.adb import AdbSource
 from arknightsavatar.sources.apk_adb import ApkAdbSource
 
@@ -63,8 +66,14 @@ def test_detect_full_suite_all_available():
     # unzip probe pushed one tiny zip and cleaned it up again
     assert device.push.call_count == 1
     remote = device.push.call_args.args[1]
-    assert remote.startswith("/data/local/tmp/arknights_caps_unzip_") and remote.endswith(".zip")
-    rm_calls = [call.args[0] for call in device.shell.call_args_list if call.args[0].startswith("rm -f")]
+    assert remote.startswith(
+        "/data/local/tmp/arknights_caps_unzip_"
+    ) and remote.endswith(".zip")
+    rm_calls = [
+        call.args[0]
+        for call in device.shell.call_args_list
+        if call.args[0].startswith("rm -f")
+    ]
     assert any("arknights_caps_unzip_" in cmd for cmd in rm_calls)
     assert not list(Path(tempfile.gettempdir()).glob("arknights_caps_*.zip"))
 
@@ -85,7 +94,9 @@ def test_detect_can_skip_probes():
     device = _fake_device([("command -v", "OK tar\nOK unzip\n")])
     caps = detect_device_caps(device, probe_tar=False, probe_unzip=False)
     assert caps.tar is True and caps.unzip is True
-    assert caps.tar_list is False and caps.unzip_list is False and caps.unzip_pipe is False
+    assert (
+        caps.tar_list is False and caps.unzip_list is False and caps.unzip_pipe is False
+    )
     device.push.assert_not_called()
 
 
@@ -99,7 +110,11 @@ def test_tar_probe_failure_still_cleans_scratch():
     device = _fake_device([("command -v", "OK tar\n"), ("tar -cf", "")])
     caps = detect_device_caps(device)
     assert caps.tar_list is False and caps.tar_gzip is False
-    rm_calls = [call.args[0] for call in device.shell.call_args_list if call.args[0].startswith("rm -rf")]
+    rm_calls = [
+        call.args[0]
+        for call in device.shell.call_args_list
+        if call.args[0].startswith("rm -rf")
+    ]
     assert any("arknights_caps_list_" in cmd for cmd in rm_calls)
     assert any("arknights_caps_gz_" in cmd for cmd in rm_calls)
 
@@ -125,7 +140,9 @@ def test_device_caps_properties():
     assert not caps.apk_batch_ok  # unzip missing
     assert not caps.compress_ok
 
-    full = DeviceCaps(tar=True, tar_list=True, unzip=True, unzip_list=True, unzip_pipe=True)
+    full = DeviceCaps(
+        tar=True, tar_list=True, unzip=True, unzip_list=True, unzip_pipe=True
+    )
     assert full.apk_batch_ok
 
     assert DeviceCaps(tar_gzip=True).compress_ok
@@ -133,9 +150,19 @@ def test_device_caps_properties():
 
 def test_render_caps_report():
     caps = DeviceCaps(
-        ls=True, cat=True, grep=True, printf=True, rm=True, mkdir=True,
-        tar=True, tar_list=True, tar_gzip=False, gzip=True,
-        unzip=True, unzip_list=True, unzip_pipe=True,
+        ls=True,
+        cat=True,
+        grep=True,
+        printf=True,
+        rm=True,
+        mkdir=True,
+        tar=True,
+        tar_list=True,
+        tar_gzip=False,
+        gzip=True,
+        unzip=True,
+        unzip_list=True,
+        unzip_pipe=True,
     )
     report = render_caps_report(caps)
     assert report.startswith("device capability report:")
@@ -216,9 +243,7 @@ def test_adb_source_disables_compress_without_gzip(monkeypatch):
 
 
 def test_adb_source_keeps_batch_when_caps_ok(monkeypatch):
-    _patch_adb_source(
-        monkeypatch, DeviceCaps(tar=True, tar_list=True, tar_gzip=True)
-    )
+    _patch_adb_source(monkeypatch, DeviceCaps(tar=True, tar_list=True, tar_gzip=True))
     source = AdbSource("127.0.0.1", 5555, "/sdcard/game", batch=True, compress=True)
     assert source._batch is True
     assert source._compress is True
@@ -243,13 +268,18 @@ def _patch_apk_adb_source(monkeypatch, caps: DeviceCaps):
     monkeypatch.setattr(apk_mod, "detect_device_caps", lambda device, **kwargs: caps)
     monkeypatch.setattr(apk_mod, "connect_device", lambda *args, **kwargs: None)
     monkeypatch.setattr(apk_mod, "load_rsa_keys", lambda *args, **kwargs: [])
-    monkeypatch.setattr(apk_mod, "installed_apk_paths", lambda *args, **kwargs: ["/data/app/base.apk"])
+    monkeypatch.setattr(
+        apk_mod, "installed_apk_paths", lambda *args, **kwargs: ["/data/app/base.apk"]
+    )
     monkeypatch.setattr(adb_shell.adb_device, "AdbDeviceTcp", lambda host, port: Mock())
 
 
 def test_apk_adb_source_disables_batch_without_unzip(monkeypatch):
     _patch_apk_adb_source(
-        monkeypatch, DeviceCaps(tar=True, tar_list=True, unzip=True, unzip_list=False, unzip_pipe=False)
+        monkeypatch,
+        DeviceCaps(
+            tar=True, tar_list=True, unzip=True, unzip_list=False, unzip_pipe=False
+        ),
     )
     source = ApkAdbSource("127.0.0.1", 5555, "com.hypergryph.arknights", batch=True)
     assert source._batch is False
@@ -257,7 +287,10 @@ def test_apk_adb_source_disables_batch_without_unzip(monkeypatch):
 
 def test_apk_adb_source_disables_batch_without_tar(monkeypatch):
     _patch_apk_adb_source(
-        monkeypatch, DeviceCaps(unzip=True, unzip_list=True, unzip_pipe=True, tar=True, tar_list=False)
+        monkeypatch,
+        DeviceCaps(
+            unzip=True, unzip_list=True, unzip_pipe=True, tar=True, tar_list=False
+        ),
     )
     source = ApkAdbSource("127.0.0.1", 5555, "com.hypergryph.arknights", batch=True)
     assert source._batch is False
@@ -266,7 +299,9 @@ def test_apk_adb_source_disables_batch_without_tar(monkeypatch):
 def test_apk_adb_source_keeps_batch_when_caps_ok(monkeypatch):
     _patch_apk_adb_source(
         monkeypatch,
-        DeviceCaps(tar=True, tar_list=True, unzip=True, unzip_list=True, unzip_pipe=True),
+        DeviceCaps(
+            tar=True, tar_list=True, unzip=True, unzip_list=True, unzip_pipe=True
+        ),
     )
     source = ApkAdbSource("127.0.0.1", 5555, "com.hypergryph.arknights", batch=True)
     assert source._batch is True

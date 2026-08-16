@@ -5,7 +5,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from arknightsavatar import paths, reporting
@@ -132,7 +132,9 @@ class ClassificationReport:
             "generated_at": self.generated_at,
             "characters_dir": self.characters_dir,
             "stats": self.stats,
-            "characters": {name: item.as_dict() for name, item in self.characters.items()},
+            "characters": {
+                name: item.as_dict() for name, item in self.characters.items()
+            },
         }
 
 
@@ -150,7 +152,11 @@ def _load_meta_textures(char_dir: Path) -> dict[str, list[int]]:
         return {}
     result: dict[str, list[int]] = {}
     for key, size in textures.items():
-        if isinstance(size, list) and len(size) == 2 and all(isinstance(v, int) for v in size):
+        if (
+            isinstance(size, list)
+            and len(size) == 2
+            and all(isinstance(v, int) for v in size)
+        ):
             result[str(key)] = size
     return result
 
@@ -233,7 +239,14 @@ def classify_character_dir(char_dir: Path) -> CharacterClassification:
 
 def classify_characters(characters_dir: Path) -> ClassificationReport:
     """Classify all characters and aggregate stats."""
-    stats = {"total": 0, "ok": 0, "empty": 0, "no_base": 0, "base_files": 0, "diff_files": 0}
+    stats = {
+        "total": 0,
+        "ok": 0,
+        "empty": 0,
+        "no_base": 0,
+        "base_files": 0,
+        "diff_files": 0,
+    }
     characters: dict[str, CharacterClassification] = {}
     for char_dir in sorted(p for p in characters_dir.iterdir() if p.is_dir()):
         classification = classify_character_dir(char_dir)
@@ -241,11 +254,13 @@ def classify_characters(characters_dir: Path) -> ClassificationReport:
         stats["total"] += 1
         stats[classification.status] += 1
         stats["base_files"] += len(classification.bases)
-        stats["diff_files"] += sum(len(diffs) for diffs in classification.bases.values())
+        stats["diff_files"] += sum(
+            len(diffs) for diffs in classification.bases.values()
+        )
         stats["diff_files"] += len(classification.unassigned)
     return ClassificationReport(
         characters_dir=str(characters_dir),
-        generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        generated_at=datetime.now(UTC).isoformat(timespec="seconds"),
         characters=characters,
         stats=stats,
     )
@@ -273,7 +288,9 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     characters_dir = Path(args.characters_dir)
     if not characters_dir.is_dir():
-        print(f"error: characters directory not found: {characters_dir}", file=sys.stderr)
+        print(
+            f"error: characters directory not found: {characters_dir}", file=sys.stderr
+        )
         return 1
 
     report = classify_characters(characters_dir)

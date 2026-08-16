@@ -13,10 +13,11 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from arknightsavatar import paths, reporting
 from arknightsavatar.skip import DEFAULT_SKIP, SkipList
@@ -46,7 +47,7 @@ _box_only_unavailable = False
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def _auto_device() -> str:
@@ -55,7 +56,7 @@ def _auto_device() -> str:
 
         if torch.cuda.is_available():
             return "cuda:0"
-    except Exception:  # noqa: BLE001 - 无 torch/GPU 时回退 CPU
+    except Exception:  # noqa: BLE001, S110 - 无 torch/GPU 时回退 CPU
         pass
     return "cpu"
 
@@ -135,7 +136,7 @@ def _detect_boxes(bgr: np.ndarray, device: str) -> list[dict]:
             box = _scale_box(np.asarray(raw_box, dtype=np.float32))
             out.append(
                 {
-                    "bbox": [int(round(v)) for v in box[:4]],
+                    "bbox": [round(v) for v in box[:4]],
                     "confidence": float(box[4]) if len(box) >= 5 else None,
                 }
             )
@@ -147,7 +148,7 @@ def _detect_boxes(bgr: np.ndarray, device: str) -> list[dict]:
         box = np.asarray(det["bbox"], dtype=np.float32)
         out.append(
             {
-                "bbox": [int(round(v)) for v in box[:4]],
+                "bbox": [round(v) for v in box[:4]],
                 "confidence": float(box[4]) if len(box) >= 5 else None,
             }
         )
@@ -160,7 +161,7 @@ def _clip_bbox(
     height: int,
 ) -> tuple[int, int, int, int]:
     """把 bbox 四舍五入并裁剪到图片边界内。"""
-    x0, y0, x1, y1 = (int(round(v)) for v in bbox)
+    x0, y0, x1, y1 = (round(v) for v in bbox)
     x0 = max(0, min(width, x0))
     y0 = max(0, min(height, y0))
     x1 = max(0, min(width, x1))
@@ -171,10 +172,10 @@ def _clip_bbox(
 def _bbox_to_face_pos(x0: int, y0: int, x1: int, y1: int) -> dict[str, int]:
     """由裁剪后的检测框推导 face_pos：左上角 + 尺寸（原始像素，四舍五入）。"""
     return {
-        "x": int(round(x0)),
-        "y": int(round(y0)),
-        "w": int(round(x1 - x0 + 1)),
-        "h": int(round(y1 - y0 + 1)),
+        "x": x0,
+        "y": y0,
+        "w": x1 - x0 + 1,
+        "h": y1 - y0 + 1,
     }
 
 
@@ -283,7 +284,9 @@ class DetectionReport:
             "generated_at": self.generated_at,
             "characters_dir": self.characters_dir,
             "stats": self.stats,
-            "characters": {name: item.as_dict() for name, item in self.characters.items()},
+            "characters": {
+                name: item.as_dict() for name, item in self.characters.items()
+            },
         }
 
 
@@ -339,7 +342,9 @@ def detect_characters(
         stats["total_characters"] += 1
 
         files = sorted(
-            p for p in char_dir.iterdir() if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES
+            p
+            for p in char_dir.iterdir()
+            if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES
         )
         char_det = CharacterDetection(name=char_dir.name)
         for path in files:
@@ -444,7 +449,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
+def _make_progress(
+    total: int,
+) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
     """返回 (progress, close)；优先 tqdm 进度条，缺失时回退为逐条文本。"""
     if tqdm is not None:
         bar = tqdm(total=total, unit="char", desc="face detect", dynamic_ncols=True)
@@ -477,7 +484,9 @@ def main(argv: list[str] | None = None) -> int:
 
     args = build_parser().parse_args(argv)
     if not 0.0 <= args.conf <= 1.0:
-        print(f"error: --conf must be between 0 and 1 (got {args.conf})", file=sys.stderr)
+        print(
+            f"error: --conf must be between 0 and 1 (got {args.conf})", file=sys.stderr
+        )
         return 1
     if args.limit < 0:
         print(f"error: --limit must be >= 0 (got {args.limit})", file=sys.stderr)
@@ -485,7 +494,9 @@ def main(argv: list[str] | None = None) -> int:
     device = None if args.device == "auto" else args.device
 
     if args.images:
-        results = [detect_top1(image, device=device, conf=args.conf) for image in args.images]
+        results = [
+            detect_top1(image, device=device, conf=args.conf) for image in args.images
+        ]
         stats = _images_stats(results)
         payload = {
             "generated_at": _now(),
@@ -499,9 +510,15 @@ def main(argv: list[str] | None = None) -> int:
     else:
         characters_dir = Path(args.characters_dir)
         if not characters_dir.is_dir():
-            print(f"error: characters directory not found: {characters_dir}", file=sys.stderr)
+            print(
+                f"error: characters directory not found: {characters_dir}",
+                file=sys.stderr,
+            )
             return 1
-        if args.character is not None and not (characters_dir / args.character).is_dir():
+        if (
+            args.character is not None
+            and not (characters_dir / args.character).is_dir()
+        ):
             print(
                 f"error: character not found in {characters_dir}: {args.character}",
                 file=sys.stderr,

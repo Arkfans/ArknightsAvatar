@@ -8,6 +8,7 @@ from PIL import Image
 try:
     import UnityPy
     from UnityPy import classes as UnityClasses
+
     from .ak import install_unitypy_ak_patch
 
     # Arknights bundles use a custom LZ4 variant under the "LZHAM" flag.
@@ -37,7 +38,11 @@ def extract_face_groups(tree: dict[str, Any]) -> list[dict[str, dict[str, int]]]
     def walk(key: str, value: Any) -> None:
         nonlocal current
         normalized = key[0].lower() + key[1:] if key else key
-        if normalized in ("facePos", "faceSize") and isinstance(value, dict) and "x" in value:
+        if (
+            normalized in ("facePos", "faceSize")
+            and isinstance(value, dict)
+            and "x" in value
+        ):
             if len(current) == 2:
                 groups.append(current)
                 current = {}
@@ -76,10 +81,14 @@ class AbParse:
             object_type = obj.type.name
             if object_type == "Texture2D":
                 texture = obj.read()
-                self.textures[getattr(texture, "m_Name", "") or f"unnamed_{len(self.textures)}"] = texture
+                self.textures[
+                    getattr(texture, "m_Name", "") or f"unnamed_{len(self.textures)}"
+                ] = texture
             elif object_type == "Sprite":
                 sprite = obj.read()
-                self.sprites[getattr(sprite, "m_Name", "") or f"unnamed_{len(self.sprites)}"] = sprite
+                self.sprites[
+                    getattr(sprite, "m_Name", "") or f"unnamed_{len(self.sprites)}"
+                ] = sprite
             elif object_type == "MonoBehaviour":
                 # read_typetree 位于 ObjectReader 上，不在 read() 返回的对象上
                 tree = obj.read_typetree()
