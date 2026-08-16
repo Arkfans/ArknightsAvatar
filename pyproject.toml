@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Arknights NPC avatar extraction pipeline: fetch AB resources, unpack to PNG, extract avatars."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "ruff>=0.16.3",
+]
 
 [project.optional-dependencies]
 fetch = ["adb-shell>=0.4.4", "PyYAML>=6.0"]
