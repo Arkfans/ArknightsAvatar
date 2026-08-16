@@ -1,7 +1,9 @@
 from pathlib import Path
 
+import pytest
+
 from arknightsavatar import fetch
-from arknightsavatar.config import AdbConfig, ApkConfig, Config
+from arknightsavatar.config import AdbConfig, ApkConfig, Config, ConfigError
 from arknightsavatar.fetch import run_fetch
 from arknightsavatar.manifest import FailureLog, Manifest
 from arknightsavatar.sources import ApkSource, MultiSource
@@ -187,3 +189,31 @@ def test_run_fetch_multi_source_union_and_first_wins(tmp_path: Path):
     stats = run_fetch(source, ["characters"], raw, game_version="v1")
     assert stats["characters"]["fetched"] == 0
     assert stats["characters"]["skipped"] == 3
+
+
+def test_make_source_local_apk_missing_dir_raises_config_error(tmp_path: Path):
+    """P2: local-apk 未配置 apk.dir 时 raise ConfigError（原 SystemExit 绕过 main 格式）。"""
+    config = Config(adb=AdbConfig(), apk=ApkConfig())
+    with pytest.raises(ConfigError, match="apk.dir is not configured"):
+        fetch.make_source("local-apk", config)
+
+
+def test_make_source_unknown_name_raises_config_error(tmp_path: Path):
+    """P2: 未知 source 名 raise ConfigError（原 SystemExit 绕过 main 格式）。"""
+    config = Config(adb=AdbConfig(), apk=ApkConfig(dir=tmp_path))
+    with pytest.raises(ConfigError, match="unknown source"):
+        fetch.make_source("nonsense", config)
+
+
+def test_main_local_apk_missing_dir_returns_error(tmp_path: Path, capsys):
+    """P2 端到端：未配置 apk.dir 时 main 把 ConfigError 统一格式为 error: + exit 1
+    （而非未修饰的 SystemExit traceback）。"""
+    # 写一个空配置（无 [apk] 表）
+    config_path = tmp_path / "config.toml"
+    config_path.write_text("# empty config\n", encoding="utf8")
+    code = fetch.main(["--config", str(config_path), "--source", "local-apk"])
+    assert code == 1
+    err = capsys.readouterr().err
+    assert "error: ConfigError:" in err or "error: " in err
+    assert "apk.dir is not configured" in err
+    assert "Traceback (most recent call last)" not in err

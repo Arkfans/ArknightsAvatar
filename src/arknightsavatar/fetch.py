@@ -7,7 +7,7 @@ from pathlib import Path
 
 from arknightsavatar import paths
 
-from .config import CATEGORIES, Config, load_config
+from .config import CATEGORIES, ConfigError, Config, load_config
 from .manifest import FailureLog, FileRecord, Manifest
 from .sources import ApkSource, MultiSource, Source
 from .sources.adb import AdbSource
@@ -33,7 +33,7 @@ def make_source(
         )
     if name == "local-apk":
         if not config.apk.dir:
-            raise SystemExit(
+            raise ConfigError(
                 "apk.dir is not configured (config.toml or ARKNIGHTSAVATAR_APK_DIR)"
             )
         return ApkSource(config.apk.dir)
@@ -45,7 +45,7 @@ def make_source(
             batch=batch,
             compress=compress,
         )
-    raise SystemExit(f"unknown source: {name}")
+    raise ConfigError(f"unknown source: {name}")
 
 
 def make_sources(
