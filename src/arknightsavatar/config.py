@@ -18,6 +18,11 @@ DEFAULT_CONFIG_FILE = "config.toml"
 DEFAULT_DATA_REPO_CONFIG_FILE = "data_repo.yaml"
 ENV_PREFIX = "ARKNIGHTSAVATAR_"
 
+
+class ConfigError(ValueError):
+    """Invalid configuration (user-facing message; a ``ValueError`` subclass)."""
+
+
 # 数据仓库（sync-cache）默认分类映射：本地路径 -> 数据仓库内路径。
 # desc 为该分类的一句话说明，交互选择（setup 选项 b）与下载进度中展示。
 DEFAULT_DATA_REPO_CATEGORIES = [
@@ -101,6 +106,23 @@ def _env(name: str) -> str | None:
     return os.environ.get(ENV_PREFIX + name)
 
 
+def _parse_port(raw: object, source: str) -> int:
+    """Parse an ADB port from env/config; ``ConfigError`` on invalid value.
+
+    ``source`` describes the origin (e.g. ``"ADB_PORT"`` env or ``"adb.port"``)
+    so the message points the user at the right knob.
+    """
+    try:
+        port = int(raw)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as error:
+        raise ConfigError(
+            f"invalid {source}={raw!r}: expected an integer in [1, 65535]"
+        ) from error
+    if not 1 <= port <= 65535:
+        raise ConfigError(f"invalid {source}={raw!r}: port must be in [1, 65535]")
+    return port
+
+
 def infer_game_version(apk: ApkConfig) -> str:
     candidates = []
     if apk.file:
@@ -170,9 +192,15 @@ def load_config(
     apk_data = data.get("apk") or {}
 
     server = _env("ADB_GAME_SERVER") or game_data.get("server", "official")
+    env_port = _env("ADB_PORT") or None  # 空/未设置 → 用配置或默认
+    port = (
+        _parse_port(env_port, ENV_PREFIX + "ADB_PORT")
+        if env_port is not None
+        else _parse_port(adb_data.get("port", 5555), "adb.port")
+    )
     adb = AdbConfig(
         host=_env("ADB_HOST") or adb_data.get("host", "127.0.0.1"),
-        port=int(_env("ADB_PORT") or adb_data.get("port", 5555)),
+        port=port,
         server=server,
         location=_env("ADB_GAME_LOCATION") or game_data.get("location", ""),
     )

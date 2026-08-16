@@ -1,7 +1,10 @@
 from pathlib import Path
 
+import pytest
+
 from arknightsavatar.config import (
     DEFAULT_DATA_REPO_CATEGORIES,
+    ConfigError,
     load_config,
 )
 
@@ -145,3 +148,35 @@ def test_data_repo_empty_categories_fall_back_to_defaults(tmp_path):
     repo_path.write_text("categories: []\n", encoding="utf8")
     config = load_config(tmp_path / "config.toml")
     assert len(config.data_repo.categories) == len(DEFAULT_DATA_REPO_CATEGORIES)
+
+
+@pytest.mark.parametrize("raw", ["abc", "12.5", "0", "65536", "-1"])
+def test_invalid_adb_port_env_raises_config_error(tmp_path, monkeypatch, raw):
+    monkeypatch.setenv("ARKNIGHTSAVATAR_ADB_PORT", raw)
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(tmp_path / "config.toml")
+    assert "ADB_PORT" in str(exc_info.value)
+    assert str(raw) in str(exc_info.value)
+
+
+def test_empty_adb_port_env_falls_back_to_default(tmp_path, monkeypatch):
+    # 空环境变量与未设置等价（与旧 `"" or default` 行为一致），不应报错
+    monkeypatch.setenv("ARKNIGHTSAVATAR_ADB_PORT", "")
+    assert load_config(tmp_path / "config.toml").adb.port == 5555
+
+
+@pytest.mark.parametrize("raw", ["abc", 0, 65536, -1])
+def test_invalid_adb_port_config_raises_config_error(tmp_path, raw):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(f"[adb]\nport = {raw!r}\n", encoding="utf8")
+    with pytest.raises(ConfigError) as exc_info:
+        load_config(config_path)
+    assert "adb.port" in str(exc_info.value)
+
+
+def test_valid_adb_port_bounds_accepted(tmp_path):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text("[adb]\nport = 1\n", encoding="utf8")
+    assert load_config(config_path).adb.port == 1
+    config_path.write_text("[adb]\nport = 65535\n", encoding="utf8")
+    assert load_config(config_path).adb.port == 65535
