@@ -30,12 +30,20 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from arknightsavatar import __version__, paths
 from arknightsavatar.config import DataRepoConfig, load_config
 
 # 比较模式：manifest 加速（默认） / 全量 sha256 / 旧 size+mtime
 COMPARE_AUTO = "auto"
 COMPARE_CONTENT = "content"
 COMPARE_SIZE_MTIME = "size_mtime"
+
+# 提取报告（avatar_extract.json）对应的提交消息正文比较模式标签
+_COMPARE_LABELS = {
+    COMPARE_AUTO: "manifest {size, sha256} fingerprints; size+mtime fallback",
+    COMPARE_CONTENT: "full sha256 content hash",
+    COMPARE_SIZE_MTIME: "size + mtime (legacy)",
+}
 
 
 class SyncError(Exception):
@@ -44,6 +52,80 @@ class SyncError(Exception):
 
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+def _load_extract_report(path: str | Path) -> dict:
+    """Load ``avatar_extract.json``; ``{}`` when missing/broken."""
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf8"))
+    except (OSError, ValueError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _extract_counts(report: dict) -> dict[str, int]:
+    """character/bases/textures 计数（status==ok 口径）；空报告→0。
+
+    - ``characters``：至少一个 diff 被解析出（status==ok）的角色数；
+    - ``bases``：status==ok 的 base 头像数；
+    - ``textures``：``bases`` + status==ok 的 diff 数（base + diff 总和）。
+    """
+    characters = report.get("characters") if isinstance(report, dict) else {}
+    if not isinstance(characters, dict):
+        characters = {}
+    n_chars = n_bases = n_diffs = 0
+    for char in characters.values():
+        if not isinstance(char, dict):
+            continue
+        bases = char.get("bases") if isinstance(char.get("bases"), dict) else {}
+        diffs = char.get("diffs") if isinstance(char.get("diffs"), dict) else {}
+        b_ok = sum(
+            1 for v in bases.values() if isinstance(v, dict) and v.get("status") == "ok"
+        )
+        d_ok = sum(
+            1 for v in diffs.values() if isinstance(v, dict) and v.get("status") == "ok"
+        )
+        if d_ok:
+            n_chars += 1
+        n_bases += b_ok
+        n_diffs += d_ok
+    return {"characters": n_chars, "bases": n_bases, "textures": n_bases + n_diffs}
+
+
+def _resolve_versions(report: dict, fallback_game: str) -> tuple[str, str]:
+    """Pipeline/game version from extract report header; ``__version__`` / fallback on miss."""
+    if isinstance(report, dict):
+        pipeline = str(report.get("pipeline_version") or __version__)
+        game = str(report.get("game_version") or fallback_game)
+    else:
+        pipeline = __version__
+        game = fallback_game
+    return pipeline, game
+
+
+def build_commit_message(
+    counts: dict[str, int],
+    mode: str,
+    pipeline_version: str,
+    game_version: str,
+) -> str:
+    """Default rich commit message: ``sync <UTC timestamp>`` + 6 background lines.
+
+    主题行保持 ``sync <UTC timestamp>``（与数据仓库历史及 ``"sync" in log`` 测试一致）；
+    正文含 pipeline/game 版本、比较模式与提取计数。``--message`` 完全覆盖此默认。
+    """
+    return "\n".join(
+        [
+            f"sync {_now()}",
+            "",
+            f"pipeline:   arknightsavatar {pipeline_version}",
+            f"game:       {game_version}",
+            f"compare:    {_COMPARE_LABELS[mode]}",
+            f"characters: {counts['characters']}",
+            f"bases:      {counts['bases']}",
+            f"textures:   {counts['textures']}",
+        ]
+    )
 
 
 def git(cwd: Path, *argv: str) -> subprocess.CompletedProcess:
@@ -300,7 +382,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--message",
         default=None,
-        help="commit message (default: 'sync <UTC timestamp>')",
+        help="commit message (default: 'sync <UTC timestamp>' with pipeline/game version, compare mode, and extract counts)",
     )
     compare = parser.add_mutually_exclusive_group()
     compare.add_argument(
@@ -348,7 +430,12 @@ def main(argv: list[str] | None = None) -> int:
                 category.local, category.remote, root, workdir, stats, mode=mode
             )
 
-        message = args.message or f"sync {_now()}"
+        report = _load_extract_report(root / paths.EXTRACT_REPORT)
+        counts = _extract_counts(report)
+        pipeline_version, game_version = _resolve_versions(report, config.game_version)
+        message = args.message or build_commit_message(
+            counts, mode, pipeline_version, game_version
+        )
         committed = commit_changes(workdir, message, dry_run=args.dry_run)
     except SyncError as error:
         print(f"error: {error}", file=sys.stderr)

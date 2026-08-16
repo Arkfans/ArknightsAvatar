@@ -122,6 +122,94 @@ def test_sync_clones_mirrors_and_commits(tmp_path, monkeypatch):
     assert "sync" in log.stdout
 
 
+def _commit_body(workdir: Path) -> str:
+    """Return the full commit message body of the latest commit."""
+    result = subprocess.run(
+        ["git", "-C", str(workdir), "log", "-1", "--format=%B"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout
+
+
+def _write_extract_report(path: Path, *, game_version: str, characters: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "pipeline_version": "0.1.0",
+        "game_version": game_version,
+        "generated_at": "2026-01-01T00:00:00+00:00",
+        "characters": characters,
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf8")
+
+
+def test_default_commit_message_contains_background_info(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text('{"a": 1}', encoding="utf8")
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+
+    assert sync_cache.main(["--config", str(config)]) == 0
+    workdir = tmp_path / "data_cache"
+    body = _commit_body(workdir)
+    assert body.startswith("sync ")
+    assert "pipeline:   arknightsavatar 0.1.0" in body
+    assert "game:       unknown" in body  # config.toml 仅注释 → 默认 unknown
+    assert "compare:    manifest {size, sha256} fingerprints" in body
+    assert "characters: 0" in body
+    assert "bases:      0" in body
+    assert "textures:   0" in body
+    assert "Mirror local data" not in body  # 引言已移除
+
+
+def test_default_commit_message_with_extract_report(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text('{"a": 1}', encoding="utf8")
+    _write_extract_report(
+        local_dir / "avatar_extract.json",
+        game_version="2.7.61",
+        characters={
+            "avg_001_amiya_1": {
+                "bases": {
+                    "1$1.png": {"status": "ok"},
+                    "1$2.png": {"status": "skipped"},
+                },
+                "diffs": {
+                    "2$1.png": {"status": "ok"},
+                    "3$1.png": {"status": "no_box"},
+                },
+            },
+            "avg_002_dead_1": {
+                "bases": {"1$1.png": {"status": "ok"}},
+                "diffs": {"2$1.png": {"status": "failed"}},
+            },
+        },
+    )
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+
+    assert sync_cache.main(["--config", str(config)]) == 0
+    workdir = tmp_path / "data_cache"
+    body = _commit_body(workdir)
+    assert "game:       2.7.61" in body  # 取自 extract 报告头
+    assert "characters: 1" in body  # 仅第一个角色有 ok 的 diff
+    assert "bases:      2" in body  # 两个角色各 1 个 ok base
+    assert "textures:   3" in body  # bases 2 + diffs_ok 1
+
+
 def test_second_sync_without_changes_creates_no_commit(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     remote = tmp_path / "remote"
