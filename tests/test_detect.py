@@ -150,6 +150,23 @@ def test_detect_top1_detector_error(tmp_path: Path):
     assert result["error"] == "RuntimeError: model failed"
 
 
+def test_detect_top1_detector_error_clears_image_size(tmp_path: Path):
+    """P1-11: 图片已读取成功后检测失败 → image_size 被清空为 None，
+    维持「error 非空 ⇒ 其余字段不可信」契约，避免下游误信尺寸。"""
+    image = tmp_path / "a.png"
+    _write_image(image)
+
+    def boom(bgr):
+        raise RuntimeError("model failed")
+
+    result = detect.detect_top1(image, detector=boom)
+    assert result["error"] == "RuntimeError: model failed"
+    assert result["image_size"] is None
+    assert result["face_pos"] is None
+    assert result["confidence"] is None
+    assert result["detected"] is False
+
+
 def test_detect_characters_report_and_stats(tmp_path: Path):
     characters_dir = tmp_path / "characters"
     _write_image(characters_dir / "avg_003_kalts_1" / "avg_003_kalts_1$1.png")

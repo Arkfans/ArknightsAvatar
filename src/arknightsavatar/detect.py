@@ -190,6 +190,10 @@ def detect_top1(
 
     detector 为可注入的测试替身（``callable(bgr) -> list[{"bbox", "confidence"}]``），
     默认使用懒加载的真实模型。
+
+    契约：当 ``error`` 非空时，除 ``image`` 外其余字段（含 ``image_size``）一律不可
+    信——检测在图片读取成功后仍可能失败，此时 ``image_size`` 也被清空为 ``None``
+    以使该不变式可被下游静态判定。
     """
     path = Path(image_path)
     result = {
@@ -216,6 +220,9 @@ def detect_top1(
         else:
             detections = _detect_boxes(bgr, device or _auto_device())
     except Exception as exc:  # noqa: BLE001 - 检测异常不中断批量
+        # 图片已读但检测失败：清空 image_size 以维持「error 非空 ⇒ 其余字段不可信」契约，
+        # 否则下游（detect_bases）可能误信 image_size。
+        result["image_size"] = None
         result["error"] = f"{type(exc).__name__}: {exc}"
         return result
     if not detections:
