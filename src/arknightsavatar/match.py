@@ -27,6 +27,7 @@ MIN_AVATAR_SIZE = 130
 MAX_AVATAR_SIZE = 325
 STOP_THRESHOLD = 0.70
 CONFIDENCE_TARGET = 0.85
+REMATCH_CONFIDENCE = 0.9
 MAX_OPTIMIZE_TIMES = 50
 FIND_MAX_OPTIMIZE_TIMES = 10
 
@@ -398,6 +399,18 @@ class OffsetMatch:
     y: int
     best: bool = False
 
+    @classmethod
+    def from_dict(cls, data: dict) -> OffsetMatch:
+        """从报告 JSON 条目还原 OffsetMatch。"""
+        return cls(
+            offset=data["offset"],
+            size=data["size"],
+            threshold=data["threshold"],
+            x=data["x"],
+            y=data["y"],
+            best=bool(data.get("best", False)),
+        )
+
     def as_dict(self) -> dict:
         return {
             "offset": self.offset,
@@ -424,6 +437,27 @@ class BaseMatch:
     def ok(self) -> bool:
         return self.error is None
 
+    @classmethod
+    def from_dict(cls, data: dict) -> BaseMatch:
+        """从报告 JSON 条目还原 BaseMatch（error-only 与完整字段两种形态）。"""
+        if "error" in data:
+            return cls(error=data["error"])
+        offsets = data.get("offsets")
+        return cls(
+            avatar=data.get("avatar"),
+            threshold=data.get("threshold"),
+            box=data.get("box"),
+            box_norm=data.get("box_norm"),
+            offsets=(
+                {
+                    name: [OffsetMatch.from_dict(record) for record in records]
+                    for name, records in offsets.items()
+                }
+                if offsets is not None
+                else None
+            ),
+        )
+
     def as_dict(self) -> dict:
         if self.error is not None:
             return {"error": self.error}
@@ -447,6 +481,18 @@ class CharacterMatch:
     status: str
     candidates: list[str]
     bases: dict[str, BaseMatch] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, name: str, data: dict) -> CharacterMatch:
+        """从报告 JSON 条目还原 CharacterMatch（增量合并旧报告时使用）。"""
+        return cls(
+            name=name,
+            status=str(data.get("status", "ok")),
+            candidates=list(data.get("candidates") or []),
+            bases={
+                base: BaseMatch.from_dict(item) for base, item in (data.get("bases") or {}).items()
+            },
+        )
 
     def as_dict(self) -> dict:
         return {
@@ -541,22 +587,17 @@ def match_base(
     )
 
 
-def match_characters(
-    classified: dict,
-    characters_dir: Path,
-    avatars_dir: Path,
-    classified_path: Path | None = None,
-    limit: int = 0,
-    character: str | None = None,
-    min_avatar_size: int = MIN_AVATAR_SIZE,
-    max_avatar_size: int = MAX_AVATAR_SIZE,
+def compute_stats(
+    characters: dict[str, CharacterMatch],
     stop_threshold: float = STOP_THRESHOLD,
-    confidence_target: float = CONFIDENCE_TARGET,
-    coarse_increase: int = COARSE_INCREASE,
-    detail: bool = False,
-    progress: Callable[[int, str], None] | None = None,
-) -> MatchReport:
-    """遍历分类报告中符合条件的角色并匹配其底图，聚合统计；指定 character 时只处理该角色。"""
+    classified: dict | None = None,
+) -> dict[str, int]:
+    """从角色结果聚合统计（全量匹配与增量合并共用同一实现）。
+
+    base_files 统计分类报告中的底图条目数（含未匹配/无候选头像的底图），
+    与旧实现一致；未提供 classified 时退化为按已匹配结果计数。
+    """
+    source = (classified or {}).get("characters") or {}
     stats = {
         "total": 0,
         "ok": 0,
@@ -567,23 +608,123 @@ def match_characters(
         "matched_bases": 0,
         "low_confidence": 0,
     }
+    for match in characters.values():
+        stats["total"] += 1
+        if source:
+            stats["base_files"] += len((source.get(match.name) or {}).get("bases") or {})
+        else:
+            stats["base_files"] += len(match.bases)
+        for result in match.bases.values():
+            if result.ok:
+                stats["matched_bases"] += 1
+                if result.threshold is not None and result.threshold < stop_threshold:
+                    stats["low_confidence"] += 1
+        stats[match.status] += 1
+    return stats
+
+
+def needs_rematch(
+    old: dict,
+    new_candidates: list[str],
+    rematch_confidence: float = REMATCH_CONFIDENCE,
+) -> bool:
+    """候选头像更新后，该角色（旧报告条目）是否需要重匹配。
+
+    仅当候选列表发生变化且并非所有 base 都高置信匹配时才需要重匹配：
+    - 任一 base 匹配失败（error，无 threshold）；
+    - 任一 base 的 threshold 低于 rematch_confidence；
+    - 旧结果引用的头像已不在新候选列表中（悬空引用保护，避免下游读到
+      已不存在的头像文件）；
+    - 旧报告没有任何 base 结果（如之前 no_avatar，现新增了候选头像）。
+    候选列表未变化时一律返回 False，严格遵守「候选更新 + 低置信」双条件。
+    """
+    if (old.get("candidates") or []) == new_candidates:
+        return False
+    bases = old.get("bases") or {}
+    if not bases:
+        return True
+    for result in bases.values():
+        if "error" in result:
+            return True
+        if result.get("avatar") not in new_candidates:
+            return True
+        threshold = result.get("threshold")
+        if threshold is None or threshold < rematch_confidence:
+            return True
+    return False
+
+
+def plan_rematch(
+    classified: dict,
+    old_characters: dict[str, dict],
+    avatars_dir: Path,
+    rematch_confidence: float = REMATCH_CONFIDENCE,
+    character: str | None = None,
+) -> tuple[set[str], set[str]]:
+    """按分类报告顺序决定哪些角色需要重匹配，返回 (需重匹配, 保持不变)。
+
+    不在旧报告中的角色视为新角色，直接归入需重匹配；候选列表未变化或
+    所有 base 均高置信匹配的角色保持不变。
+    """
+    to_rematch: set[str] = set()
+    kept: set[str] = set()
+    for name in classified.get("characters") or {}:
+        if not _is_target_character(name):
+            continue
+        if character is not None and name != character:
+            continue
+        old = old_characters.get(name)
+        if old is None:
+            to_rematch.add(name)
+            continue
+        seq = _char_seq(name)
+        candidates = _avatar_candidates(avatars_dir, seq, name) if seq else []
+        if needs_rematch(old, candidates, rematch_confidence):
+            to_rematch.add(name)
+        else:
+            kept.add(name)
+    return to_rematch, kept
+
+
+def match_characters(
+    classified: dict,
+    characters_dir: Path,
+    avatars_dir: Path,
+    classified_path: Path | None = None,
+    limit: int = 0,
+    character: str | None = None,
+    only: set[str] | None = None,
+    min_avatar_size: int = MIN_AVATAR_SIZE,
+    max_avatar_size: int = MAX_AVATAR_SIZE,
+    stop_threshold: float = STOP_THRESHOLD,
+    confidence_target: float = CONFIDENCE_TARGET,
+    coarse_increase: int = COARSE_INCREASE,
+    detail: bool = False,
+    progress: Callable[[int, str], None] | None = None,
+) -> MatchReport:
+    """遍历分类报告中符合条件的角色并匹配其底图，聚合统计；指定 character 时只处理该角色。
+
+    only 非空时只处理集合内的角色（与 character/limit 过滤叠加，增量重匹配使用）。
+    """
     characters: dict[str, CharacterMatch] = {}
+    processed = 0
 
     for name, item in classified.get("characters", {}).items():
         if not _is_target_character(name):
             continue
         if character is not None and name != character:
             continue
-        if limit and stats["total"] >= limit:
+        if only is not None and name not in only:
+            continue
+        if limit and processed >= limit:
             break
-        stats["total"] += 1
+        processed += 1
 
         bases = item.get("bases") or {}
         seq = _char_seq(name)
         candidates = _avatar_candidates(avatars_dir, seq, name) if seq else []
         match = CharacterMatch(name=name, status="ok", candidates=candidates)
 
-        stats["base_files"] += len(bases)
         if not bases:
             match.status = "empty"
         elif not candidates:
@@ -602,17 +743,12 @@ def match_characters(
                     detail=detail,
                 )
                 match.bases[base_name] = result
-                if result.ok:
-                    stats["matched_bases"] += 1
-                    if result.threshold is not None and result.threshold < stop_threshold:
-                        stats["low_confidence"] += 1
-                else:
+                if not result.ok:
                     match.status = "failed"
 
-        stats[match.status] += 1
         characters[name] = match
         if progress is not None:
-            progress(stats["total"], name)
+            progress(processed, name)
 
     return MatchReport(
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -620,7 +756,7 @@ def match_characters(
         characters_dir=str(characters_dir),
         avatars_dir=str(avatars_dir),
         characters=characters,
-        stats=stats,
+        stats=compute_stats(characters, stop_threshold=stop_threshold, classified=classified),
     )
 
 
@@ -697,6 +833,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--rematch-confidence",
+        type=float,
+        default=REMATCH_CONFIDENCE,
+        help=(
+            "when a character's candidate avatar list changed, re-match it only if "
+            f"some base has a threshold below this value (default: {REMATCH_CONFIDENCE})"
+        ),
+    )
+    parser.add_argument(
         "--detail",
         action="store_true",
         help="include per-offset scale search details for every candidate avatar in the report (default: off)",
@@ -741,6 +886,12 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
+    if not 0 < args.rematch_confidence <= 1:
+        print(
+            f"error: --rematch-confidence must be in (0, 1] (got {args.rematch_confidence})",
+            file=sys.stderr,
+        )
+        return 1
     classified_path = Path(args.classified)
     if not classified_path.is_file():
         print(f"error: classified report not found: {classified_path}", file=sys.stderr)
@@ -764,12 +915,45 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     output = Path(args.output)
+    old_report: dict | None = None
     if args.output != "-" and output.is_file() and not args.force:
+        try:
+            with output.open("rt", encoding="utf8") as f:
+                old_report = json.load(f)
+        except (OSError, ValueError) as error:
+            print(
+                f"warning: cannot read existing report {output}: {error}; full match",
+                file=sys.stderr,
+            )
+        if old_report is not None and not isinstance(old_report.get("characters"), dict):
+            print(
+                f"warning: existing report {output} has no characters map; full match",
+                file=sys.stderr,
+            )
+            old_report = None
+
+    to_rematch: set[str] = set()
+    kept: set[str] = set()
+    if old_report is not None:
+        to_rematch, kept = plan_rematch(
+            classified,
+            old_report.get("characters") or {},
+            Path(args.avatars_dir),
+            args.rematch_confidence,
+            character=args.character,
+        )
+        if not to_rematch:
+            print(
+                f"no candidate changes to re-match, skipping match: {output} "
+                "(use --force to re-run)",
+                file=sys.stdout,
+            )
+            return 0
         print(
-            f"report already exists, skipping match: {output} (use --force to re-run)",
+            f"report exists, re-matching {len(to_rematch)} character(s) "
+            f"(candidates changed and low confidence), keeping {len(kept)} unchanged",
             file=sys.stdout,
         )
-        return 0
 
     report = match_characters(
         classified,
@@ -778,6 +962,7 @@ def main(argv: list[str] | None = None) -> int:
         classified_path=classified_path,
         limit=args.limit,
         character=args.character,
+        only=to_rematch or None,
         min_avatar_size=args.min_avatar_size,
         max_avatar_size=args.max_avatar_size,
         stop_threshold=args.stop_threshold,
@@ -786,6 +971,26 @@ def main(argv: list[str] | None = None) -> int:
         detail=args.detail,
         progress=_on_progress,
     )
+    if old_report is not None:
+        # 增量合并：新结果覆盖旧条目，其余角色保留旧报告结果，避免子集重匹配丢数据。
+        merged: dict[str, CharacterMatch] = {}
+        for name in classified.get("characters") or {}:
+            if not _is_target_character(name):
+                continue
+            if args.character is not None and name != args.character:
+                continue
+            if name in report.characters:
+                merged[name] = report.characters[name]
+            elif name in (old_report.get("characters") or {}):
+                merged[name] = CharacterMatch.from_dict(name, old_report["characters"][name])
+        report = MatchReport(
+            generated_at=report.generated_at,
+            classified=report.classified,
+            characters_dir=report.characters_dir,
+            avatars_dir=report.avatars_dir,
+            characters=merged,
+            stats=compute_stats(merged, stop_threshold=args.stop_threshold, classified=classified),
+        )
     stats = report.stats
     print(
         f"characters: {stats['total']}  ok: {stats['ok']}  no_avatar: {stats['no_avatar']}  "

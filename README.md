@@ -78,8 +78,9 @@ uv run arknightsavatar run --force --source local-apk
 
 步骤在进程内依次执行（复用各单工具的 `main(argv)`，行为与逐个运行一致），失败即中止
 并指出失败步骤；每步退出码与总览写入 `data/stats/run_stats.json`（`--stats-out` 可换）。
-`match` 步骤的输出报告（默认 `data/recognition/avatar_match.json`）已存在时整步跳过，
-`--force` 强制重跑。
+`match` 步骤的输出报告（默认 `data/recognition/avatar_match.json`）已存在时按角色增量：
+候选头像列表变化的角色若存在置信度低于 `--rematch-confidence`（默认 0.9）的底图则重匹配，
+其余角色保留旧结果；无可重匹配角色时整步跳过，`--force` 强制全量重跑。
 `extract` 依赖推导模型，缺失时给出「先 `derive-model` 或 `sync-cache --pull --restore`」的提示。
 
 ### pull（设备侧获取）
@@ -421,8 +422,10 @@ device capability report:
 的头像（`char_<ID>_*`）作为候选，用 OpenCV 模板匹配（TM_CCOEFF_NORMED + 缩放搜索，
 移植自旧版）在每张底图上定位头像包围盒，输出报告（默认
 `data/recognition/avatar_match.json`）。该工具未接入 fetch/unpack 主流程，用于调整
-匹配参数。匹配是增量的：输出报告已存在时整步跳过（管道重跑不重复计算），
-`--force` 强制重跑。
+匹配参数。匹配是增量的：输出报告已存在时逐角色对比候选头像列表，仅重匹配「候选列表
+发生变化且存在置信度低于 `--rematch-confidence`（默认 0.9）的底图」的角色，其余角色
+保留上次结果（新头像解包后重跑只补低置信角色，不重复计算）；没有任何角色需要重匹配
+时整步跳过（管道重跑不重复计算），`--force` 强制全量重跑。
 
 ```bash
 # 冒烟：只处理前 20 个角色，输出到 stdout
@@ -437,6 +440,12 @@ uv run arknightsavatar-match
 # 报告已存在时强制重跑
 uv run arknightsavatar-match --force
 ```
+
+增量语义细节：某角色候选头像列表（报告里存储的 `candidates`，由 avatars 目录扫描生成）
+与上次不同，且满足以下任一条件即重匹配该角色——任一底图匹配失败（error）、任一底图
+`threshold < --rematch-confidence`、旧结果引用的头像已不在新候选列表中、或旧报告该角色
+没有任何底图结果（如之前 `no_avatar`，现新增了候选头像）；候选列表未变化（或变化后
+所有底图仍高置信）的角色一律保留旧结果。
 
 输出语义：`characters.<name>.bases.<底图>` = `{avatar, threshold, box, box_norm}`，
 其中 `box` 为头像在底图原始像素中的包围盒 `[x1, y1, x2, y2]`，`box_norm` 为按
@@ -453,7 +462,8 @@ uv run arknightsavatar-match --force
 即采用该结果并跳过后续候选（候选级早停）。
 可调参数：`--min-avatar-size`（默认 130）、`--max-avatar-size`（默认 325，
 缩放搜索时模板最大边长不超过该值）、`--stop-threshold`（默认 0.70）、
-`--confidence-target`（默认 0.85）、`--limit`、`--character <角色名>`
+`--confidence-target`（默认 0.85）、`--rematch-confidence`（默认 0.9，
+候选列表变化时重匹配的底图置信度下限）、`--limit`、`--character <角色名>`
 （只处理指定角色，需与分类报告中的角色名完全一致）、`--detail`
 （输出逐 offset 的详细匹配情况）、`--force`（报告已存在时强制重跑）。
 
