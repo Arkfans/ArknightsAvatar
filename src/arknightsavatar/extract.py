@@ -17,8 +17,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
+import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -479,21 +481,33 @@ def detect_face_head_image(
     key: str,
     cache: FaceHeadCache,
     *,
-    tmp_dir: str | Path,
-    stem: str,
+    tmp_dir: str | Path | None = None,
     device: str | None = None,
     face_detector: Callable[[np.ndarray], list[dict]] | None = None,
     head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
     | None = None,
 ) -> tuple[dict, bool]:
-    """Detect face + head on an in-memory image via a temp PNG file."""
+    """Detect face + head on an in-memory image via a temp PNG file.
+
+    The temp PNG is written to ``tmp_dir`` (default: the system temp dir via
+    :func:`tempfile.mkstemp`) with a random name, so a crash that leaves a
+    residual can never pollute the export directory (it would otherwise be
+    globbed by ``*.png`` into npc-json / manifests / ``git add -A``). The file
+    is always removed in the ``finally`` block.
+    """
     entry = cache.get(key)
     if entry is not None:
         return entry, True
-    tmp_dir = Path(tmp_dir)
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-    tmp = tmp_dir / f".arknightsavatar_tmp_{stem}.png"
+    if tmp_dir is not None:
+        Path(tmp_dir).mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(
+        suffix=".png",
+        prefix="arknightsavatar_detect_",
+        dir=str(tmp_dir) if tmp_dir is not None else None,
+    )
+    tmp = Path(tmp_name)
     try:
+        os.close(fd)
         image.convert("RGBA").save(tmp)
         face = detect.detect_top1(tmp, device=device, detector=face_detector)
         head = detect_bases.detect_head_top1(tmp, detector=head_detector)
@@ -672,6 +686,30 @@ class ExtractionReport:
         }
 
 
+_STALE_STATUSES = ("dropped", "no_box", "failed")
+
+
+def _prune_stale_outputs(char_ext: CharacterExtraction, out_dir: Path) -> None:
+    """Delete on-disk PNGs whose report status is no longer a kept output.
+
+    Keeps ``skipped`` (prior valid output, untouched this run) and ``ok`` (just
+    written) PNGs; removes ``dropped``/``no_box``/``failed`` ones so report
+    status and on-disk state stay consistent -- otherwise a previously-ok avatar
+    that is now dropped/no_box/failed would linger and be globbed by ``npc-json``
+    / category manifests / ``sync-cache`` into the data repo.
+    """
+    for base_name, base_result in char_ext.bases.items():
+        if base_result.status in _STALE_STATUSES:
+            out_path = out_dir / f"{Path(base_name).stem}.png"
+            if out_path.is_file():
+                out_path.unlink()
+    for diff_name, diff_result in char_ext.diffs.items():
+        if diff_result.status in _STALE_STATUSES:
+            out_path = out_dir / f"{Path(diff_name).stem}.png"
+            if out_path.is_file():
+                out_path.unlink()
+
+
 def _dedup_bases(
     char_ext: CharacterExtraction,
     base_avatars: dict[str, Image.Image | None],
@@ -763,8 +801,14 @@ def process_character(
     head_detector: Callable[[str], list[tuple[tuple[int, int, int, int], str, float]]]
     | None = None,
     stats: dict[str, int] | None = None,
+    tmp_dir: str | Path | None = None,
 ) -> CharacterExtraction:
-    """Extract one character's base/diff avatars and aggregate stats."""
+    """Extract one character's base/diff avatars and aggregate stats.
+
+    ``tmp_dir`` is where in-memory special-diff detection temp PNGs are written
+    (default ``None`` → the system temp dir, kept outside the export tree so
+    crash residuals never enter npc-json/manifests/sync-cache).
+    """
     if stats is None:
         stats = {key: 0 for key in STATS_KEYS}
     bases = item.get("bases") or {}
@@ -789,8 +833,36 @@ def process_character(
         stem = Path(base_name).stem
         out_path = out_dir / f"{stem}.png"
         if out_path.is_file() and not force:
+            # 复用既有 PNG（status=skipped）但补解析 box，否则该 base 的（新增/未提取）
+            # diff 永远落入 box is None → no_box（旧增量缺陷：skipped base 不解析 box）。
+            # 解析优先命中 match 报告/检测缓存，零额外开销；仅当两者皆无才回退检测并充
+            # 实检测缓存。下面 diff 复用 base_result.box（同 ok 路径）。
+            box, method, confidence, cache_hit = resolve_base_box(
+                name,
+                base_name,
+                char_dir / base_name,
+                manual=manual,
+                match_report=match_report,
+                force_match=force_match,
+                avatars_dir=avatars_dir,
+                derive_model=derive_model,
+                cache=cache,
+                match_threshold=match_threshold,
+                face_conf=face_conf,
+                head_conf=head_conf,
+                device=device,
+                face_detector=face_detector,
+                head_detector=head_detector,
+            )
+            if cache_hit is not None:
+                stats["detect_cache_hits" if cache_hit else "detect_cache_new"] += 1
             char_ext.bases[base_name] = ItemExtraction(
-                status="skipped", avatar_file=str(out_path)
+                status="skipped",
+                avatar_file=str(out_path),
+                box=box,
+                method=method,
+                confidence=confidence,
+                detect_cache_hit=cache_hit,
             )
             try:
                 base_avatars[base_name] = Image.open(out_path).convert("RGBA")
@@ -950,8 +1022,7 @@ def process_character(
                             composed,
                             diff_key,
                             cache,
-                            tmp_dir=out_dir,
-                            stem=stem,
+                            tmp_dir=tmp_dir,
                             device=device,
                             face_detector=face_detector,
                             head_detector=head_detector,
@@ -1032,6 +1103,8 @@ def process_character(
                 detect_cache_hit=cache_hit,
             )
 
+    _prune_stale_outputs(char_ext, out_dir)
+
     for base_result in char_ext.bases.values():
         stats[f"base_{base_result.status}"] += 1
     for diff_result in char_ext.diffs.values():
@@ -1071,6 +1144,7 @@ def extract_characters(
     | None = None,
     progress: Callable[[int, int, str], None] | None = None,
     skip: SkipList | None = None,
+    tmp_dir: str | Path | None = None,
 ) -> ExtractionReport:
     """Extract avatars for all (or filtered) characters and aggregate a report."""
     characters_dir = Path(characters_dir)
@@ -1111,6 +1185,7 @@ def extract_characters(
             face_detector=face_detector,
             head_detector=head_detector,
             stats=stats,
+            tmp_dir=tmp_dir,
         )
         characters[name] = char_ext
         stats["characters"] += 1

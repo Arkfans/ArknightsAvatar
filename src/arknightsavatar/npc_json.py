@@ -51,8 +51,17 @@ def iter_character_dirs(export_dir: Path) -> list[Path]:
 
 
 def iter_png_stems(char_dir: Path) -> list[str]:
-    """Return the sorted stems of PNG files directly under ``char_dir``."""
-    return sorted(p.stem for p in char_dir.glob("*.png") if p.is_file())
+    """Return the sorted stems of PNG files directly under ``char_dir``.
+
+    Dotfiles (residual detection scratch, hidden files) are skipped so a stray
+    ``.arknightsavatar_detect_*.png`` left by a crash can never become a ghost
+    avatar entry.
+    """
+    return sorted(
+        p.stem
+        for p in char_dir.glob("*.png")
+        if p.is_file() and not p.name.startswith(".")
+    )
 
 
 def build_npc_avatar_map(

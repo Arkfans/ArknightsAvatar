@@ -44,6 +44,22 @@ def test_iter_png_stems_sorted_and_ignores_non_png(workdir):
     ]
 
 
+def test_iter_png_stems_skips_dotfiles(workdir):
+    """P1-2: 点文件（残留检测临时文件 .arknightsavatar_detect_*.png）不进头像索引。
+
+    pathlib 的 ``glob("*.png")`` 实测会匹配点文件；若不防御，崩溃残留的点文件
+    会被采成幽灵条目并随 sync-cache 进入数据仓库。
+    """
+    char_dir = Path(workdir) / "export" / "avg_001_a_1"
+    char_dir.mkdir(parents=True)
+    _write_png(char_dir / "1$1.png")
+    # 模拟崩溃残留的点文件（glob(`*.png`) 会匹配点文件）
+    _write_png(char_dir / ".arknightsavatar_detect_x.png")
+    _write_png(char_dir / ".DS_Store.png")
+    _write_png(char_dir / "..tmp.png")
+    assert npc_json.iter_png_stems(char_dir) == ["1$1"]
+
+
 def test_build_npc_avatar_map_legacy_format(workdir):
     export = Path(workdir) / "export"
     _write_png(export / "avg_003_kalts_1" / "1$1.png")

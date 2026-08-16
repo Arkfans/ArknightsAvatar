@@ -163,6 +163,7 @@ def _run(
     face_detector=None,
     head_detector=None,
     skip=None,
+    tmp_dir: str | Path | None = None,
 ) -> extract.ExtractionReport:
     return extract.extract_characters(
         classified,
@@ -181,6 +182,7 @@ def _run(
         face_detector=face_detector,
         head_detector=head_detector,
         skip=skip,
+        tmp_dir=tmp_dir,
     )
 
 
@@ -641,6 +643,192 @@ def test_skip_diff_keeps_base(workdir: Path):
     assert "d1.png" not in char.diffs
     assert (workdir / "export" / "avg_001_a_1" / "base.png").is_file()
     assert not (workdir / "export" / "avg_001_a_1" / "d1.png").exists()
+
+
+def test_skipped_base_resolves_box_for_new_diff(workdir: Path):
+    """P1-1: 增量重跑时 base 跳过仍补解析 box，使新增/未提取 diff 走 ok 而非 no_box。"""
+    # 上一跑已写出 base.png 与 d1.png（均 skipped）；本跑新增 d2.png
+    characters_dir, classified = _standard_character(workdir)
+    out_dir = workdir / "export" / "avg_001_a_1"
+    _write_png(out_dir / "base.png", _avatar_image(180, seed=1))
+    _write_png(out_dir / "d1.png", _avatar_image(180, seed=2))
+    # 追加第二个 diff
+    char_dir = characters_dir / "avg_001_a_1"
+    _write_png(char_dir / "d2.png", Image.new("RGBA", (64, 64), (255, 128, 0, 255)))
+    classified = _classified(
+        characters_dir,
+        {"avg_001_a_1": _char_entry({"base.png": {"diff": ["d1.png", "d2.png"]}})},
+    )
+    match_report = _match_report(
+        characters_dir,
+        {"avg_001_a_1": {"bases": {"base.png": _base_match(box=(100, 100, 300, 300))}}},
+    )
+    report = _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=match_report,
+        face_detector=_raising_detector(),
+        head_detector=_raising_detector(),
+    )
+    char = report.characters["avg_001_a_1"]
+    # base skipped 但已恢复 box（来自 match 报告，零检测）
+    base = char.bases["base.png"]
+    assert base.status == "skipped"
+    assert base.box == [100, 100, 300, 300]
+    assert base.method == "match"
+    # 旧 diff d1 输出已存在 → skipped；新 diff d2 走 ok（复用 base.box）
+    assert char.diffs["d1.png"].status == "skipped"
+    assert char.diffs["d2.png"].status == "ok"
+    assert char.diffs["d2.png"].box == [100, 100, 300, 300]
+    assert report.stats["base_skipped"] == 1
+
+
+def test_prune_stale_outputs_helper(workdir: Path):
+    """P1-2: _prune_stale_outputs 删除 dropped/no_box/failed 的在盘 PNG，保留 ok/skipped。"""
+    out_dir = workdir / "export" / "avg_001_a_1"
+    out_dir.mkdir(parents=True)
+    # 模拟上一 run 已落盘的 PNG
+    for name in (
+        "ok.png",
+        "skipped.png",
+        "dropped.png",
+        "no_box.png",
+        "failed.png",
+        "ok_diff.png",
+        "dropped_diff.png",
+    ):
+        _write_png(out_dir / name, _avatar_image())
+    char_ext = extract.CharacterExtraction(name="avg_001_a_1")
+    char_ext.bases["ok.png"] = extract.ItemExtraction(status="ok")
+    char_ext.bases["skipped.png"] = extract.ItemExtraction(status="skipped")
+    char_ext.bases["dropped.png"] = extract.ItemExtraction(status="dropped")
+    char_ext.bases["no_box.png"] = extract.ItemExtraction(status="no_box")
+    char_ext.bases["failed.png"] = extract.ItemExtraction(status="failed")
+    char_ext.diffs["ok_diff.png"] = extract.ItemExtraction(status="ok")
+    char_ext.diffs["dropped_diff.png"] = extract.ItemExtraction(status="dropped")
+    extract._prune_stale_outputs(char_ext, out_dir)
+    assert (out_dir / "ok.png").is_file()
+    assert (out_dir / "skipped.png").is_file()
+    assert (out_dir / "ok_diff.png").is_file()
+    for name in ("dropped.png", "no_box.png", "failed.png", "dropped_diff.png"):
+        assert not (out_dir / name).exists(), name
+
+
+def test_dedup_prunes_preexisting_dropped_base_png(workdir: Path):
+    """P1-2 端到端：base2 上一 run 落盘的 PNG 在本 run 被 dedup 判 dropped 后被 _prune 删除。"""
+    characters_dir = workdir / "characters"
+    char_dir = characters_dir / "avg_001_a_1"
+    avatar = _avatar_image(180, seed=1)
+    for base_name in ("base1.png", "base2.png"):
+        _write_png(char_dir / base_name, _base_with_avatar(avatar))
+    _write_png(char_dir / "d1.png", Image.new("RGBA", (64, 64), (255, 0, 0, 255)))
+    _write_meta(
+        char_dir, [{"facePos": {"x": 10, "y": 10}, "faceSize": {"x": 64, "y": 64}}]
+    )
+    classified = _classified(
+        characters_dir,
+        {
+            "avg_001_a_1": _char_entry(
+                {"base1.png": {"diff": ["d1.png"]}, "base2.png": {"diff": []}}
+            )
+        },
+    )
+    match_report = _match_report(
+        characters_dir,
+        {
+            "avg_001_a_1": {
+                "bases": {
+                    "base1.png": _base_match(threshold=0.9, box=(300, 200, 480, 380)),
+                    "base2.png": _base_match(threshold=0.85, box=(300, 200, 480, 380)),
+                }
+            }
+        },
+    )
+    out_dir = workdir / "export" / "avg_001_a_1"
+    # 预置上一 run 的 PNG（两个 base 输出 + d1 输出内容相同 → dedup 必判 dropped）
+    same_avatar = _avatar_image(180, seed=1)
+    _write_png(out_dir / "base1.png", same_avatar)
+    _write_png(out_dir / "base2.png", same_avatar)
+    _write_png(out_dir / "d1.png", same_avatar)
+    report = _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=match_report,
+        face_detector=_raising_detector(),
+        head_detector=_raising_detector(),
+    )
+    assert report.characters["avg_001_a_1"].bases["base2.png"].status == "dropped"
+    # _prune_stale_outputs 删除了 base2 的陈旧 PNG
+    assert not (out_dir / "base2.png").exists()
+    # ok/skipped 的输出保留
+    assert (out_dir / "base1.png").is_file()
+    assert (out_dir / "d1.png").is_file()
+
+
+def test_special_diff_tmp_png_outside_export(workdir: Path):
+    """P1-3: detection temp PNG 写在 tmp_dir，不落在 export 目录，无残留。"""
+    characters_dir, classified, match_report = _special_diff_character(workdir)
+    detect_tmp = workdir / "detect_tmp"
+
+    def counting_face(bgr):
+        return [{"bbox": [100, 50, 140, 90], "confidence": 0.9}]
+
+    report = _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=match_report,
+        face_detector=counting_face,
+        head_detector=_head_detector(0.8),
+        tmp_dir=detect_tmp,
+    )
+    assert report.characters["avg_001_a_1"].diffs["d1.png"].status == "ok"
+    # 运行结束后 detect_tmp 内无残留临时文件
+    leftover = list(detect_tmp.iterdir()) if detect_tmp.exists() else []
+    assert leftover == []
+    # export 目录: base.png（source 对应的 base ok 输出）与 d1.png，无点文件/检测残留
+    out_dir = workdir / "export" / "avg_001_a_1"
+    names = {p.name for p in out_dir.iterdir()}
+    assert "d1.png" in names
+    # 不存在旧式的 .arknightsavatar_tmp_* 临时文件 / 任何点文件 / detect_ 前缀残留
+    assert all(not n.startswith(".") for n in names), names
+    assert all("arknightsavatar_tmp" not in n for n in names), names
+    assert all(not n.startswith("arknightsavatar_detect_") for n in names), names
+
+
+def test_special_diff_tmp_uses_system_temp_when_none(workdir: Path, monkeypatch):
+    """P1-3: 默认 tmp_dir=None 时临时 PNG 写入系统临时目录，而非 export 目录。"""
+    characters_dir, classified, match_report = _special_diff_character(workdir)
+    import tempfile as _tempfile
+
+    mkstemp_dirs: list = []
+    real_mkstemp = _tempfile.mkstemp
+
+    def spy_mkstemp(*args, **kwargs):
+        mkstemp_dirs.append(kwargs.get("dir"))
+        return real_mkstemp(*args, **kwargs)
+
+    monkeypatch.setattr(_tempfile, "mkstemp", spy_mkstemp)
+
+    def counting_face(bgr):
+        return [{"bbox": [100, 50, 140, 90], "confidence": 0.9}]
+
+    _run(
+        workdir,
+        characters_dir,
+        classified,
+        match_report=match_report,
+        face_detector=counting_face,
+        head_detector=_head_detector(0.8),
+        tmp_dir=None,
+    )
+    export_str = str((workdir / "export").resolve())
+    # 所有 mkstemp 的 dir 要么为 None（系统临时目录），要么不在 export 树下
+    assert mkstemp_dirs, "detect_face_head_image should have called mkstemp"
+    for d in mkstemp_dirs:
+        assert d is None or export_str not in str(d), (d, export_str)
 
 
 def test_alpha_png_diff_ignored(workdir: Path):
