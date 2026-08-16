@@ -106,3 +106,12 @@ torchvision = [
   { index = "pytorch-cpu", group = "detect", marker = "sys_platform != 'darwin'" },
   { index = "pytorch-cu126", extra = "detect-gpu", marker = "sys_platform == 'win32' or (sys_platform == 'linux' and platform_machine == 'x86_64')" },
 ]
+
+# 固化 ruff 默认规则集（之前隐式依赖 ruff 默认行为，跨版本易漂移）。
+# 仅 pin 当前默认行的最小等价集，使 `ruff check` 的绿构建可复现；更宽的
+# 规则集（PL.W/S/BLE 等）会引入大量告警，作为独立后续项分批治理。
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
