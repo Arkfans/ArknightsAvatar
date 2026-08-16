@@ -429,3 +429,75 @@ def test_size_mtime_mode_ignores_manifest(tmp_path, monkeypatch, capsys):
     os.utime(local_dir / "a.json", (1700000000, 1700000000))
     assert sync_cache.main(["--config", str(config), "--size-mtime"]) == 0
     assert "copied=1" in capsys.readouterr().out
+
+
+def test_commit_changes_raises_on_git_add_failure(tmp_path, monkeypatch):
+    """P1-4: ``git add -A`` 非零时 commit_changes 抛 SyncError，而非静默判定无变化。"""
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    _run_git(workdir, "init", "-b", "main")
+
+    real_git = sync_cache.git
+    add_call = {"n": 0}
+
+    def fake_git(cwd, *argv):
+        if argv[:1] == ("add",):
+            add_call["n"] += 1
+            # 模拟索引锁/hook 报错：add 返回非零且 stderr 有内容
+            return subprocess.CompletedProcess(
+                args=["git", *argv],
+                returncode=128,
+                stdout="",
+                stderr="fatal: Unable to create '/repo/.git/index.lock': File exists.",
+            )
+        return real_git(cwd, *argv)
+
+    monkeypatch.setattr(sync_cache, "git", fake_git)
+
+    with pytest.raises(sync_cache.SyncError, match="git add failed"):
+        sync_cache.commit_changes(workdir, "sync msg", dry_run=False)
+    assert add_call["n"] == 1
+
+
+def test_main_returns_error_when_git_add_fails(tmp_path, monkeypatch, capsys):
+    """P1-4 端到端：git add 非零通过 main 暴露为 exit 1（非静默跳过同步）。"""
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("a", encoding="utf8")
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+
+    real_git = sync_cache.git
+
+    def fake_git(cwd, *argv):
+        if argv[:1] == ("add",):
+            return subprocess.CompletedProcess(
+                args=["git", *argv], returncode=128, stdout="", stderr="add boom"
+            )
+        return real_git(cwd, *argv)
+
+    monkeypatch.setattr(sync_cache, "git", fake_git)
+    assert sync_cache.main(["--config", str(config)]) == 1
+    assert "git add failed" in capsys.readouterr().err
+
+
+def test_mirror_file_rejects_dir_destination(tmp_path):
+    """P1-5: 目标是目录而源是文件时显式报错，而非 rmtree（数据丢失防御）。"""
+    source = tmp_path / "source.json"
+    source.write_text("{}", encoding="utf8")
+    dest = tmp_path / "dest.json"  # 模拟配置错位：dest 已是目录
+    dest.mkdir()
+    mark_inside = dest / "keep.me"
+    mark_inside.write_text("precious", encoding="utf8")
+
+    stats = {"copied": 0, "removed": 0, "restored": 0, "missing": 0}
+    with pytest.raises(sync_cache.SyncError, match="destination is a directory"):
+        sync_cache.mirror_file(source, dest, stats)
+    # 目录及其内容必须保留（未 rmtree）
+    assert dest.is_dir()
+    assert (dest / "keep.me").read_text(encoding="utf8") == "precious"
+    assert stats["copied"] == 0

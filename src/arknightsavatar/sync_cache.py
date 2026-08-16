@@ -284,8 +284,13 @@ def mirror_dir(
 def mirror_file(
     source: Path, dest: Path, stats: dict, mode: str = COMPARE_AUTO
 ) -> None:
-    if dest.is_dir():
-        shutil.rmtree(dest)
+    if dest.exists() and dest.is_dir():
+        # 配置错位（本地映射为文件、工作副本里却是目录，或反之）时显式报错，
+        # 而非 shutil.rmtree 整个目录（真实数据丢失向量）。
+        raise SyncError(
+            f"destination is a directory, expected a file: {dest}"
+            " (check data_repo.yaml local/remote mapping)"
+        )
     dest.parent.mkdir(parents=True, exist_ok=True)
     if not _same_file(source, dest, mode=mode):
         shutil.copy2(source, dest)
@@ -343,7 +348,11 @@ def restore_category(
 
 def commit_changes(workdir: Path, message: str, dry_run: bool) -> bool:
     """Stage everything and commit when there are staged changes."""
-    git(workdir, "add", "-A")
+    add = git(workdir, "add", "-A")
+    if add.returncode != 0:
+        # add 失败（索引锁/hook 报错/权限）若不检查，diff --cached --quiet 会返回 0
+        # 而被误判为无变化，本地数据被静默跳过同步。
+        raise SyncError(f"git add failed: {add.stderr.strip()}")
     result = git(workdir, "diff", "--cached", "--quiet")
     if result.returncode == 0:
         return False  # 无变化，不产生空提交
