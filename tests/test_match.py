@@ -969,3 +969,52 @@ def test_cli_incremental_skips_when_confident_and_candidates_change(tmp_path: Pa
     assert main(argv) == 0
     assert "skipping match" in capsys.readouterr().out
     assert output.read_bytes() == before
+
+
+def test_match_characters_progress_reports_every_character(tmp_path: Path):
+    characters_dir = tmp_path / "characters"
+    avatars_dir = tmp_path / "avatars"
+    classified = tmp_path / "classified.json"
+    _write_classified(
+        classified,
+        {
+            "avg_003_kalts_1": {"status": "ok", "bases": {}, "unassigned": [], "sizes": {}},
+            "avg_007_closre_1": {"status": "ok", "bases": {}, "unassigned": [], "sizes": {}},
+            "npc_001": {"status": "ok", "bases": {}},  # 非 target 角色，不处理
+        },
+    )
+
+    calls: list[tuple[int, int, str]] = []
+    match_characters(
+        json.loads(classified.read_text(encoding="utf8")),
+        characters_dir,
+        avatars_dir,
+        progress=lambda index, total, label: calls.append((index, total, label)),
+    )
+
+    # 逐角色回调，不按 20 节流；total 与实际处理数一致
+    assert calls == [(1, 2, "avg_003_kalts_1"), (2, 2, "avg_007_closre_1")]
+
+
+def test_match_characters_progress_total_respects_limit(tmp_path: Path):
+    characters_dir = tmp_path / "characters"
+    avatars_dir = tmp_path / "avatars"
+    classified = tmp_path / "classified.json"
+    _write_classified(
+        classified,
+        {
+            "avg_003_kalts_1": {"status": "ok", "bases": {}, "unassigned": [], "sizes": {}},
+            "avg_007_closre_1": {"status": "ok", "bases": {}, "unassigned": [], "sizes": {}},
+        },
+    )
+
+    calls: list[tuple[int, int, str]] = []
+    match_characters(
+        json.loads(classified.read_text(encoding="utf8")),
+        characters_dir,
+        avatars_dir,
+        limit=1,
+        progress=lambda index, total, label: calls.append((index, total, label)),
+    )
+
+    assert calls == [(1, 1, "avg_003_kalts_1")]

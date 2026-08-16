@@ -18,6 +18,11 @@ except ImportError:  # pragma: no cover - optional dependency
     cv2 = None  # type: ignore[assignment]
     np = None  # type: ignore[assignment]
 
+try:
+    from tqdm import tqdm
+except ImportError:  # pragma: no cover - optional dependency
+    tqdm = None  # type: ignore[assignment]
+
 MATCH_SIZE = 1024
 BASE_EXTEND_TOP = 76
 MATCH_HEIGHT = MATCH_SIZE + BASE_EXTEND_TOP
@@ -686,6 +691,28 @@ def plan_rematch(
     return to_rematch, kept
 
 
+def _target_names(
+    classified: dict,
+    character: str | None = None,
+    limit: int = 0,
+    only: set[str] | None = None,
+) -> list[str]:
+    """按分类报告顺序返回本次实际处理的角色名（target/character/only/limit 过滤），
+    进度总数与处理数共用以保证一致。"""
+    names: list[str] = []
+    for name in classified.get("characters", {}):
+        if not _is_target_character(name):
+            continue
+        if character is not None and name != character:
+            continue
+        if only is not None and name not in only:
+            continue
+        if limit and len(names) >= limit:
+            break
+        names.append(name)
+    return names
+
+
 def match_characters(
     classified: dict,
     characters_dir: Path,
@@ -700,24 +727,21 @@ def match_characters(
     confidence_target: float = CONFIDENCE_TARGET,
     coarse_increase: int = COARSE_INCREASE,
     detail: bool = False,
-    progress: Callable[[int, str], None] | None = None,
+    progress: Callable[[int, int, str], None] | None = None,
 ) -> MatchReport:
     """遍历分类报告中符合条件的角色并匹配其底图，聚合统计；指定 character 时只处理该角色。
 
     only 非空时只处理集合内的角色（与 character/limit 过滤叠加，增量重匹配使用）。
+    progress 回调签名 ``(index, total, name)``，index 从 1 开始，每处理一个角色调用一次。
     """
     characters: dict[str, CharacterMatch] = {}
+    names = _target_names(classified, character=character, limit=limit, only=only)
+    total = len(names)
+    characters_map = classified.get("characters", {})
     processed = 0
 
-    for name, item in classified.get("characters", {}).items():
-        if not _is_target_character(name):
-            continue
-        if character is not None and name != character:
-            continue
-        if only is not None and name not in only:
-            continue
-        if limit and processed >= limit:
-            break
+    for name in names:
+        item = characters_map[name]
         processed += 1
 
         bases = item.get("bases") or {}
@@ -748,7 +772,7 @@ def match_characters(
 
         characters[name] = match
         if progress is not None:
-            progress(processed, name)
+            progress(processed, total, name)
 
     return MatchReport(
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -859,9 +883,21 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _on_progress(index: int, name: str) -> None:
-    if index % 20 == 0:
-        print(f"matched {index}: {name}")
+def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
+    """返回 (progress, close)；优先 tqdm 进度条，缺失时回退为逐条文本。"""
+    if tqdm is not None:
+        bar = tqdm(total=total, unit="char", desc="match", dynamic_ncols=True)
+
+        def progress(index: int, total_count: int, label: str) -> None:
+            bar.set_postfix_str(label)
+            bar.update(1)
+
+        return progress, bar.close
+
+    def progress(index: int, total_count: int, label: str) -> None:
+        print(f"[{index}/{total_count}] {label}")
+
+    return progress, lambda: None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -955,22 +991,32 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stdout,
         )
 
-    report = match_characters(
+    names = _target_names(
         classified,
-        Path(args.characters_dir),
-        Path(args.avatars_dir),
-        classified_path=classified_path,
-        limit=args.limit,
         character=args.character,
+        limit=args.limit,
         only=to_rematch or None,
-        min_avatar_size=args.min_avatar_size,
-        max_avatar_size=args.max_avatar_size,
-        stop_threshold=args.stop_threshold,
-        confidence_target=args.confidence_target,
-        coarse_increase=args.coarse_increase,
-        detail=args.detail,
-        progress=_on_progress,
     )
+    progress, close_progress = _make_progress(len(names))
+    try:
+        report = match_characters(
+            classified,
+            Path(args.characters_dir),
+            Path(args.avatars_dir),
+            classified_path=classified_path,
+            limit=args.limit,
+            character=args.character,
+            only=to_rematch or None,
+            min_avatar_size=args.min_avatar_size,
+            max_avatar_size=args.max_avatar_size,
+            stop_threshold=args.stop_threshold,
+            confidence_target=args.confidence_target,
+            coarse_increase=args.coarse_increase,
+            detail=args.detail,
+            progress=progress,
+        )
+    finally:
+        close_progress()
     if old_report is not None:
         # 增量合并：新结果覆盖旧条目，其余角色保留旧报告结果，避免子集重匹配丢数据。
         merged: dict[str, CharacterMatch] = {}
