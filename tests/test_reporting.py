@@ -114,6 +114,36 @@ def test_write_report_idempotent_rewrites_on_content_change(tmp_path: Path):
     assert payload["files"] == {"a": 2}
 
 
+def test_write_report_tmp_file_has_random_suffix_no_residue(tmp_path: Path):
+    """P1-13: 临时文件用随机后缀而非固定 .tmp；写后无残留。"""
+    out = tmp_path / "report.json"
+    reporting.write_report({"generated_at": "t0"}, out)
+    assert out.is_file()
+    # 不存在固定名残留 report.json.tmp
+    assert not (tmp_path / "report.json.tmp").exists()
+    # 目录内只有目标文件本身（随机后缀的 .tmp 已被 os.replace 替换为正式名）
+    files = [p.name for p in tmp_path.iterdir()]
+    assert files == ["report.json"]
+
+
+def test_write_report_write_failure_leaves_no_dottmp(tmp_path: Path, monkeypatch):
+    """P1-13: 临时文件写失败时清理 .tmp，不留残留。"""
+    out = tmp_path / "report.json"
+
+    def boom_write(self, *args, **kwargs):  # noqa: ARG001
+        raise OSError("disk full")
+
+    monkeypatch.setattr(Path, "write_text", boom_write)
+
+    with pytest.raises(OSError, match="disk full"):
+        reporting.write_report({"generated_at": "t0"}, out)
+
+    # 任何随机后缀的 .tmp 残留都应被清理
+    leftover = [p for p in tmp_path.iterdir() if p.suffix == ".tmp" or ".tmp" in p.name]
+    assert leftover == []
+    assert not (tmp_path / "report.json").exists()
+
+
 def test_sha256_file(tmp_path: Path):
     path = tmp_path / "a.bin"
     path.write_bytes(b"hello world")

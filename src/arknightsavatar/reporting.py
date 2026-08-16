@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -112,8 +113,18 @@ def write_report(
         if isinstance(old, dict) and _same_ignoring(old, data, "generated_at"):
             return False
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.tmp")
-    tmp.write_text(text, encoding="utf8")
+    # 临时文件用随机后缀（mkstemp），避免固定名 .tmp 的并发竞争/写失败残留；
+    # 仍在目标同一目录以保证 os.replace 跨同文件系统原子替换。
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(path.parent), prefix=path.name + ".", suffix=".tmp"
+    )
+    os.close(fd)
+    tmp = Path(tmp_name)
+    try:
+        tmp.write_text(text, encoding="utf8")
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
     os.replace(tmp, path)
     return True
 
