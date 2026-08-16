@@ -13,11 +13,13 @@ match = ["numpy>=1.26", "opencv-python-headless>=4.8"]
 # detect：CPU 推理栈（非 macOS 用 pytorch-cpu 索引的 +cpu 轮子，macOS 走默认索引）。
 # 同名的 dependency-groups.detect 被 [tool.uv] default-groups 默认安装，
 # 因此 `uv sync` 默认即为 CPU；detect extra 供显式 `--extra detect` 使用。
-detect = ["anime-face-detector>=0.1.0", "dghs-imgutils>=0.19.0", "opencv-python-headless>=4.8", "numpy>=1.26", "tqdm>=4.66", "torch==2.13.0+cpu; sys_platform != 'darwin'", "torch==2.13.0; sys_platform == 'darwin'", "torchvision==0.28.0+cpu; sys_platform != 'darwin'", "torchvision==0.28.0; sys_platform == 'darwin'"]
+# imgutils 在模块导入期即 require onnxruntime（imgutils.utils.onnxruntime），
+# 因此必须在 detect 栈中显式声明，否则 detect-bases 的头部检测无法导入。
+detect = ["anime-face-detector>=0.1.0", "dghs-imgutils>=0.19.0", "onnxruntime>=1.18", "opencv-python-headless>=4.8", "numpy>=1.26", "tqdm>=4.66", "torch==2.13.0+cpu; sys_platform != 'darwin'", "torch==2.13.0; sys_platform == 'darwin'", "torchvision==0.28.0+cpu; sys_platform != 'darwin'", "torchvision==0.28.0; sys_platform == 'darwin'"]
 # detect-gpu：pytorch-cu126 索引的 CUDA 轮子（Windows / Linux x86_64）。
 # 与 detect 二选一（conflicting extras，见 [tool.uv.conflicts]），
 # 安装命令：uv sync --no-group detect --extra detect-gpu
-detect-gpu = ["anime-face-detector>=0.1.0", "dghs-imgutils>=0.19.0", "opencv-python-headless>=4.8", "numpy>=1.26", "tqdm>=4.66", "torch==2.13.0+cu126; sys_platform == 'win32' or (sys_platform == 'linux' and platform_machine == 'x86_64')", "torchvision==0.28.0+cu126; sys_platform == 'win32' or (sys_platform == 'linux' and platform_machine == 'x86_64')"]
+detect-gpu = ["anime-face-detector>=0.1.0", "dghs-imgutils>=0.19.0", "onnxruntime>=1.18", "opencv-python-headless>=4.8", "numpy>=1.26", "tqdm>=4.66", "torch==2.13.0+cu126; sys_platform == 'win32' or (sys_platform == 'linux' and platform_machine == 'x86_64')", "torchvision==0.28.0+cu126; sys_platform == 'win32' or (sys_platform == 'linux' and platform_machine == 'x86_64')"]
 
 [project.scripts]
 # 统一入口（子命令分发）
@@ -51,7 +53,7 @@ arknightsavatar-manifest = "arknightsavatar.manifest_tool:main"
 dev = ["pytest>=8.0", "numpy>=1.26", "opencv-python-headless>=4.8", "Pillow>=10.0", "lz4>=4.0", "unitypy>=1.10.14", "adb-shell>=0.4.4"]
 # 与 extra detect 同内容的 CPU 推理栈；默认安装（见 [tool.uv] default-groups），
 # 使 `uv sync` 默认即为 CPU。
-detect = ["anime-face-detector>=0.1.0", "dghs-imgutils>=0.19.0", "opencv-python-headless>=4.8", "numpy>=1.26", "tqdm>=4.66", "torch==2.13.0+cpu; sys_platform != 'darwin'", "torch==2.13.0; sys_platform == 'darwin'", "torchvision==0.28.0+cpu; sys_platform != 'darwin'", "torchvision==0.28.0; sys_platform == 'darwin'"]
+detect = ["anime-face-detector>=0.1.0", "dghs-imgutils>=0.19.0", "onnxruntime>=1.18", "opencv-python-headless>=4.8", "numpy>=1.26", "tqdm>=4.66", "torch==2.13.0+cpu; sys_platform != 'darwin'", "torch==2.13.0; sys_platform == 'darwin'", "torchvision==0.28.0+cpu; sys_platform != 'darwin'", "torchvision==0.28.0; sys_platform == 'darwin'"]
 
 [build-system]
 requires = ["hatchling>=1.27"]
