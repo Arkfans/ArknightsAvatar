@@ -43,6 +43,7 @@ arknightsavatar-collage = "arknightsavatar.collage:main"
 arknightsavatar-export-webp = "arknightsavatar.export_webp:main"
 arknightsavatar-npc-json = "arknightsavatar.npc_json:main"
 arknightsavatar-pull-apk = "arknightsavatar.pull_apk:main"
+arknightsavatar-device-caps = "arknightsavatar.device_caps:main"
 # 增量更新数据文件（manifest / version.json / changes / changelog / characters.csv）
 arknightsavatar-manifest = "arknightsavatar.manifest_tool:main"
 

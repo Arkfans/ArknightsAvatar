@@ -88,3 +88,7 @@
 
 - 探测脚本：`/tmp/ak_probe.py`（连接配置设备，输出工具可用性、APK/条目体积、三类吞吐实测）
 - 相关代码：`src/arknightsavatar/sources/apk_adb.py`、`src/arknightsavatar/sources/adb.py`（`_fetch_category_pack`/`_PullProgress`）、`src/arknightsavatar/pull_apk.py`
+- 设备命令能力检测（2026-08-16 新增）：`src/arknightsavatar/device_caps.py` 独立模块，功能性探测设备端
+  `tar -cf -C -T` / `tar -czf` / `unzip -l` / `unzip -p` 等批量拉取依赖命令（探测文件放
+  `/data/local/tmp`，失败/超时一律视为不支持）；`fetch` 的 adb/apk 源启动时自动探测，不支持时
+  回退逐文件/逐条拉取并打印 warning；CLI：`arknightsavatar device-caps`（`arknightsavatar-device-caps`）。

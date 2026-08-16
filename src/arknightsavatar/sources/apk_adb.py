@@ -18,6 +18,7 @@ from .adb import (
 )
 from .base import FileInfo, Source
 from .device import connect_device, installed_apk_paths, load_rsa_keys
+from arknightsavatar.device_caps import detect_device_caps
 
 _UNZIP_L_LINE = re.compile(r"^\s*(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s+(.+)$")
 
@@ -65,6 +66,15 @@ class ApkAdbSource(Source):
         self._apk_paths = sorted(paths, key=lambda path: (0 if path.endswith("base.apk") else 1, path))
         self._show_progress = sys.stderr.isatty() if progress is None else progress
         self._batch = batch
+        if batch:
+            caps = detect_device_caps(self._device)
+            if not caps.apk_batch_ok:
+                print(
+                    "warning: 设备不支持 unzip/tar 批量打包（unzip -l/-p 或 tar -cf -T "
+                    "探测失败），已改为逐条解压",
+                    file=sys.stderr,
+                )
+                self._batch = False
 
     @staticmethod
     def _quote(value: str) -> str:

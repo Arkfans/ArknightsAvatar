@@ -219,11 +219,14 @@ uv run arknightsavatar manifest --category export
 
 ## 单工具
 
-13 个单工具保留（改名），既可直接运行也可经统一入口调用：
+14 个单工具保留（改名），既可直接运行也可经统一入口调用：
 
 ```bash
 # 从设备上已安装 APK 中提取头像（默认设备端解压打包后单次拉取）
 uv run arknightsavatar-fetch --source apk --category avatars
+
+# 检测设备是否支持 tar/unzip 等批量拉取依赖的命令（tar 打包、tar gzip、unzip -l/-p）
+uv run arknightsavatar-device-caps
 
 # 从本地 APK 解包目录取头像（回退来源）
 uv run arknightsavatar-fetch --source local-apk --category avatars
@@ -304,6 +307,38 @@ uv run arknightsavatar-pull-apk --package com.hypergryph.arknights.bilibili --ou
 
 主机/端口来自 `config.toml` 的 `adb.host` / `adb.port`，服务区由 `adb.game.server`
 决定（official / bilibili）。
+
+## 检测设备命令能力（独立工具）
+
+`arknightsavatar-device-caps` 通过 adb_shell 直连设备，探测拉取流程中用于提速的
+设备端命令是否可用：`tar` 打包（`tar -cf -C -T`，fetch 批量拉取依赖）、`tar` gzip
+（`tar -czf`，`--compress` 依赖）、`unzip -l` / `unzip -p`（apk 源解压依赖），
+以及 `ls`/`cat`/`grep`/`printf`/`rm`/`mkdir` 等基础工具。探测是功能性的：在
+`/data/local/tmp` 用临时文件实际执行命令并校验结果，失败/超时一律视为「不支持」，
+不会报错中断。
+
+```bash
+uv run arknightsavatar-device-caps            # 输出能力报告
+uv run arknightsavatar-device-caps --config config.toml
+```
+
+报告示例：
+
+```
+connected: 127.0.0.1:5555
+device capability report:
+  basic tools:  ls=yes  cat=yes  grep=yes  printf=yes  rm=yes  mkdir=yes
+  tar:          present=yes  pack(tar -cf -C -T)=yes  gzip(tar -czf)=yes
+  unzip:        present=yes  list(unzip -l)=yes  pipe(unzip -p)=yes
+  gzip:         present=yes
+  adb batch (device-side tar packing):  available
+  apk batch (device-side unzip + tar):  available
+  --compress (gzip pack):               available
+```
+
+`fetch` 启动时也会自动探测并自适应：设备不支持 `tar -cf -C -T` 时自动改为逐文件
+拉取，不支持 `tar -z` 时自动禁用 `--compress`，均打印 warning 说明原因（逐文件/
+逐条路径不需要任何额外能力，始终可用）。
 
 ## 跳过清单
 

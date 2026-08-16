@@ -14,6 +14,7 @@ from typing import ClassVar
 
 from .base import FileInfo, Source
 from .device import connect_device, load_rsa_keys
+from arknightsavatar.device_caps import detect_device_caps
 
 _LS_LINE = re.compile(r"^[bcdlps-][rwxsStT-]{9}\s+\S+\s+\S+\s+\S+\s+(\d+)\s+(?:\S+\s+){2,3}(.+)$")
 _UNIT = 1024.0
@@ -212,6 +213,21 @@ class AdbSource(Source):
         self._show_progress = sys.stderr.isatty() if progress is None else progress
         self._batch = batch
         self._compress = compress
+        if batch or compress:
+            caps = detect_device_caps(self._device, probe_unzip=False)
+            if batch and not caps.adb_batch_ok:
+                print(
+                    "warning: 设备不支持 tar 批量打包（tar -cf -C -T 探测失败），"
+                    "已改为逐文件拉取",
+                    file=sys.stderr,
+                )
+                self._batch = False
+            if compress and not caps.compress_ok:
+                print(
+                    "warning: 设备 tar 不支持 gzip（tar -czf 探测失败），已禁用 --compress",
+                    file=sys.stderr,
+                )
+                self._compress = False
 
     def dir_for(self, category: str) -> str:
         return "/".join((self.location, *self.CATEGORY_SUBPATHS[category]))
