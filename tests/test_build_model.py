@@ -55,7 +55,15 @@ def test_step_argv_detect_bases_defaults():
         "--limit", "3",
         "--output", "recognition/face_detect_matched.json",
         "--no-vis",
+        "--force",
     ]
+
+
+def test_step_argv_detect_bases_no_force_without_flag():
+    args = _args([])
+    argv = build_model.step_argv("detect-bases", args)
+    assert "--force" not in argv
+    assert "--no-vis" in argv
 
 
 def test_step_argv_detect_bases_custom_knobs():
@@ -136,6 +144,21 @@ def test_main_success_writes_stats(tmp_path: Path, monkeypatch):
     payload = json.loads(stats_out.read_text(encoding="utf8"))
     assert payload["steps"] == {name: 0 for name in build_model.BUILD_MODEL_STEPS}
     assert payload["ok"] is True
+    assert "elapsed_secs" in payload
+
+
+def test_main_prints_final_report(tmp_path: Path, monkeypatch, capsys):
+    monkeypatch.setattr(run, "run_step", lambda name, argv, modules=None: 0)
+    monkeypatch.setattr(build_model, "check_detect_deps", lambda: True)
+    stats_out = tmp_path / "stats.json"
+    code = build_model.main(["--stats-out", str(stats_out)])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "build-model report:" in out
+    assert "fetch" in out and "derive-model" in out  # 步骤表包含全部步骤
+    assert "ok" in out
+    assert "elapsed:" in out
+    assert "build-model complete" in out
 
 
 def test_main_fails_on_step_writes_stats(tmp_path: Path, monkeypatch, capsys):

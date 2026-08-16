@@ -14,6 +14,13 @@ anime-face-detector YOLOv3) and the head detector
 The tool is a standalone CLI (``arknightsavatar-detect-bases``) and also exposes
 Python functions for pipeline integration. Progress is reported through a
 callback so the CLI can render a tqdm progress bar.
+
+Re-runs are incremental: bases whose detection entry already exists in the
+output report are reused from the previous run instead of being re-inferred.
+When *every* selected base is already present (the common ``build-model``
+re-run case), no model inference happens at all -- the progress bar jumps
+straight to 100% and a hint is printed. ``--force`` restores the old
+detect-everything behavior.
 """
 
 from __future__ import annotations
@@ -90,6 +97,43 @@ def filter_bases(
                 continue
             selected.append((name, base_name, entry, characters_dir / name / base_name))
     return selected
+
+
+def load_previous_report(output: str | Path) -> dict | None:
+    """读取已有的输出报告；不可读、不含 characters 或输出到 stdout 时返回 None。"""
+    if str(output) == "-":
+        return None
+    path = Path(output)
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf8"))
+    except (OSError, ValueError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def split_covered(
+    selected: list[tuple[str, str, dict, Path]],
+    previous: dict | None,
+) -> tuple[list[tuple[str, str, dict, Path]], list[tuple[str, str, dict, Path]]]:
+    """按 previous 报告把 selected 拆成（已覆盖, 缺失）两组。
+
+    已覆盖 = 该角色底图在 previous 的 ``characters.<角色>.bases`` 中已有条目；
+    缺失的才需要重新跑模型识别。
+    """
+    if previous is None:
+        return [], selected
+    prev_chars = previous.get("characters") or {}
+    covered: list[tuple[str, str, dict, Path]] = []
+    missing: list[tuple[str, str, dict, Path]] = []
+    for item in selected:
+        name, base_name, _entry, _image_path = item
+        if base_name in ((prev_chars.get(name) or {}).get("bases") or {}):
+            covered.append(item)
+        else:
+            missing.append(item)
+    return covered, missing
 
 
 def detect_head_top1(
@@ -291,6 +335,95 @@ def detect_matched_bases(
     )
 
 
+def _entry_to_detection(entry: dict) -> BaseFaceDetection:
+    """把报告条目 dict 还原为 BaseFaceDetection（合并/复用缓存时用）。"""
+    return BaseFaceDetection(
+        image=entry.get("image", ""),
+        image_size=entry.get("image_size"),
+        detected=bool(entry.get("detected")),
+        face_pos=entry.get("face_pos"),
+        confidence=entry.get("confidence"),
+        error=entry.get("error"),
+        match={key: entry.get(key) for key in MATCH_FIELDS},
+        vis_image=entry.get("vis_image"),
+        head_detected=entry.get("head_detected"),
+        head_pos=entry.get("head_pos"),
+        head_confidence=entry.get("head_confidence"),
+        head_error=entry.get("head_error"),
+    )
+
+
+def _subset_match_report(
+    match_report: dict,
+    selected: list[tuple[str, str, dict, Path]],
+) -> dict:
+    """从匹配报告中抽取指定 base 的子集，供增量检测只跑缺失部分。"""
+    characters: dict[str, dict] = {}
+    for name, base_name, entry, _image_path in selected:
+        characters.setdefault(name, {"bases": {}})
+        characters[name]["bases"][base_name] = entry
+    return {**match_report, "characters": characters}
+
+
+def _aggregate_stats(characters: dict[str, CharacterFaceDetection]) -> dict[str, int]:
+    """对合并后的报告条目重新聚合 stats（与逐张检测时的计数口径一致）。"""
+    stats = {"filtered": 0, "detected": 0, "not_detected": 0, "errors": 0, "heads_detected": 0}
+    for char in characters.values():
+        for det in char.bases.values():
+            stats["filtered"] += 1
+            if det.head_detected:
+                stats["heads_detected"] += 1
+            if det.error:
+                stats["errors"] += 1
+            elif det.detected:
+                stats["detected"] += 1
+            else:
+                stats["not_detected"] += 1
+    return stats
+
+
+def merge_reports(
+    new_report: MatchedDetectReport | None,
+    previous: dict | None,
+    selected: list[tuple[str, str, dict, Path]],
+    *,
+    match_file: str | Path,
+    characters_dir: str | Path,
+    threshold: float,
+) -> MatchedDetectReport:
+    """把新检测结果与 previous 报告中的缓存条目合并。
+
+    new_report 为 None 表示没有新检测（全量缓存命中）；对每个 selected 底图
+    优先取新检测结果，缺失时回退到 previous 条目，输出顺序与 selected 一致，
+    stats 按合并后的全量条目重新聚合。
+    """
+    prev_chars = (previous or {}).get("characters") or {}
+    new_chars = new_report.characters if new_report is not None else {}
+    characters: dict[str, CharacterFaceDetection] = {}
+    for name, base_name, _entry, _image_path in selected:
+        det = (
+            new_chars[name].bases.get(base_name)
+            if name in new_chars and base_name in new_chars[name].bases
+            else None
+        )
+        if det is None:
+            stored = (prev_chars.get(name) or {}).get("bases") or {}
+            if base_name in stored:
+                det = _entry_to_detection(stored[base_name])
+        if det is None:
+            continue
+        characters.setdefault(name, CharacterFaceDetection(name=name))
+        characters[name].bases[base_name] = det
+    return MatchedDetectReport(
+        generated_at=_now(),
+        match_file=str(match_file) if match_file is not None else "",
+        characters_dir=str(characters_dir),
+        threshold=threshold,
+        characters=characters,
+        stats=_aggregate_stats(characters),
+    )
+
+
 def _read_bgra(path: Path) -> np.ndarray:
     """读取图片为 4 通道 BGRA（兼容中文/特殊字符路径）。"""
     data = np.fromfile(str(path), dtype=np.uint8)
@@ -479,6 +612,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="skip annotated PNG rendering (write the JSON report only)",
     )
     parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "re-detect every selected base, ignoring already-cached entries "
+            "in the output report (default: reuse cached results, detect only "
+            "missing bases)"
+        ),
+    )
+    parser.add_argument(
         "--skip",
         default=DEFAULT_SKIP,
         help=f"skip-list JSON path (default: {DEFAULT_SKIP})",
@@ -494,8 +636,13 @@ def _check_head_deps() -> bool:
     return True
 
 
-def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callable[[], None]]:
-    """返回 (progress, close)；优先 tqdm 进度条，缺失时回退为逐条文本。"""
+def _make_progress(
+    total: int,
+) -> tuple[Callable[[int, int, str], None], Callable[[], None], Callable[[str], None]]:
+    """返回 (progress, close, skip)；skip(label) 把进度条直接快进到 100%。
+
+    优先 tqdm 进度条，缺失时回退为逐条文本（skip 无操作）。
+    """
     if tqdm is not None:
         bar = tqdm(total=total, unit="base", desc="face detect", dynamic_ncols=True)
 
@@ -503,12 +650,20 @@ def _make_progress(total: int) -> tuple[Callable[[int, int, str], None], Callabl
             bar.set_postfix_str(label)
             bar.update(1)
 
-        return progress, bar.close
+        def skip(label: str) -> None:
+            if total > 0:
+                bar.set_postfix_str(label)
+                bar.update(total)
+
+        return progress, bar.close, skip
 
     def progress(index: int, total_count: int, label: str) -> None:
         print(f"[{index}/{total_count}] {label}")
 
-    return progress, lambda: None
+    def skip(label: str) -> None:
+        print(f"skip: {label}")
+
+    return progress, lambda: None, skip
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -576,30 +731,74 @@ def main(argv: list[str] | None = None) -> int:
         selected = selected[: args.limit]
 
     device = None if args.device == "auto" else args.device
-    progress, close_progress = _make_progress(len(selected))
+    progress, close_progress, skip_progress = _make_progress(len(selected))
+
+    # 增量：输出报告里已有的底图不再重新推理（--force 强制全量重跑）。
+    # previous 为 None 或 --force 时视为全部缺失 → 全量检测。
+    previous = load_previous_report(args.output)
+    if previous is not None and not args.force:
+        covered, missing = split_covered(selected, previous)
+    else:
+        covered: list[tuple[str, str, dict, Path]] = []
+        missing: list[tuple[str, str, dict, Path]] = selected
+
+    report: MatchedDetectReport
     try:
-        report = detect_matched_bases(
-            match_report,
-            characters_dir,
-            match_file=match_path,
-            threshold=args.threshold,
-            conf=args.conf,
-            head_conf=args.head_conf,
-            device=device,
-            limit=args.limit,
-            character=args.character,
-            progress=progress,
-            skip=skip_list,
-        )
+        if selected and not missing:
+            skip_progress(f"skip: all {len(selected)} base(s) cached")
+            print(
+                f"detect-bases: all {len(selected)} base(s) already detected in {args.output}; "
+                "skipping re-detection (use --force to re-run)",
+            )
+            report = merge_reports(
+                None,
+                previous,
+                selected,
+                match_file=match_path,
+                characters_dir=characters_dir,
+                threshold=args.threshold,
+            )
+        else:
+            if covered:
+                print(
+                    f"detect-bases: reusing {len(covered)} cached detection(s); "
+                    f"detecting {len(missing)} new base(s)",
+                )
+            subset = _subset_match_report(match_report, missing) if missing else match_report
+            new_report = detect_matched_bases(
+                subset,
+                characters_dir,
+                match_file=match_path,
+                threshold=args.threshold,
+                conf=args.conf,
+                head_conf=args.head_conf,
+                device=device,
+                limit=0,
+                character=None,
+                progress=progress,
+                skip=skip_list,
+            )
+            if covered:
+                report = merge_reports(
+                    new_report,
+                    previous,
+                    selected,
+                    match_file=match_path,
+                    characters_dir=characters_dir,
+                    threshold=args.threshold,
+                )
+            else:
+                report = new_report
     finally:
         close_progress()
 
     stats = report.stats
-    print(
-        f"filtered: {stats['filtered']}  detected: {stats['detected']}  "
-        f"not_detected: {stats['not_detected']}  errors: {stats['errors']}  "
-        f"heads_detected: {stats['heads_detected']}"
-    )
+    print("face detect report:")
+    print(f"  filtered:       {stats['filtered']}")
+    print(f"  detected:       {stats['detected']}")
+    print(f"  not_detected:   {stats['not_detected']}")
+    print(f"  errors:         {stats['errors']}")
+    print(f"  heads_detected: {stats['heads_detected']}")
 
     payload = report.as_dict()
     reporting.write_report(payload, args.output)

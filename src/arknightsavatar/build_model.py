@@ -20,7 +20,9 @@ the resource pull.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+import time
 from pathlib import Path
 
 from arknightsavatar import detect, detect_bases, paths
@@ -81,7 +83,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="pass --force to fetch/unpack/match",
+        help="pass --force to fetch/unpack/match/detect-bases (detect-bases: "
+        "re-detect every base, ignoring cached face_detect_matched entries)",
     )
     parser.add_argument(
         "--no-batch",
@@ -187,6 +190,8 @@ def step_argv(name: str, args: argparse.Namespace) -> list[str]:
             argv += ["--vis-dir", args.vis_dir]
         else:
             argv += ["--no-vis"]
+        if args.force:
+            argv += ["--force"]
         return argv
     if name == "derive-model":
         argv = [
@@ -267,6 +272,17 @@ def run_steps(
     return results
 
 
+def _format_elapsed(seconds: float) -> str:
+    """把秒数格式化为人类可读的耗时（如 ``1m 5s``）。"""
+    if seconds < 60:
+        return f"{seconds:.1f}s" if seconds < 10 else f"{round(seconds)}s"
+    minutes, secs = divmod(int(round(seconds)), 60)
+    if minutes < 60:
+        return f"{minutes}m {secs}s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h {minutes}m {secs}s"
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if BUILD_MODEL_STEPS.index(args.from_step) > BUILD_MODEL_STEPS.index(args.until_step):
@@ -280,18 +296,40 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     started = run_module._now()
+    t0 = time.monotonic()
     results = run_steps(args)
+    elapsed = time.monotonic() - t0
     expected = BUILD_MODEL_STEPS[
         BUILD_MODEL_STEPS.index(args.from_step) : BUILD_MODEL_STEPS.index(args.until_step) + 1
     ]
     payload = {
         "generated_at": run_module._now(),
         "started_at": started,
+        "elapsed_secs": round(elapsed, 2),
         "steps": results,
         "ok": len(results) == len(expected) and all(code == 0 for code in results.values()),
     }
     run_module.write_stats(args.stats_out, payload)
     print(f"build-model stats written: {args.stats_out}")
+
+    print("build-model report:")
+    for name in BUILD_MODEL_STEPS:
+        if name not in results:
+            continue
+        code = results[name]
+        status = "ok" if code == 0 else f"failed ({code})"
+        print(f"  {name:<13} {status}")
+    print(f"  elapsed:       {_format_elapsed(elapsed)}")
+    print(f"  stats:         {args.stats_out}")
+    if "derive-model" in results and results["derive-model"] == 0:
+        model_path = Path(args.derive_dir) / "model.json"
+        if model_path.is_file():
+            try:
+                samples = json.loads(model_path.read_text(encoding="utf8")).get("fit_samples")
+                if samples is not None:
+                    print(f"  model:         {model_path} ({samples} fit samples)")
+            except (OSError, ValueError):
+                pass
 
     failed = [name for name, code in results.items() if code != 0]
     if failed:

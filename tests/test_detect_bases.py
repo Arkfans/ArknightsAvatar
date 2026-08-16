@@ -534,6 +534,207 @@ def test_cli_run_writes_report_and_images(cli_env, workdir: Path):
     assert (vis_dir / "avg_002_b_1__b.png").is_file()
 
 
+def test_cli_all_cached_skips_detection(cli_env, workdir, capsys, monkeypatch):
+    """face_detect_matched 已覆盖全部选中底图 → 不再推理，进度快进并给出提示。"""
+    characters_dir = workdir / "characters"
+    _write_image(characters_dir / "avg_001_a_1" / "a.png")
+    _write_image(characters_dir / "avg_002_b_1" / "b.png")
+    match_path = workdir / "match.json"
+    match_path.write_text(
+        json.dumps(
+            _match_report(
+                characters_dir,
+                {
+                    "avg_001_a_1": {"a.png": _entry(0.96)},
+                    "avg_002_b_1": {"b.png": _entry(0.97)},
+                },
+            ),
+            ensure_ascii=False,
+        ),
+        encoding="utf8",
+    )
+    output = workdir / "report.json"
+
+    calls = {"n": 0}
+
+    def counting_top1(image_path, **kwargs):
+        calls["n"] += 1
+        return _stub_top1(image_path, **kwargs)
+
+    monkeypatch.setattr(detect, "detect_top1", counting_top1)
+
+    code = detect_bases.main(["--match", str(match_path), "--output", str(output), "--no-vis"])
+    assert code == 0
+    assert calls["n"] == 2
+
+    code = detect_bases.main(["--match", str(match_path), "--output", str(output), "--no-vis"])
+    assert code == 0
+    assert calls["n"] == 2  # 第二次未调用模型
+    out = capsys.readouterr().out
+    assert "already detected" in out
+    assert "skipping re-detection" in out
+
+    payload = json.loads(output.read_text(encoding="utf8"))
+    assert payload["stats"] == {
+        "filtered": 2,
+        "detected": 2,
+        "not_detected": 0,
+        "errors": 0,
+        "heads_detected": 2,
+    }
+    assert set(payload["characters"]) == {"avg_001_a_1", "avg_002_b_1"}
+
+
+def test_cli_incremental_detects_only_missing(cli_env, workdir, capsys, monkeypatch):
+    """部分缓存命中时只重新检测缺失底图，合并输出完整报告。"""
+    characters_dir = workdir / "characters"
+    for name, base in [
+        ("avg_001_a_1", "a.png"),
+        ("avg_002_b_1", "b.png"),
+        ("avg_003_c_1", "c.png"),
+    ]:
+        _write_image(characters_dir / name / base)
+    match_path = workdir / "match.json"
+    match_path.write_text(
+        json.dumps(
+            _match_report(
+                characters_dir,
+                {
+                    "avg_001_a_1": {"a.png": _entry(0.96)},
+                    "avg_002_b_1": {"b.png": _entry(0.97)},
+                    "avg_003_c_1": {"c.png": _entry(0.98)},
+                },
+            ),
+            ensure_ascii=False,
+        ),
+        encoding="utf8",
+    )
+    output = workdir / "report.json"
+
+    calls = {"n": 0}
+
+    def counting_top1(image_path, **kwargs):
+        calls["n"] += 1
+        return _stub_top1(image_path, **kwargs)
+
+    monkeypatch.setattr(detect, "detect_top1", counting_top1)
+
+    code = detect_bases.main(
+        ["--match", str(match_path), "--output", str(output), "--no-vis", "--limit", "2"]
+    )
+    assert code == 0
+    assert calls["n"] == 2  # 第一轮只处理前两张
+
+    code = detect_bases.main(["--match", str(match_path), "--output", str(output), "--no-vis"])
+    assert code == 0
+    assert calls["n"] == 3  # 第二轮只检测缺失的 c.png
+    assert "reusing 2 cached detection(s)" in capsys.readouterr().out
+
+    payload = json.loads(output.read_text(encoding="utf8"))
+    assert set(payload["characters"]) == {"avg_001_a_1", "avg_002_b_1", "avg_003_c_1"}
+    assert payload["stats"] == {
+        "filtered": 3,
+        "detected": 3,
+        "not_detected": 0,
+        "errors": 0,
+        "heads_detected": 3,
+    }
+
+
+def test_cli_force_redetects_cached(cli_env, workdir, monkeypatch):
+    """--force 忽略缓存，全量重新推理。"""
+    characters_dir = workdir / "characters"
+    _write_image(characters_dir / "avg_001_a_1" / "a.png")
+    match_path = workdir / "match.json"
+    match_path.write_text(
+        json.dumps(_match_report(characters_dir, {"avg_001_a_1": {"a.png": _entry(0.96)}})),
+        encoding="utf8",
+    )
+    output = workdir / "report.json"
+
+    calls = {"n": 0}
+
+    def counting_top1(image_path, **kwargs):
+        calls["n"] += 1
+        return _stub_top1(image_path, **kwargs)
+
+    monkeypatch.setattr(detect, "detect_top1", counting_top1)
+
+    code = detect_bases.main(["--match", str(match_path), "--output", str(output), "--no-vis"])
+    assert code == 0
+    assert calls["n"] == 1
+
+    code = detect_bases.main(
+        ["--match", str(match_path), "--output", str(output), "--no-vis", "--force"]
+    )
+    assert code == 0
+    assert calls["n"] == 2
+
+
+def test_split_covered_and_merge_reports(workdir: Path):
+    characters_dir = workdir / "characters"
+    _write_image(characters_dir / "avg_001_a_1" / "a.png")
+    _write_image(characters_dir / "avg_001_a_1" / "a2.png")
+    report_data = _match_report(
+        characters_dir,
+        {"avg_001_a_1": {"a.png": _entry(0.96), "a2.png": _entry(0.97)}},
+    )
+    selected = detect_bases.filter_bases(report_data, threshold=0.95)
+    previous = {
+        "characters": {
+            "avg_001_a_1": {
+                "bases": {
+                    "a.png": {
+                        "image": "prev/a.png",
+                        "image_size": [100, 100],
+                        "detected": True,
+                        "face_pos": {"x": 10, "y": 20, "w": 81, "h": 81},
+                        "confidence": 0.9,
+                        "error": None,
+                        "avatar": "char_003_kalts.png",
+                        "threshold": 0.96,
+                        "box": [10, 20, 90, 100],
+                        "box_norm": [round(v / 1024, 6) for v in (10, 20, 90, 100)],
+                        "head_detected": True,
+                        "head_pos": {"x": 20, "y": 10, "w": 60, "h": 60},
+                        "head_confidence": 0.8,
+                        "head_error": None,
+                    }
+                }
+            }
+        }
+    }
+
+    covered, missing = detect_bases.split_covered(selected, previous)
+    assert [(n, b) for n, b, _, _ in covered] == [("avg_001_a_1", "a.png")]
+    assert [(n, b) for n, b, _, _ in missing] == [("avg_001_a_1", "a2.png")]
+
+    new = detect_bases.detect_matched_bases(
+        detect_bases._subset_match_report(report_data, missing),
+        characters_dir,
+        detector=_fake_detector((10, 20, 90, 100, 0.9)),
+        head_detector=_fake_head_detector(((10, 10, 60, 60), 0.8)),
+    )
+    merged = detect_bases.merge_reports(
+        new,
+        previous,
+        selected,
+        match_file="match.json",
+        characters_dir=characters_dir,
+        threshold=0.95,
+    )
+    assert merged.stats == {
+        "filtered": 2,
+        "detected": 2,
+        "not_detected": 0,
+        "errors": 0,
+        "heads_detected": 2,
+    }
+    assert list(merged.characters["avg_001_a_1"].bases) == ["a.png", "a2.png"]
+    # 缓存条目被原样复用（image 来自 previous）
+    assert merged.characters["avg_001_a_1"].bases["a.png"].image == "prev/a.png"
+
+
 def test_cli_no_vis_skips_images(cli_env, workdir: Path, capsys: pytest.CaptureFixture):
     characters_dir = workdir / "characters"
     _write_image(characters_dir / "avg_001_a_1" / "a.png")

@@ -126,19 +126,23 @@ uv run arknightsavatar build-model
 # 断点续跑 / 限定范围 / 指定设备与数量
 uv run arknightsavatar build-model --from match --until derive-model --limit 20 --device auto
 
-# 强制重拉重跑 / 渲染标注图（默认跳过） / 跳过 derive 对比图
+# 强制重拉重跑（含 detect-bases 全量重识别）/ 渲染标注图（默认跳过） / 跳过 derive 对比图
 uv run arknightsavatar build-model --force --vis-dir data/recognition/face_detect_vis --no-compare
 ```
 
 链路 `fetch → unpack → classify → match → detect-bases → derive-model`，前四步复用
 `run` 的 argv 拼装（行为与逐个运行工具一致），统计写入 `data/stats/build_model_stats.json`
-（`--stats-out` 可换）。`run` 的 `extract` 依赖已存在的推导模型（缺失时给出
+（`--stats-out` 可换）。结束时打印最终报告：每个步骤的 ok/failed 状态、总耗时、
+统计文件路径，以及 derive-model 产出的 `model.json` 拟合样本数（该步成功时）。
+`run` 的 `extract` 依赖已存在的推导模型（缺失时给出
 「先 `derive-model` 或 `sync-cache --pull --restore`」的提示），`build-model` 正是
 冷启动补齐模型的一步到位入口：新环境或资源大版本更新后先跑它，再跑 `run`。
 `detect-bases` 需要 detect 依赖栈（`uv sync` 默认已装 CPU 栈；GPU 用
 `uv sync --no-group detect --extra detect-gpu`），缺失时在拉取资源前即报错。
 detect-bases 的标注 PNG 默认跳过（`--vis-dir <路径>` 可开启并重定向）；
 derive-model 的 compare 抽样图默认生成（`--no-compare` 跳过）。
+detect-bases 步骤是增量的：`face_detect_matched.json` 里已有的底图直接复用，
+缺失的才重新识别（`--force` 对 detect-bases 同样生效，强制全量重跑）。
 
 ### sync-cache（数据仓库同步）
 
@@ -535,6 +539,14 @@ uv run arknightsavatar-detect --conf 0.3 --device auto
    红色框为 YOLO 人脸框并标注 `yolo <confidence>`，未检出时标注 `no face`；
 3. tqdm 进度条显示逐张处理进度（缺 tqdm 时回退为 `[序号/总数] 角色/底图` 文本）。
 
+识别是**增量**的：输出报告（`--output`）里已存在对应 `角色/底图` 条目时直接复用
+缓存，只对缺失的底图重新推理。若全部底图都已有结果（如 `build-model` 重复运行的
+常见场景），完全不调用模型，进度条直接快进到 100% 并提示
+`all N base(s) already detected ... skipping re-detection`；部分命中时提示
+`reusing N cached detection(s), detecting M new base(s)`。`--force` 忽略缓存全量重跑。
+结束后打印最终报告（filtered / detected / not_detected / errors / heads_detected）
+与报告/标注图输出路径。
+
 ```bash
 # 全量处理高置信底图
 uv run arknightsavatar-detect-bases
@@ -547,6 +559,9 @@ uv run arknightsavatar-detect-bases --match data/recognition/avatar_match.json -
 
 # 只处理指定角色；设备默认 auto（有 CUDA 用 GPU，否则 CPU）
 uv run arknightsavatar-detect-bases --character avg_003_kalts_1 --device auto
+
+# 强制全量重识别（忽略 face_detect_matched.json 缓存）
+uv run arknightsavatar-detect-bases --force
 ```
 
 输出语义：顶层为 `{generated_at, match_file, characters_dir, threshold, stats,
@@ -555,8 +570,9 @@ characters}`；`characters.<角色>.bases.<底图>` 为
 confidence, error}`，其中 `avatar/threshold/box/box_norm` 来自匹配报告，
 `face_pos/confidence` 为模型识别结果（`face_pos` 为左上角 + 尺寸
 `{x, y, w, h}`，原始像素），`error` 非空表示读图失败或检测异常；渲染成功时
-另附 `vis_image`。`stats` 为 `{filtered, detected, not_detected, errors}`，
-`filtered` 表示实际处理的底图数（`--limit`/`--character` 后）。
+另附 `vis_image`。`stats` 为 `{filtered, detected, not_detected, errors,
+heads_detected}`，`filtered` 表示报告中实际涵盖的底图数（`--limit`/`--character`
+后，含复用的缓存条目）。`heads_detected` 为头部检测命中的底图数。
 该工具不接入 fetch/unpack 主流程；模型权重首次运行时由 anime-face-detector
 自动下载并缓存（需联网）。
 
