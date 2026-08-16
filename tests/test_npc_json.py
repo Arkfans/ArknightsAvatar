@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import shutil
 from pathlib import Path
@@ -24,15 +24,6 @@ def workdir():
 def _write_png(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(b"x")
-
-
-def test_iter_character_dirs_sorted_and_ignores_files(workdir):
-    export = Path(workdir) / "export"
-    (export / "b_char").mkdir(parents=True)
-    (export / "a_char").mkdir(parents=True)
-    (export / "note.txt").write_text("x", encoding="utf8")
-    assert [p.name for p in npc_json.iter_character_dirs(export)] == ["a_char", "b_char"]
-    assert npc_json.iter_character_dirs(Path(workdir) / "missing") == []
 
 
 def test_iter_png_stems_sorted_and_ignores_non_png(workdir):

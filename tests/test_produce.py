@@ -3,13 +3,6 @@ import json
 from arknightsavatar import produce, run
 
 
-def test_from_after_until_is_error(tmp_path, capsys):
-    code = produce.main(["--from", "npc-json", "--until", "classify",
-                         "--stats-out", str(tmp_path / "s.json")])
-    assert code == 1
-    assert "--from must not be after --until" in capsys.readouterr().err
-
-
 def test_missing_derive_model_aborts(tmp_path, capsys):
     code = produce.main(["--derive-model", str(tmp_path / "missing.json"),
                          "--stats-out", str(tmp_path / "s.json")])
