@@ -28,6 +28,7 @@ arknightsavatar = "arknightsavatar.cli:main"
 arknightsavatar-run = "arknightsavatar.run:main"
 arknightsavatar-pull = "arknightsavatar.pull:main"
 arknightsavatar-produce = "arknightsavatar.produce:main"
+arknightsavatar-build-model = "arknightsavatar.build_model:main"
 arknightsavatar-derive-model = "arknightsavatar.derive_model:main"
 arknightsavatar-sync-cache = "arknightsavatar.sync_cache:main"
 # 交互初始化（全量同步 / 选择分类下载）

@@ -44,7 +44,7 @@ uv sync --extra fetch --extra unpack --extra match
 
 ## 统一入口与编排型入口
 
-统一入口 `arknightsavatar` 按子命令分发；6 个编排型入口各自也有独立脚本。
+统一入口 `arknightsavatar` 按子命令分发；7 个编排型入口各自也有独立脚本。
 
 ```bash
 uv run arknightsavatar --help            # 子命令总览
@@ -58,6 +58,7 @@ uv run arknightsavatar detect --conf 0.3 # 子命令分发到单工具（argv �
 | `arknightsavatar run` | 全流程：fetch → unpack → classify → match → extract → export-webp → npc-json |
 | `arknightsavatar pull` | 设备侧获取：fetch（`--with-apk` 可选追加 pull-apk） |
 | `arknightsavatar produce` | 离线生产：classify → match → extract → export-webp → npc-json（不触设备） |
+| `arknightsavatar build-model` | 从零构建推导模型：fetch → unpack → classify → match → detect-bases → derive-model（含资源拉取） |
 | `arknightsavatar derive-model` | 由 `data/recognition/face_detect_matched.json` 重新拟合 face/head → 裁切框推导模型 |
 | `arknightsavatar sync-cache` | 把数据目录同步提交到 GitHub 数据仓库（本地 git 工作副本 + git CLI） |
 | `arknightsavatar setup` | 初始化向导：全量同步（含 export）或交互选择分类仅下载数据文件 |
@@ -108,6 +109,29 @@ uv run arknightsavatar derive-model --min-conf 0.8 --out-dir data/recognition/de
 产物：`model.json`（extract 第 3 档读取）、`derive_coords.json`、`stats.json`、
 `compare/`（抽样可视化，`--no-compare` 跳过）。输入由
 `arknightsavatar detect-bases`（阈值 > 0.95 的高置信底图）生成。
+
+### build-model（从零构建推导模型）
+
+```bash
+# 从零（空 data/、无中间产物）构建推导模型：拉资源 → 解包 → 分类 → 匹配 → 识别 → 拟合
+uv run arknightsavatar build-model
+
+# 断点续跑 / 限定范围 / 指定设备与数量
+uv run arknightsavatar build-model --from match --until derive-model --limit 20 --device auto
+
+# 强制重拉重跑 / 渲染标注图（默认跳过） / 跳过 derive 对比图
+uv run arknightsavatar build-model --force --vis-dir data/recognition/face_detect_vis --no-compare
+```
+
+链路 `fetch → unpack → classify → match → detect-bases → derive-model`，前四步复用
+`run` 的 argv 拼装（行为与逐个运行工具一致），统计写入 `data/stats/build_model_stats.json`
+（`--stats-out` 可换）。`run` 的 `extract` 依赖已存在的推导模型（缺失时给出
+「先 `derive-model` 或 `sync-cache --pull --restore`」的提示），`build-model` 正是
+冷启动补齐模型的一步到位入口：新环境或资源大版本更新后先跑它，再跑 `run`。
+`detect-bases` 需要 detect 依赖栈（`uv sync` 默认已装 CPU 栈；GPU 用
+`uv sync --no-group detect --extra detect-gpu`），缺失时在拉取资源前即报错。
+detect-bases 的标注 PNG 默认跳过（`--vis-dir <路径>` 可开启并重定向）；
+derive-model 的 compare 抽样图默认生成（`--no-compare` 跳过）。
 
 ### sync-cache（数据仓库同步）
 

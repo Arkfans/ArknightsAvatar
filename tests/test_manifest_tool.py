@@ -106,12 +106,13 @@ def test_main_full_flow_version_out(tmp_path: Path):
 
 
 def test_stats_manifest_excludes_run_records(tmp_path: Path):
-    """run_stats/produce_stats 每次运行必变且无消费者，默认排除出 stats 清单。"""
+    """run_stats/produce_stats/build_model_stats 每次运行必变且无消费者，默认排除出 stats 清单。"""
     _make_tree(tmp_path)
     (tmp_path / "data" / "stats" / "produce_stats.json").write_text('{"generated_at": "t"}', encoding="utf8")
+    (tmp_path / "data" / "stats" / "build_model_stats.json").write_text('{"generated_at": "t"}', encoding="utf8")
     assert manifest_tool.main(["--version-out"]) == 0
     stats = json.loads((tmp_path / "data" / "stats" / "manifest.json").read_text(encoding="utf8"))
-    assert set(stats["files"]) == {"s.json"}  # run_stats.json / produce_stats.json 被排除
+    assert set(stats["files"]) == {"s.json"}  # 三个运行记录文件被排除
     # 运行记录本身仍在磁盘上（不进清单 ≠ 删除）
     assert (tmp_path / "data" / "stats" / "run_stats.json").is_file()
 

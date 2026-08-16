@@ -269,7 +269,8 @@ def main(argv: list[str] | None = None) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     source = Path(args.source)
     if not source.is_absolute():
-        source = (out_dir / source).resolve()
+        # 相对路径按当前工作目录解析（与其它工具一致）
+        source = (Path.cwd() / source).resolve()
     if not source.is_file():
         print(f"error: source report not found: {source}", file=sys.stderr)
         return 1

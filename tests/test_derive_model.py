@@ -86,6 +86,18 @@ def test_main_missing_source(tmp_path, capsys):
     assert "not found" in capsys.readouterr().err
 
 
+def test_main_relative_source_resolved_against_cwd(tmp_path, monkeypatch, capsys):
+    """相对 --source 按当前工作目录解析（而非 --out-dir）。"""
+    source = tmp_path / "report.json"
+    _write_report(source, n=3)
+    out_dir = tmp_path / "derive"
+    monkeypatch.chdir(tmp_path)
+    code = derive_model.main(["--source", "report.json", "--out-dir", str(out_dir), "--no-compare"])
+    assert code == 0
+    assert (out_dir / "model.json").is_file()
+    assert (out_dir / "stats.json").is_file()
+
+
 def test_main_no_valid_rows(tmp_path, capsys):
     source = tmp_path / "report.json"
     source.write_text(json.dumps({"characters": {}}), encoding="utf8")

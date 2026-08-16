@@ -474,6 +474,11 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"directory for annotated PNGs (default: {DEFAULT_VIS_DIR})",
     )
     parser.add_argument(
+        "--no-vis",
+        action="store_true",
+        help="skip annotated PNG rendering (write the JSON report only)",
+    )
+    parser.add_argument(
         "--skip",
         default=DEFAULT_SKIP,
         help=f"skip-list JSON path (default: {DEFAULT_SKIP})",
@@ -601,6 +606,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.output != "-":
         print(f"report written: {args.output}")
 
+    if args.no_vis:
+        print("images: skipped (--no-vis)")
+        return 0
     vis_dir = Path(args.vis_dir)
     img_count = render_annotations(report, characters_dir, vis_dir)
     print(f"images written: {img_count} -> {vis_dir}")

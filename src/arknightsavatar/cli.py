@@ -17,6 +17,7 @@ ORCHESTRATION: dict[str, tuple[str, str]] = {
     "run": ("arknightsavatar.run", "全流程编排：fetch → unpack → classify → match → extract → export-webp → npc-json"),
     "pull": ("arknightsavatar.pull", "设备侧资源获取：fetch（--with-apk 可选追加 pull-apk）"),
     "produce": ("arknightsavatar.produce", "离线生产：classify → match → extract → export-webp → npc-json"),
+    "build-model": ("arknightsavatar.build_model", "从零构建推导模型：fetch → unpack → classify → match → detect-bases → derive-model（含设备/APK 资源拉取）"),
     "derive-model": ("arknightsavatar.derive_model", "由 face/head 识别报告重新拟合头像推导模型"),
     "sync-cache": ("arknightsavatar.sync_cache", "同步数据目录到 GitHub 数据仓库并自动增量提交"),
     "setup": ("arknightsavatar.setup", "初始化：全量同步（含 export）或交互选择分类下载数据文件"),

@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import shutil
 from uuid import uuid4
@@ -532,6 +532,36 @@ def test_cli_run_writes_report_and_images(cli_env, workdir: Path):
     assert payload["match_file"] == str(match_path)
     assert (vis_dir / "avg_001_a_1__a.png").is_file()
     assert (vis_dir / "avg_002_b_1__b.png").is_file()
+
+
+def test_cli_no_vis_skips_images(cli_env, workdir: Path, capsys: pytest.CaptureFixture):
+    characters_dir = workdir / "characters"
+    _write_image(characters_dir / "avg_001_a_1" / "a.png")
+    match_path = workdir / "match.json"
+    match_path.write_text(
+        json.dumps(
+            _match_report(characters_dir, {"avg_001_a_1": {"a.png": _entry(0.96)}}),
+            ensure_ascii=False,
+        ),
+        encoding="utf8",
+    )
+    output = workdir / "report.json"
+    vis_dir = workdir / "vis"
+
+    code = detect_bases.main(
+        [
+            "--match", str(match_path),
+            "--output", str(output),
+            "--vis-dir", str(vis_dir),
+            "--no-vis",
+        ]
+    )
+
+    assert code == 0
+    payload = json.loads(output.read_text(encoding="utf8"))
+    assert payload["stats"]["filtered"] == 1
+    assert not vis_dir.exists()  # 标注图目录不创建
+    assert "skipped (--no-vis)" in capsys.readouterr().out
 
 
 def test_cli_output_stdout_dash(cli_env, capsys: pytest.CaptureFixture, workdir: Path):

@@ -51,9 +51,9 @@ CATEGORIES: dict[str, dict] = {
         "dir": paths.STATS_DIR,
         "manifest": paths.STATS_MANIFEST,
         "remote": "stats",
-        # run/produce 的每次运行都会重写这两个记录文件（内容必变），
+        # run/produce/build-model 每次运行都会重写这些记录文件（内容必变），
         # 排除后 stats 指纹只在真实数据变化时更新，避免空提交。
-        "default_excludes": ("run_stats.json", "produce_stats.json"),
+        "default_excludes": ("run_stats.json", "produce_stats.json", "build_model_stats.json"),
     },
 }
 

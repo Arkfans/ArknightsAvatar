@@ -8,6 +8,7 @@ def test_help_exits_zero(capsys):
     assert "usage: arknightsavatar" in out
     assert "run" in out
     assert "sync-cache" in out
+    assert "build-model" in out
     assert "detect-bases" in out
 
 
