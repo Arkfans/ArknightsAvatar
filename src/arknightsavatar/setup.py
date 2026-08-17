@@ -299,7 +299,12 @@ def run_download(config_path: str | None, selected_remotes: list[str] | None) ->
 
         print("正在准备数据仓库工作副本（首次运行将克隆仓库）…")
         root = Path.cwd()
-        workdir = sync_cache.ensure_working_copy(config.data_repo, root, pull=True)
+        workdir = sync_cache.ensure_working_copy(
+            config.data_repo,
+            root,
+            pull=True,
+            method=config.sync_cache.method,
+        )
 
         if chosen is None:
             indices = _prompt_categories(categories)

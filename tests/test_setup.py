@@ -246,6 +246,30 @@ def test_prompt_categories_shows_descriptions(monkeypatch, capsys):
     assert "schema  ←  data/schema" in out
 
 
+def test_download_uses_configured_clone_method(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    config = _write_config(
+        tmp_path,
+        "https://github.com/octo/example.git",
+        [{"local": "data/recognition", "remote": "recognition"}],
+    )
+    config.write_text("[sync_cache]\nmethod = 'gh'\n", encoding="utf8")
+    calls = []
+
+    def fake_working_copy(repo, root, pull, method="git"):
+        calls.append((pull, method))
+        return tmp_path / "cache"
+
+    monkeypatch.setattr(setup.sync_cache, "ensure_working_copy", fake_working_copy)
+    assert (
+        setup.main(
+            ["--download", "--category", "recognition", "--config", str(config)]
+        )
+        == 0
+    )
+    assert calls == [(True, "gh")]
+
+
 def test_download_restores_selected_categories(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     remote = tmp_path / "remote"

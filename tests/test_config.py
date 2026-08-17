@@ -75,6 +75,26 @@ def test_data_repo_defaults(tmp_path):
     ]
 
 
+def test_sync_cache_method_defaults_to_git(tmp_path):
+    assert load_config(tmp_path / "missing.toml").sync_cache.method == "git"
+
+
+def test_sync_cache_method_from_toml(tmp_path):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text("[sync_cache]\nmethod = 'gh'\n", encoding="utf8")
+    assert load_config(config_path).sync_cache.method == "gh"
+
+
+@pytest.mark.parametrize("method", ["api", "Git", ""])
+def test_invalid_sync_cache_method_raises_config_error(tmp_path, method):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(
+        f"[sync_cache]\nmethod = {method!r}\n", encoding="utf8"
+    )
+    with pytest.raises(ConfigError, match="sync_cache.method"):
+        load_config(config_path)
+
+
 def test_data_repo_from_yaml_next_to_config(tmp_path):
     repo_path = tmp_path / "data_repo.yaml"
     repo_path.write_text(

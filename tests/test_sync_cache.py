@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from arknightsavatar import sync_cache
+from arknightsavatar.config import DataRepoConfig
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -651,6 +652,165 @@ def test_push_after_failed_push_retries(tmp_path, monkeypatch, capsys):
     assert "pushed=True" in capsys.readouterr().out
     assert "sync" in _remote_subject(remote)
     assert _remote_file(remote, "recognition/a.json") == "a"
+
+
+# ---------- 初次克隆方式：git（默认）/ gh ----------
+
+
+def test_ensure_working_copy_defaults_to_git_clone(tmp_path, monkeypatch):
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    calls = []
+    real_git = sync_cache.git
+
+    def tracking_git(cwd, *argv):
+        calls.append((cwd, argv))
+        return real_git(cwd, *argv)
+
+    monkeypatch.setattr(sync_cache, "git", tracking_git)
+    workdir = sync_cache.ensure_working_copy(
+        DataRepoConfig(path="cache", url=str(remote), branch="main"), tmp_path, pull=False
+    )
+
+    assert workdir == (tmp_path / "cache").resolve()
+    assert calls == [
+        (
+            (tmp_path / "cache").parent,
+            ("clone", "--branch", "main", str(remote), "cache"),
+        )
+    ]
+
+
+def test_ensure_working_copy_uses_gh_for_initial_clone(tmp_path, monkeypatch):
+    remote_url = "https://github.com/octo/example.git"
+    calls = []
+
+    def fake_gh(cwd, *argv):
+        calls.append((cwd, argv))
+        if argv == ("--version",):
+            return subprocess.CompletedProcess(["gh", *argv], 0, "gh version", "")
+        return subprocess.CompletedProcess(["gh", *argv], 0, "", "")
+
+    monkeypatch.setattr(sync_cache, "gh", fake_gh)
+    workdir = sync_cache.ensure_working_copy(
+        DataRepoConfig(path="cache", url=remote_url, branch="trunk"),
+        tmp_path,
+        pull=False,
+        method="gh",
+    )
+
+    assert workdir == (tmp_path / "cache").resolve()
+    assert calls == [
+        (tmp_path, ("--version",)),
+        (
+            tmp_path,
+            (
+                "repo",
+                "clone",
+                remote_url,
+                str((tmp_path / "cache").resolve()),
+                "--",
+                "--branch",
+                "trunk",
+            ),
+        ),
+    ]
+
+
+def test_existing_working_copy_does_not_invoke_gh(tmp_path, monkeypatch):
+    remote = tmp_path / "remote"
+    _make_remote(remote)
+    workdir = tmp_path / "cache"
+    _run_git(tmp_path, "clone", str(remote), str(workdir))
+    monkeypatch.setattr(
+        sync_cache,
+        "gh",
+        lambda *args: pytest.fail("gh must not run for an existing working copy"),
+    )
+
+    assert (
+        sync_cache.ensure_working_copy(
+            DataRepoConfig(path="cache", url=str(remote), branch="main"),
+            tmp_path,
+            pull=False,
+            method="gh",
+        )
+        == workdir.resolve()
+    )
+
+
+def test_gh_clone_errors_are_user_facing(tmp_path, monkeypatch):
+    def unavailable_gh(cwd, *argv):
+        if argv == ("--version",):
+            return subprocess.CompletedProcess(["gh", *argv], 1, "", "not installed")
+        pytest.fail("clone should not run when gh is unavailable")
+
+    monkeypatch.setattr(sync_cache, "gh", unavailable_gh)
+    repo = DataRepoConfig(path="cache", url="https://github.com/octo/example.git")
+    with pytest.raises(sync_cache.SyncError, match="gh CLI not available"):
+        sync_cache.ensure_working_copy(repo, tmp_path, pull=False, method="gh")
+
+    def failed_clone_gh(cwd, *argv):
+        if argv == ("--version",):
+            return subprocess.CompletedProcess(["gh", *argv], 0, "gh version", "")
+        return subprocess.CompletedProcess(["gh", *argv], 1, "", "authentication failed")
+
+    monkeypatch.setattr(sync_cache, "gh", failed_clone_gh)
+    with pytest.raises(sync_cache.SyncError, match="gh repo clone failed: authentication failed"):
+        sync_cache.ensure_working_copy(repo, tmp_path, pull=False, method="gh")
+
+
+def test_invalid_toml_method_returns_user_facing_error(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    config = tmp_path / "config.toml"
+    config.write_text("[sync_cache]\nmethod = 'api'\n", encoding="utf8")
+
+    assert sync_cache.main(["--config", str(config)]) == 1
+    err = capsys.readouterr().err
+    assert "sync_cache.method" in err
+    assert "Traceback" not in err
+
+
+def test_cli_method_overrides_toml_method(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    config = _write_config(
+        tmp_path,
+        "https://github.com/octo/example.git",
+        [{"local": "data/missing", "remote": "missing"}],
+    )
+    config.write_text("[sync_cache]\nmethod = 'gh'\n", encoding="utf8")
+    methods = []
+
+    def fake_working_copy(repo, root, pull, method="git"):
+        methods.append(method)
+        workdir = tmp_path / "cache"
+        _run_git(tmp_path, "init", "-b", "main", str(workdir))
+        return workdir
+
+    monkeypatch.setattr(sync_cache, "ensure_working_copy", fake_working_copy)
+    assert sync_cache.main(["--config", str(config), "--method", "git"]) == 0
+    assert methods == ["git"]
+
+
+def test_toml_method_selects_gh_for_sync_cache(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    config = _write_config(
+        tmp_path,
+        "https://github.com/octo/example.git",
+        [{"local": "data/missing", "remote": "missing"}],
+    )
+    config.write_text("[sync_cache]\nmethod = 'gh'\n", encoding="utf8")
+    methods = []
+
+    def fake_working_copy(repo, root, pull, method="git"):
+        methods.append(method)
+        workdir = tmp_path / "cache"
+        _run_git(tmp_path, "init", "-b", "main", str(workdir))
+        return workdir
+
+    monkeypatch.setattr(sync_cache, "ensure_working_copy", fake_working_copy)
+    assert sync_cache.main(["--config", str(config)]) == 0
+    assert methods == ["gh"]
 
 
 def test_push_rejected_when_remote_ahead(tmp_path, monkeypatch, capsys):

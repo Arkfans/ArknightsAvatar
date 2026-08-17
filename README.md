@@ -163,6 +163,9 @@ uv run arknightsavatar sync-cache --message "sync after 2.7.61"
 # 提交后推送到 GitHub（--pull 先取回远端提交，避免非快进拒绝）
 uv run arknightsavatar sync-cache --pull --push
 
+# 首次克隆时使用已认证的 GitHub CLI（之后仍使用 git pull/commit/push）
+uv run arknightsavatar sync-cache --method gh
+
 # 比较模式（默认：manifest 加速，见下）
 uv run arknightsavatar sync-cache --content-hash   # 全量 sha256 内容比较
 uv run arknightsavatar sync-cache --size-mtime     # 旧行为：size + mtime
@@ -190,7 +193,19 @@ uv run arknightsavatar sync-cache --size-mtime     # 旧行为：size + mtime
 检测到未推送的本地提交并自动补推。
 
 工作副本默认 `data_cache/`（已 gitignore）；url 为空时工具会提示先创建仓库并填写配置。
-全程调用 git CLI（clone / pull / add / diff / commit / push），无其它依赖。
+
+首次创建工作副本默认调用 `git clone`。如已通过 `gh auth login` 配置 GitHub CLI，可在命令行
+指定 `--method gh`，或在 `config.toml` 设置以下内容；命令行参数优先：
+
+```toml
+[sync_cache]
+method = "gh" # git（默认）或 gh
+```
+
+`gh` 模式只替换首次的 `gh repo clone <url> <workdir> -- --branch <branch>`，既有工作副本
+不会调用 `gh`；后续 `pull`、`add`、`diff`、`commit`、`push` 仍通过 git CLI 执行，因此两种
+方式都需要安装 git，`gh` 模式另需安装 GitHub CLI。仓库 URL、分支与分类映射仍由
+`data_repo.yaml` 管理。
 
 ### setup（初始化）
 

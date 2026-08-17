@@ -17,3 +17,8 @@ server = "official"      # 服务区：official / bilibili
 [apk]
 file = "apk/arknights-hg-2761.apk"   # 本地 APK 文件（可选）
 dir = "apk/arknights-hg-2761"        # 本地 APK 解包目录（fetch --source local-apk 使用）
+
+[sync_cache]
+# 首次创建数据仓库工作副本的方式：git（默认）或 gh。
+# gh 仅替换首次 clone；之后 pull / commit / push 仍通过 git CLI 执行。
+method = "git"

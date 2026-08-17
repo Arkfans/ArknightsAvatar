@@ -8,8 +8,10 @@ raw avatars (``data/unpacked/avatars``), extracted avatars (``data/export``,
 This tool mirrors those local paths into a local git working copy of the data
 repo (``data_repo.yaml: path``, default ``data_cache``) and commits
 incrementally through the git CLI: a commit is only created when something
-changed, so repeated runs are cheap. Create the GitHub repo first, then fill
-``data_repo.yaml: url`` and run -- the tool is ready as-is.
+changed, so repeated runs are cheap. The initial clone uses git by default;
+``--method gh`` or ``[sync_cache] method = "gh"`` uses ``gh repo clone``
+instead. Create the GitHub repo first, then fill ``data_repo.yaml: url`` and
+run -- the tool is ready as-is.
 
 Options:
 - ``--pull``    update the working copy from the remote before mirroring;
@@ -18,7 +20,8 @@ Options:
 - ``--dry-run`` mirror without committing;
 - ``--message`` custom commit message;
 - ``--push``    push the local branch to ``origin`` after committing
-  (skipped when there is nothing to push; ignored with ``--dry-run``).
+  (skipped when there is nothing to push; ignored with ``--dry-run``);
+- ``--method``  choose ``git`` (default) or ``gh`` for the initial clone only.
 """
 
 from __future__ import annotations
@@ -33,7 +36,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from arknightsavatar import __version__, paths
-from arknightsavatar.config import DataRepoConfig, load_config
+from arknightsavatar.config import ConfigError, DataRepoConfig, load_config
 
 # 比较模式：manifest 加速（默认） / 全量 sha256 / 旧 size+mtime
 COMPARE_AUTO = "auto"
@@ -142,15 +145,43 @@ def git(cwd: Path, *argv: str) -> subprocess.CompletedProcess:
 
 
 def ensure_git_available() -> None:
-    result = subprocess.run(
-        ["git", "--version"], capture_output=True, text=True, check=False
-    )
+    try:
+        result = subprocess.run(
+            ["git", "--version"], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError as error:
+        raise SyncError("git CLI not found on PATH; sync-cache requires git") from error
     if result.returncode != 0:
         raise SyncError("git CLI not found on PATH; sync-cache requires git")
 
 
-def ensure_working_copy(repo: DataRepoConfig, root: Path, pull: bool) -> Path:
-    """Return the local git working copy of the data repo, cloning if needed."""
+def gh(cwd: Path, *argv: str) -> subprocess.CompletedProcess:
+    """Run the GitHub CLI in ``cwd``, capturing output."""
+    return subprocess.run(
+        ["gh", *argv],
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def ensure_gh_available(cwd: Path) -> None:
+    """Raise a user-facing error when the GitHub CLI is unavailable."""
+    try:
+        result = gh(cwd, "--version")
+    except FileNotFoundError as error:
+        raise SyncError(
+            "gh CLI not found on PATH; sync-cache --method gh requires gh"
+        ) from error
+    if result.returncode != 0:
+        raise SyncError("gh CLI not available; sync-cache --method gh requires gh")
+
+
+def ensure_working_copy(
+    repo: DataRepoConfig, root: Path, pull: bool, method: str = "git"
+) -> Path:
+    """Return the local git working copy, cloning through the selected method."""
     workdir = Path(repo.path)
     if not workdir.is_absolute():
         workdir = (root / workdir).resolve()
@@ -175,11 +206,33 @@ def ensure_working_copy(repo: DataRepoConfig, root: Path, pull: bool) -> Path:
             "move it away or fix data_repo.path"
         )
     workdir.parent.mkdir(parents=True, exist_ok=True)
-    result = git(
-        workdir.parent, "clone", "--branch", repo.branch, repo.url, str(workdir.name)
-    )
-    if result.returncode != 0:
-        raise SyncError(f"git clone failed: {result.stderr.strip()}")
+    if method == "git":
+        result = git(
+            workdir.parent, "clone", "--branch", repo.branch, repo.url, str(workdir.name)
+        )
+        if result.returncode != 0:
+            raise SyncError(f"git clone failed: {result.stderr.strip()}")
+    elif method == "gh":
+        ensure_gh_available(workdir.parent)
+        try:
+            result = gh(
+                workdir.parent,
+                "repo",
+                "clone",
+                repo.url,
+                str(workdir),
+                "--",
+                "--branch",
+                repo.branch,
+            )
+        except FileNotFoundError as error:  # pragma: no cover - checked above
+            raise SyncError(
+                "gh CLI not found on PATH; sync-cache --method gh requires gh"
+            ) from error
+        if result.returncode != 0:
+            raise SyncError(f"gh repo clone failed: {result.stderr.strip()}")
+    else:  # pragma: no cover - CLI/config validation makes this unreachable
+        raise SyncError(f"unknown clone method: {method}")
     return workdir
 
 
@@ -402,6 +455,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--config", help="Path to config file")
     parser.add_argument(
+        "--method",
+        choices=("git", "gh"),
+        default=None,
+        help="initial clone method (default: config sync_cache.method, then git); subsequent sync always uses git",
+    )
+    parser.add_argument(
         "--pull",
         action="store_true",
         help="git pull the working copy before mirroring",
@@ -459,9 +518,12 @@ def main(argv: list[str] | None = None) -> int:
     mode = _compare_mode(args)
     try:
         config = load_config(args.config)
+        method = args.method or config.sync_cache.method
         ensure_git_available()
         root = Path.cwd()
-        workdir = ensure_working_copy(config.data_repo, root, pull=args.pull)
+        workdir = ensure_working_copy(
+            config.data_repo, root, pull=args.pull, method=method
+        )
 
         stats = {"copied": 0, "removed": 0, "restored": 0, "missing": 0}
         if args.restore:
@@ -487,7 +549,7 @@ def main(argv: list[str] | None = None) -> int:
         ):
             push_changes(workdir, config.data_repo.branch)
             pushed = True
-    except SyncError as error:
+    except (ConfigError, SyncError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 

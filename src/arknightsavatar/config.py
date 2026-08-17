@@ -95,10 +95,18 @@ class DataRepoConfig:
 
 
 @dataclass
+class SyncCacheConfig:
+    """sync-cache command settings loaded from the main TOML config."""
+
+    method: str = "git"
+
+
+@dataclass
 class Config:
     adb: AdbConfig = field(default_factory=AdbConfig)
     apk: ApkConfig = field(default_factory=ApkConfig)
     data_repo: DataRepoConfig = field(default_factory=DataRepoConfig)
+    sync_cache: SyncCacheConfig = field(default_factory=SyncCacheConfig)
     game_version: str = "unknown"
 
 
@@ -134,6 +142,19 @@ def infer_game_version(apk: ApkConfig) -> str:
         if stem and not stem.startswith("."):
             return stem
     return ""
+
+
+def _parse_sync_cache(data: object) -> SyncCacheConfig:
+    """Parse ``[sync_cache]`` settings from the main TOML config."""
+    if not isinstance(data, dict):
+        raise ConfigError("invalid sync_cache: expected a TOML table")
+    raw_method = data.get("method", "git")
+    method = str(raw_method)
+    if method not in ("git", "gh"):
+        raise ConfigError(
+            f"invalid sync_cache.method={method!r}: expected 'git' or 'gh'"
+        )
+    return SyncCacheConfig(method=method)
 
 
 def _parse_data_repo(data: dict) -> DataRepoConfig:
@@ -190,6 +211,7 @@ def load_config(
     adb_data = data.get("adb") or {}
     game_data = adb_data.get("game") or {}
     apk_data = data.get("apk") or {}
+    sync_cache_data = data.get("sync_cache", {})
 
     server = _env("ADB_GAME_SERVER") or game_data.get("server", "official")
     env_port = _env("ADB_PORT") or None  # 空/未设置 → 用配置或默认
@@ -214,6 +236,8 @@ def load_config(
         else (Path(apk_data["dir"]) if apk_data.get("dir") else None),
     )
 
+    sync_cache = _parse_sync_cache(sync_cache_data)
+
     data_repo = _parse_data_repo(data_repo_data)
     data_repo.path = _env("DATA_REPO_PATH") or data_repo.path
     data_repo.url = _env("DATA_REPO_URL") or data_repo.url
@@ -225,4 +249,10 @@ def load_config(
         or infer_game_version(apk)
         or "unknown"
     )
-    return Config(adb=adb, apk=apk, data_repo=data_repo, game_version=game_version)
+    return Config(
+        adb=adb,
+        apk=apk,
+        data_repo=data_repo,
+        sync_cache=sync_cache,
+        game_version=game_version,
+    )
