@@ -47,6 +47,21 @@ class SelectiveParse:
         return {"2$1": Image.new("RGBA", (4, 4), (0, 0, 0, 0))}
 
 
+class DottedParse:
+    """Asset names containing or ending with double dots."""
+
+    def __init__(self, path: Path):
+        self.sprites = {"char_002_amiya..test": None, "char_003_kalts.": None}
+        self.face_groups = []
+
+    def merged_images(self) -> dict[str, Image.Image]:
+        return {
+            "char_002_amiya..test": Image.new("RGBA", (8, 8), (0, 255, 0, 255)),
+            "char_003_kalts.": Image.new("RGBA", (8, 8), (0, 0, 255, 255)),
+            "full..body": Image.new("RGBA", (8, 8), (255, 255, 0, 255)),
+        }
+
+
 class AlwaysFailParse:
     def __init__(self, path: Path):
         raise RuntimeError("boom")
@@ -172,6 +187,47 @@ def test_run_unpack_creates_output_dir_when_all_fail(tmp_path: Path):
     assert stats["characters"]["failed"] == 1
     assert (unpacked / "_manifest.json").exists()
     assert (unpacked / "_failed.json").exists()
+
+
+def test_unpack_sanitizes_double_dots_in_filenames(tmp_path: Path):
+    ab_path = tmp_path / "ui_char_avatar_1.ab"
+    ab_path.write_bytes(b"x")
+    unpacked = tmp_path / "unpacked"
+
+    unpack_one(
+        ab_path,
+        unpacked,
+        "avatars",
+        "avatars/ui_char_avatar_1.ab",
+        "sha3",
+        parser_cls=DottedParse,
+    )
+    avatars_dir = unpacked / "avatars"
+    # sprite 名中的连续句点折叠为单个句点
+    assert (avatars_dir / "char_002_amiya.test.png").exists()
+    # sprite 名以句点结尾时，拼接 .png 产生的 .. 同样被折叠
+    assert (avatars_dir / "char_003_kalts.png").exists()
+    # 原始（未清洗）文件名不应存在
+    assert not (avatars_dir / "char_002_amiya..test.png").exists()
+    assert not (avatars_dir / "char_003_kalts..png").exists()
+
+    ab_path2 = tmp_path / "avg_dotted_1.ab"
+    ab_path2.write_bytes(b"y")
+    unpack_one(
+        ab_path2,
+        unpacked,
+        "characters",
+        "characters/avg_dotted_1.ab",
+        "sha4",
+        parser_cls=DottedParse,
+    )
+    item_dir = unpacked / "characters" / "avg_dotted_1"
+    # 纹理名中的连续句点同样被折叠
+    assert (item_dir / "full.body.png").exists()
+    assert not (item_dir / "full..body.png").exists()
+    # 元数据里仍保留原始资产命名作为标识
+    meta = json.loads((item_dir / "meta.json").read_text(encoding="utf8"))
+    assert "full..body" in meta["textures"]
 
 
 def test_run_unpack_progress_callback(tmp_path: Path):

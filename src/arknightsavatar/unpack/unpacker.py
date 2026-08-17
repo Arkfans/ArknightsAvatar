@@ -26,6 +26,17 @@ def _write_meta(path: Path, payload: dict) -> None:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
+def _safe_filename(basename: str) -> str:
+    """Replace ``..`` in a generated file basename with ``.``.
+
+    Unity 资源名可能含连续句点或以 ``.`` 结尾，直接拼上 ``.png`` 会得到形如
+    ``xxx..png`` 的文件名；这里把 ``..`` 折叠为单个 ``.``。
+    """
+    while ".." in basename:
+        basename = basename.replace("..", ".")
+    return basename
+
+
 def unpack_one(
     ab_path: Path,
     unpacked_dir: Path,
@@ -63,13 +74,13 @@ def unpack_one(
                 # 过滤半身像：char_portrait（180x360）、skin portrait（292x552）等
                 # 非正方形竖版图不是角色头像，仅保留 180x180 正方形头像
                 continue
-            image.save(avatars_dir / f"{sprite_name}.png")
+            image.save(avatars_dir / _safe_filename(f"{sprite_name}.png"))
         _write_meta(avatars_dir / "_meta" / f"{ab_path.stem}.json", meta)
     else:
         item_dir = unpacked_dir / category / ab_path.stem
         item_dir.mkdir(parents=True, exist_ok=True)
         for name, image in merged.items():
-            image.save(item_dir / f"{name}.png")
+            image.save(item_dir / _safe_filename(f"{name}.png"))
         _write_meta(item_dir / "meta.json", meta)
 
     return {
