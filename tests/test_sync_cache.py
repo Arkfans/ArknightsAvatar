@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -68,6 +69,62 @@ def _make_remote(remote: Path) -> None:
     (remote / "README.md").write_text("data repo\n", encoding="utf8")
     _run_git(remote, "add", "-A")
     _run_git(remote, "commit", "-m", "init")
+
+
+def _make_bare_remote(remote: Path) -> None:
+    """Seed a bare remote with one initial commit.
+
+    ``ensure_working_copy`` clones with ``--branch main``, which fails against
+    an empty bare repo (the branch does not exist upstream), so the remote is
+    seeded through a throwaway clone first.
+    """
+    remote.mkdir(parents=True, exist_ok=True)
+    _run_git(remote, "init", "--bare", "-b", "main")
+    seed = remote.parent / (remote.name + "_seed")
+    _run_git(remote.parent, "clone", str(remote), str(seed))
+    _run_git(seed, "config", "user.name", "test")
+    _run_git(seed, "config", "user.email", "test@example.com")
+    (seed / "README.md").write_text("data repo\n", encoding="utf8")
+    _run_git(seed, "add", "-A")
+    _run_git(seed, "commit", "-m", "init")
+    _run_git(seed, "push", "origin", "HEAD:main")
+    shutil.rmtree(seed)
+
+
+def _remote_subject(bare: Path) -> str:
+    """Subject line of the latest remote commit."""
+    result = subprocess.run(
+        ["git", "--git-dir", str(bare), "log", "--format=%s", "-1"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout.strip()
+
+
+def _remote_commit_count(bare: Path) -> str:
+    """Number of commits on the remote (HEAD reachable)."""
+    result = subprocess.run(
+        ["git", "--git-dir", str(bare), "rev-list", "--count", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout.strip()
+
+
+def _remote_file(bare: Path, path: str) -> str:
+    """Content of ``path`` at the remote HEAD."""
+    result = subprocess.run(
+        ["git", "--git-dir", str(bare), "show", f"HEAD:{path}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout
 
 
 def _write_config(tmp_path: Path, url: str, categories: list[dict]) -> Path:
@@ -501,3 +558,125 @@ def test_mirror_file_rejects_dir_destination(tmp_path):
     assert dest.is_dir()
     assert (dest / "keep.me").read_text(encoding="utf8") == "precious"
     assert stats["copied"] == 0
+
+
+# ---------- --push：提交后推送到 GitHub 远端 ----------
+
+
+def test_push_uploads_commit_to_remote(tmp_path, monkeypatch, capsys):
+    """--push 提交后把分支推送到远端：bare 仓库可见 sync 提交与文件内容。"""
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote.git"
+    _make_bare_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text('{"a": 1}', encoding="utf8")
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+
+    assert sync_cache.main(["--config", str(config), "--push"]) == 0
+    workdir = tmp_path / "data_cache"
+    assert (workdir / "recognition" / "a.json").is_file()
+    assert "pushed=True" in capsys.readouterr().out
+    assert "sync" in _remote_subject(remote)
+    assert _remote_file(remote, "recognition/a.json") == '{"a": 1}'
+
+
+def test_push_skipped_when_nothing_committed(tmp_path, monkeypatch, capsys):
+    """无新变更时 --push 不推送（pushed=False），远端提交数不变。"""
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote.git"
+    _make_bare_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("a", encoding="utf8")
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+    assert sync_cache.main(["--config", str(config), "--push"]) == 0
+    capsys.readouterr()  # 丢弃第一次输出
+    count_after_first = _remote_commit_count(remote)
+    assert sync_cache.main(["--config", str(config), "--push"]) == 0
+    assert "pushed=False" in capsys.readouterr().out
+    assert _remote_commit_count(remote) == count_after_first
+
+
+def test_dry_run_with_push_does_not_push(tmp_path, monkeypatch, capsys):
+    """--dry-run --push：不提交也不推送，远端只有 init 提交。"""
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote.git"
+    _make_bare_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("a", encoding="utf8")
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+    assert sync_cache.main(["--config", str(config), "--dry-run", "--push"]) == 0
+    assert "pushed=False" in capsys.readouterr().out
+    assert "sync" not in _remote_subject(remote)
+
+
+def test_push_after_failed_push_retries(tmp_path, monkeypatch, capsys):
+    """推送失败（提交已成功）后重跑 --push 会补推，即使本次无新变更。"""
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote.git"
+    _make_bare_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("a", encoding="utf8")
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+
+    real_git = sync_cache.git
+
+    def fake_git(cwd, *argv):
+        if argv[:1] == ("push",):
+            return subprocess.CompletedProcess(
+                args=["git", *argv], returncode=128, stdout="", stderr="auth boom"
+            )
+        return real_git(cwd, *argv)
+
+    monkeypatch.setattr(sync_cache, "git", fake_git)
+    assert sync_cache.main(["--config", str(config), "--push"]) == 1
+    assert "git push failed" in capsys.readouterr().err
+    # 提交保留在本地，远端尚无 sync 提交
+    assert "sync" not in _remote_subject(remote)
+
+    # 恢复真实 git 重跑（无新变更）→ 未推送提交检查触发补推
+    monkeypatch.setattr(sync_cache, "git", real_git)
+    assert sync_cache.main(["--config", str(config), "--push"]) == 0
+    assert "pushed=True" in capsys.readouterr().out
+    assert "sync" in _remote_subject(remote)
+    assert _remote_file(remote, "recognition/a.json") == "a"
+
+
+def test_push_rejected_when_remote_ahead(tmp_path, monkeypatch, capsys):
+    """远端领先（非快进）时 --push 报错退出 1，并提示先 pull。"""
+    monkeypatch.chdir(tmp_path)
+    remote = tmp_path / "remote.git"
+    _make_bare_remote(remote)
+    local_dir = tmp_path / "data" / "recognition"
+    local_dir.mkdir(parents=True)
+    (local_dir / "a.json").write_text("a", encoding="utf8")
+    config = _write_config(
+        tmp_path, str(remote), [{"local": "data/recognition", "remote": "recognition"}]
+    )
+    assert sync_cache.main(["--config", str(config), "--push"]) == 0
+
+    # 推进远端：另一工作副本提交并推送
+    other = tmp_path / "other"
+    _run_git(tmp_path, "clone", str(remote), str(other))
+    _run_git(other, "config", "user.name", "test")
+    _run_git(other, "config", "user.email", "test@example.com")
+    (other / "b.json").write_text("remote new", encoding="utf8")
+    _run_git(other, "add", "-A")
+    _run_git(other, "commit", "-m", "remote advance")
+    _run_git(other, "push", "origin", "HEAD:main")
+
+    # 本地改动后不带 --pull 直接 --push → 非快进被拒
+    (local_dir / "a.json").write_text("v2", encoding="utf8")
+    assert sync_cache.main(["--config", str(config), "--push"]) == 1
+    assert "git push failed" in capsys.readouterr().err

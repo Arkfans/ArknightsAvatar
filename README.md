@@ -160,6 +160,9 @@ uv run arknightsavatar sync-cache --pull --restore
 uv run arknightsavatar sync-cache --dry-run
 uv run arknightsavatar sync-cache --message "sync after 2.7.61"
 
+# 提交后推送到 GitHub（--pull 先取回远端提交，避免非快进拒绝）
+uv run arknightsavatar sync-cache --pull --push
+
 # 比较模式（默认：manifest 加速，见下）
 uv run arknightsavatar sync-cache --content-hash   # 全量 sha256 内容比较
 uv run arknightsavatar sync-cache --size-mtime     # 旧行为：size + mtime
@@ -180,8 +183,14 @@ uv run arknightsavatar sync-cache --size-mtime     # 旧行为：size + mtime
 回退 `size + mtime`。`--content-hash` 对全部文件做全量 sha256（清单缺失时的正确性模式）；
 `--size-mtime` 完全恢复旧行为。镜像时 `manifest.json` 排在最后复制，中断不会出现"新清单配旧文件"。
 
+`--push` 在提交成功后执行 `git push origin <branch>`（`branch` 取 `data_repo.yaml`，默认
+`main`），把数据真正同步到 GitHub：无新提交时不推送（`pushed=False`）；`--dry-run` 下
+忽略 `--push`（不做任何远端变更）；远端领先（非快进）时推送被拒并提示先 `--pull` 或
+`git pull --rebase`。若上次推送失败（提交已留在本地），重跑 `sync-cache --push` 会
+检测到未推送的本地提交并自动补推。
+
 工作副本默认 `data_cache/`（已 gitignore）；url 为空时工具会提示先创建仓库并填写配置。
-全程调用 git CLI（clone / pull / add / diff / commit），无其它依赖。
+全程调用 git CLI（clone / pull / add / diff / commit / push），无其它依赖。
 
 ### setup（初始化）
 

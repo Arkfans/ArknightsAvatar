@@ -16,7 +16,9 @@ Options:
 - ``--restore`` copy files that exist in the data repo but are missing
   locally (e.g. the derive model on a fresh machine);
 - ``--dry-run`` mirror without committing;
-- ``--message`` custom commit message.
+- ``--message`` custom commit message;
+- ``--push``    push the local branch to ``origin`` after committing
+  (skipped when there is nothing to push; ignored with ``--dry-run``).
 """
 
 from __future__ import annotations
@@ -367,6 +369,32 @@ def commit_changes(workdir: Path, message: str, dry_run: bool) -> bool:
     return True
 
 
+def _unpushed_commits(workdir: Path, branch: str) -> bool:
+    """True when the local branch has commits not yet on ``origin/<branch>``.
+
+    Used by ``--push`` so a retry after a failed push (commit succeeded, push
+    rejected) is not silently skipped: a commit exists locally but nothing new
+    was mirrored. A ``rev-list`` failure (e.g. missing remote-tracking ref on
+    the first push) counts as unpushed so the push is attempted; ``git push``
+    then either creates the ref or fails loudly.
+    """
+    result = git(workdir, "rev-list", "--count", f"origin/{branch}..HEAD")
+    if result.returncode != 0:
+        return True
+    return result.stdout.strip() not in ("", "0")
+
+
+def push_changes(workdir: Path, branch: str) -> None:
+    """Push the local ``branch`` to ``origin``; ``SyncError`` on rejection."""
+    result = git(workdir, "push", "origin", branch)
+    if result.returncode != 0:
+        raise SyncError(
+            f"git push failed: {result.stderr.strip()}\n"
+            "hint: pull first (sync-cache --pull or git pull --rebase) when the "
+            "remote has commits you don't have yet"
+        )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="arknightsavatar-sync-cache",
@@ -392,6 +420,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--message",
         default=None,
         help="commit message (default: 'sync <UTC timestamp>' with pipeline/game version, compare mode, and extract counts)",
+    )
+    parser.add_argument(
+        "--push",
+        action="store_true",
+        help="git push the local branch to origin after committing (skipped when there is nothing to push; ignored with --dry-run)",
     )
     compare = parser.add_mutually_exclusive_group()
     compare.add_argument(
@@ -446,6 +479,14 @@ def main(argv: list[str] | None = None) -> int:
             counts, mode, pipeline_version, game_version
         )
         committed = commit_changes(workdir, message, dry_run=args.dry_run)
+        pushed = False
+        if (
+            args.push
+            and not args.dry_run
+            and (committed or _unpushed_commits(workdir, config.data_repo.branch))
+        ):
+            push_changes(workdir, config.data_repo.branch)
+            pushed = True
     except SyncError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
@@ -454,7 +495,7 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"copied={stats['copied']} removed={stats['removed']} "
         f"restored={stats['restored']} missing={stats['missing']} "
-        f"committed={committed}"
+        f"committed={committed} pushed={pushed}"
     )
     return 0
 
