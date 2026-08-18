@@ -630,7 +630,7 @@ uv run arknightsavatar-extract --force-match
    `{"box": [x1, y1, x2, y2]}`，原图像素），命中即用；
 2. **匹配**：复用 `data/recognition/avatar_match.json` 中 threshold **> 0.8** 的结果；
    报告缺失或加 `--force-match` 时内联调用匹配逻辑重算；
-3. **推导**：对人脸置信度 **> 0.8** 且头部置信度 **> 0.7** 的图，用
+3. **推导**：对人脸置信度 **> 0.60** 且头部置信度 **> 0.55** 的图，用
    `data/recognition/derive/model.json` 由 face/head 检测框推导正方形裁切框。
 
 diff 处理：与 base 同尺寸的 diff 直接使用；小尺寸 diff 按 `meta.json` 的
@@ -643,9 +643,10 @@ diff 处理：与 base 同尺寸的 diff 直接使用；小尺寸 diff 按 `meta
 （动作/姿态变化导致头像位置偏移），对组合图重新做人脸/头部识别并按第三档推导框提取。
 
 多 base 角色：先提取各 base 头像，两两比较相似度（透明合成灰度相关，默认
-**> 0.98** 判重复），保留置信度更高者（手动 > 匹配 > 推导，同档比分数，再按文件名
-稳定排序）；被丢弃的 base 及其 diff 不写新文件（已存在文件不删除），报告中标
-`dropped`。
+**> 0.9** 判重复），保留置信度更高者（手动 > 匹配 > 推导，同档比分数，再按文件名
+稳定排序）；被丢弃的 base 及其 diff 不写新文件，且其在 `data/export/<角色>/` 下已
+存在的旧 PNG 会被 `_prune_stale_outputs` 删除（避免陈旧输出被 npc-json/manifest/
+sync-cache 收集），报告中标 `dropped`。
 
 报告默认写入 `data/recognition/avatar_extract.json`（`--output -` 输出到 stdout），
 每角色 bases/diffs 各带 `{status, method, confidence, box, avatar_file, special?,
@@ -657,8 +658,8 @@ detect_cache_hit?}`；`stats` 汇总 base/diff 的 ok/skipped/dropped/no_box/fai
 `{iou, special, box, method, confidence, detect_cache_hit, error}`，任一输入变化
 即自动重算（`no_box` 决策同样回放）。缓存不做键清理，旧条目保留作调试历史。
 
-可调参数：`--match-threshold`（0.8）、`--face-conf`（0.8）、`--head-conf`（0.7）、
-`--special-mask-iou`（0.85）、`--dedup-sim`（0.98）、`--manual`、`--derive-model`、
+可调参数：`--match-threshold`（0.8）、`--face-conf`（0.6）、`--head-conf`（0.55）、
+`--special-mask-iou`（0.85）、`--dedup-sim`（0.9）、`--manual`、`--derive-model`、
 `--face-head-cache`、`--cache`、`--output-dir`、`--output`、`--limit`、`--character`、
 `--force`、`--force-match`、`--device`（auto/cuda/cpu）。依赖 `uv sync`（detect 组）。
 模型权重未缓存时首次运行需联网；本地已缓存且离线运行时设 `HF_HUB_OFFLINE=1`。
